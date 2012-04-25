@@ -1,0 +1,34 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:plone="http://namespaces.plone.org/plone"
+    i18n_domain="collective.salesforce.fundraising">
+
+  <!-- Ensure Plone's portlets ZCML has already been processed;
+       without this, we may get a permission lookup error -->
+  <include package="plone.app.portlets" />
+
+    <!-- -*- extra stuff goes here -*- -->
+
+  <plone:portlet
+      name="collective.salesforce.fundraising.portlets.CampaignGoal"
+      interface=".campaign_goal.ICampaignGoalPortlet"
+      assignment=".campaign_goal.Assignment"
+      view_permission="zope2.View"
+      edit_permission="cmf.ManagePortal"
+      renderer=".campaign_goal.Renderer"
+      addview=".campaign_goal.AddForm"
+      editview=".campaign_goal.EditForm"
+      />
+
+  <plone:portlet
+      name="collective.salesforce.fundraising.portlets.CampaignTimeline"
+      interface=".campaign_timeline.ICampaignTimelinePortlet"
+      assignment=".campaign_timeline.Assignment"
+      view_permission="zope2.View"
+      edit_permission="cmf.ManagePortal"
+      renderer=".campaign_timeline.Renderer"
+      addview=".campaign_timeline.AddForm"
+      editview=".campaign_timeline.EditForm"
+      />
+
+</configure>

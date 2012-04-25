@@ -1,0 +1,17 @@
+collective.salesforce.fundraising Installation
+-----------------------------------
+
+To install collective.salesforce.fundraising using zc.buildout and the plone.recipe.zope2instance
+recipe to manage your project, you can do this:
+
+* Add ``collective.salesforce.fundraising`` to the list of eggs to install, e.g.:
+
+    [buildout]
+    ...
+    eggs =
+        ...
+        collective.salesforce.fundraising
+       
+* Re-run buildout, e.g. with:
+
+    $ ./bin/buildout

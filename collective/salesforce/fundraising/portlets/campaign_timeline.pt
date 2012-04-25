@@ -1,0 +1,38 @@
+<dl class="portlet portletCampaignTimeline"
+    i18n:domain="collective.salesforce.fundraising"
+    tal:define="percent view/context/get_percent_timeline;"
+    tal:condition="percent">
+
+    <dt class="portletHeader">
+        <span class="portletTopLeft"></span>
+        <span>
+           Timeline
+        </span>
+        <span class="portletTopRight"></span>
+    </dt>
+
+    <dd class="portletItem campaign-days-remaining">
+      <strong tal:content="view/context/get_days_remaining">42</strong>
+      <span class="days-remaining-wrapper">
+        <span class="word-days">Days</span>
+        <span class="word-remaining">Remaining</span>
+      </span>
+    </dd>
+
+    <dd class="portletItem odd campaign-timeline">
+      <div class="progress-bar" />
+      <span tal:replace="structure view/context/render_timeline_bar_js" />
+      <div class="campaign-dates">
+        <span class="start-date" tal:content="python: view.context.date_start.strftime('%b %d')" />
+        <span class="end-date" tal:content="python: view.context.date_end.strftime('%b %d')" />
+      </div>
+    </dd>
+
+    <dd class="portletFooter">
+        <span class="portletBottomLeft"></span>
+        <span>
+        </span>
+        <span class="portletBottomRight"></span>
+    </dd>
+
+</dl>

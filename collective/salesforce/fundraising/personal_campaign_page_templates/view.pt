@@ -1,0 +1,69 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.salesforce.fundraising">
+<body>
+
+<metal:js-head-slot fill-slot="javascript_head_slot">
+  <script type="text/javascript" src="++resource++collective.salesforce.fundraising/jquery.progressbar/js/jquery.progressbar.js"></script>
+</metal:js-head-slot>
+
+
+
+<metal:main fill-slot="content-core">
+  <metal:content-core define-macro="content-core">
+
+    <div class="create-personal-page" tal:condition="context/allow_personal">
+      <a href="create-personal-campaign-page">Create Your Own Campaign Page</a>
+    </div>
+
+    <div class="campaign-status-wrapper">
+      <div class="campaign-goal" tal:condition="context/goal">
+        <h3>
+          <strong>Goal:</strong> 
+          <span tal:content="python: '$' + str(int(context.goal))">$1000</span>
+        </h3>
+        <div class="progress-bar"></div>
+        <span tal:replace="structure context/render_goal_bar_js" />
+      </div>
+      <div class="campaign-timeline">
+        <h3>
+          <strong>Dates:</strong> 
+          <span class="date-range">
+            <span class="date-range-start" tal:content="python: context.date_start.strftime('%b %d, %Y')">March 20, 2012</span>
+            <span class="date-range-to">to</span>
+            <span class="date-range-end" tal:content="python: context.date_end.strftime('%b %d, %Y')">May 30, 2012</span>
+          </span>
+        </h3>
+        <div class="progress-bar"></div>
+        <span tal:replace="structure context/render_timeline_bar_js" />
+      </div>
+    </div>
+
+    <dl>
+      <dt>Status</dt>
+      <dd tal:content="context/status"></dd>
+      <dt>Goal</dt>
+      <dd tal:condition="context/get_percent_goal" ><span tal:content="python: '$' + str(int(context.goal))" /> <span tal:content="python: str(int(context.get_percent_goal())) + '%'" /></dd>
+      <dt>Total Raised</dt>
+      <dd  tal:condition="context/donations_total" tal:content="python: '$' + str(int(context.donations_total)) "></dd>
+      <dt>Number of Donations</dt>
+      <dd tal:content="context/donations_count"></dd>
+      <dt>Timeline</dt>
+      <dd tal:condition="python: context.date_start and context.date_end">
+      </dd>
+    </dl>
+
+    <div class="campaign-donation-form-wrapper">
+      <div tal:replace="structure context/populate_form_embed" />
+    </div>
+    
+  </metal:content-core>
+</metal:main>
+
+</body>
+</html>
+

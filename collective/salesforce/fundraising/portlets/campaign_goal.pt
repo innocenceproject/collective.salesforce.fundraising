@@ -1,0 +1,61 @@
+<dl class="portlet portletCampaignGoal"
+    i18n:domain="collective.salesforce.fundraising"
+    tal:define="goal view/context/goal;
+                percent view/context/get_percent_goal;
+                raised view/context/donations_total;
+                donors view/context/donations_count;
+                addcommas nocall: view/addcommas;"
+    tal:condition="percent">
+
+    <dt class="portletHeader">
+        <span class="portletTopLeft"></span>
+        <span>
+           Goal
+        </span>
+        <span class="portletTopRight"></span>
+    </dt>
+
+    <dd class="portletItem campaign-progress-bar">
+      <div class="progress-bar" />
+      <span tal:replace="structure view/context/render_goal_bar_js" />
+    </dd>
+
+    <dd class="portletItem campaign-goal-percent" style="margin: -44px 0 0 20px; color: black">
+      <span class="goal-percent" tal:content="percent">100</span><span class="symbol-percent">%</span>
+    </dd>
+
+    <dd class="portletItem fundraising-goal">
+      <strong>Goal</strong>
+      <span class="value" tal:content="python: '$' + addcommas(goal)" />
+    </dd>
+
+    <dd class="portletItem fundraising-raised">
+      <strong>Raised</strong>
+      <span class="value" tal:content="python: '$' + addcommas(raised)" />
+    </dd>
+
+    <dd class="portletItem fundraising-remaining">
+      <strong>Remaining</strong>
+      <span class="value" tal:content="python: '$' + addcommas(goal - raised)" />
+    </dd>
+
+    <dd class="portletItem fundraising-counts">
+      <div class="count-large left count-donors">
+        <strong tal:content="donors">103</strong>
+        <span class="discreet">Donors</span>
+      </div>
+      <div class="count-large right count-partners">
+        <strong tal:content="donors">103</strong>
+        <span class="discreet">Partners</span>
+      </div>
+      <div class="visualClear"></div>
+    </dd>
+
+    <dd class="portletFooter">
+        <span class="portletBottomLeft"></span>
+        <span>
+        </span>
+        <span class="portletBottomRight"></span>
+    </dd>
+
+</dl>

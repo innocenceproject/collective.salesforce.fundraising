@@ -1,0 +1,53 @@
+<?xml version="1.0" ?>
+<model xmlns="http://namespaces.plone.org/supermodel/schema"
+       xmlns:sf="http://namespaces.plone.org/salesforce/schema"
+       xmlns:form="http://namespaces.plone.org/supermodel/form">
+    
+    <schema sf:object="Campaign" sf:criteria="Type = 'Personal Fundraising'" sf:container="get_container">
+        <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c">
+            <title>Title</title>
+            <description>Provide a brief title for your campaign</description>
+        </field>
+        <field name="description" type="zope.schema.TextLine" sf:field="Description">
+            <title>Description</title>
+            <description>Provide a 1-3 sentence pitch for your campaign</description>
+        </field>
+        <field name="status" type="zope.schema.TextLine" sf:field="Status">
+            <title>Status</title>
+            <description>The current status of the campaign</description>
+        </field>
+        <field name="goal" type="zope.schema.Float" sf:field="ExpectedRevenue">
+            <title>Goal</title>
+            <description>Set the dollar amount goal you aim to raise in your campaign</description>
+        </field>
+        <field name="donations_total" type="zope.schema.Float" sf:field="AmountWonOpportunities">
+            <title>Total Raised</title>
+            <description>The total amount of donations raised in this campaign</description>
+        </field>
+        <field name="donations_count" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
+            <title>Total Donations</title>
+            <description>The total number of donations to this campaign</description>
+        </field>
+        <field name="form_embed" type="zope.schema.Text" sf:field="Form_Embed_Code__c">
+            <title>Form Embed Code</title>
+            <description>The html code to embed the donation form for this campaign</description>
+        </field>
+        <field name="date_start" type="zope.schema.Date" sf:field="StartDate">
+            <title>Start Date</title>
+            <description>The date this campaign starts</description>
+        </field>
+        <field name="date_end" type="zope.schema.Date" sf:field="EndDate">
+            <title>End Date</title>
+            <description>The date this campaign ends</description>
+        </field>
+        <field name="personal_appeal" type="plone.app.textfield.RichText">
+            <title>Personal Appeal</title>
+            <description>Provide your personal pitch to donors.  Explain why you created your page and why your friends, family, and colleagues should donate.</description>
+        </field>
+        <field name="parent_sf_id" type="zope.schema.TextLine" sf:field="ParentId">
+            <title>Parent Salesforce ID</title>
+            <description>The Salesforce ID of the parent Campaign</description>
+        </field>
+    </schema>
+    
+</model>

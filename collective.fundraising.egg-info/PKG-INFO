@@ -1,0 +1,27 @@
+Metadata-Version: 1.0
+Name: collective.salesforce.fundraising
+Version: 1.0
+Summary: Fundraising for Salesforce.com
+Home-page: http://svn.plone.org/svn/collective/
+Author: UNKNOWN
+Author-email: UNKNOWN
+License: GPL
+Description: Introduction
+        ============
+        
+        
+        
+        This product may contain traces of nuts.
+        
+        Changelog
+        =========
+        
+        1.0dev (unreleased)
+        -------------------
+        
+        - Initial release
+        
+Platform: UNKNOWN
+Classifier: Framework :: Plone
+Classifier: Programming Language :: Python
+Classifier: Topic :: Software Development :: Libraries :: Python Modules

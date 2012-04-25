@@ -1,0 +1,7 @@
+<metadata>
+  <version>1</version>
+    <dependencies>
+        <dependency>profile-plone.app.dexterity:default</dependency>
+        <dependency>profile-collective.salesforce.content:default</dependency>
+    </dependencies>
+</metadata>
