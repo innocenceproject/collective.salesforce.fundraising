@@ -28,6 +28,7 @@ setup(name='collective.salesforce.fundraising',
           'setuptools',
           'plone.app.dexterity',
           'plone.namedfile [blobs]',
+          'collective.salesforce.content',
           # -*- Extra requirements: -*-
       ],
       entry_points="""
