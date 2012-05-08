@@ -10,10 +10,15 @@
   <!-- Include configuration for dependencies listed in setup.py -->
   <includeDependencies package="." />
 
-  <!-- Grok the package to initialise schema interfaces and content classes -->
-  <grok:grok package="." />
-  
   <i18n:registerTranslations directory="locales" />
+
+  <permission
+      id="collective.salesforce.fundraising.AddPersonalCampaign"
+      title="collective.salesforce.fundraising: Add personal campaign">
+      <role name="Member" />
+      <role name="Site Administrator" />
+      <role name="Manager" />
+  </permission>
 
   <!-- Register an extension profile to make the product installable
        in Plone -->
@@ -28,5 +33,7 @@
   <!-- -*- extra stuff goes here -*- -->
   <include package=".portlets" />
 
+  <!-- Grok the package to initialise schema interfaces and content classes -->
+  <grok:grok package="." />
 
 </configure>

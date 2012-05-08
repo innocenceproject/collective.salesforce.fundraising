@@ -68,7 +68,7 @@ class FundraisingCampaign(dexterity.Container):
     def populate_form_embed(self):
         if self.form_embed:
             form_embed = self.form_embed
-            form_embed = form_embed.replace('{{CAMPAIGN_ID}}', self.sf_object_id)
+            form_embed = form_embed.replace('{{CAMPAIGN_ID}}', getattr(self, 'sf_object_id', ''))
             form_embed = form_embed.replace('{{SOURCE_CODE}}', self.get_source_code())
             form_embed = form_embed.replace('{{SOURCE_URL}}', self.absolute_url())
             return form_embed
@@ -91,17 +91,3 @@ class CampaignView(grok.View):
     def addcommas(self, number):
         locale.setlocale(locale.LC_ALL, '')
         return locale.format('%d', number, 1)
-
-
-class CreatePersonalCampaignPageView(grok.View):
-    grok.context(IFundraisingCampaign)
-    # FIXME - make this a custom permission so it can be controlled by the workflow
-    grok.require('zope2.View')
-    grok.name('create_personal_campaign')
-    grok.template('create_personal_campaign')
-
-    @property
-    def form(self):
-        from collective.salesforce.fundraising.forms import CreatePersonalCampaignPageForm
-        form = CreatePersonalCampaignPageForm(self.request)
-        return form
