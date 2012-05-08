@@ -27,7 +27,7 @@
 
   <property name="behaviors">
      <element value="plone.app.content.interfaces.INameFromTitle" />
-     <element value="collective.salesforce.content.behaviors.ISalesforceObject"/>
+     <element value="collective.salesforce.content.interfaces.ISalesforceObject"/>
    </property>
 
   <!-- View information -->
