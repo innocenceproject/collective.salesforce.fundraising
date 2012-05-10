@@ -28,6 +28,7 @@ setup(name='collective.salesforce.fundraising',
           'setuptools',
           'five.globalrequest',
           'plone.app.dexterity',
+          'plone.app.users >= 1.1.4dev'
           'plone.namedfile [blobs]',
           'collective.salesforce.content',
           'collective.pluggablelogin',
