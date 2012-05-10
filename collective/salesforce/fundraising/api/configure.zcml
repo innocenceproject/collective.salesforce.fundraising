@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="collective.salesforce.fundraising">
+
+  <browser:page
+    for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+    name="post_fundraising_payment"
+    class=".post_payment.PostPayment"
+    permission="zope.Public"
+    />    
+
+</configure>

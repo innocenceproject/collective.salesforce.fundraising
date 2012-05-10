@@ -23,4 +23,26 @@
      i18n:attributes="title; description"
    />
 
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignGoal"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.fundraisingcampaign"
+     name="campaign.goal.portlet"
+     insert-before="*"
+     >
+     <property name="title">Goal</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignTimeline"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.fundraisingcampaign"
+     name="campaign.timeline.portlet"
+     insert-before="*"
+     >
+     <property name="title">Timeline</property>
+   </assignment> 
+
 </portlets>
