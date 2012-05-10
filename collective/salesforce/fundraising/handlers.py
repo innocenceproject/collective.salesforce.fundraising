@@ -28,12 +28,18 @@ def split_name(name):
 @grok.subscribe(IMemberCreated)
 def handleNewAccount(event):
     site = getSite()
-    # XXX exit if this site doesn't have this product
     mtool = getToolByName(site, 'portal_membership')
+    # only do this for self-registering users,
+    # not ones added by a Manager
     if mtool.isAnonymousUser():
         member = event.member
 
-        # log them in as soon as they register
+        # abort if this site doesn't have this product installed
+        mdata = getToolByName(site, 'portal_memberdata')
+        if 'sf_object_id' not in mdata.propertyIds():
+            return
+
+        # log them in immediately
         newSecurityManager(None, member.getUser())
         mtool.loginUser()
 
