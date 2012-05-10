@@ -1,11 +1,10 @@
 <?xml version="1.0" ?>
 <model xmlns="http://namespaces.plone.org/supermodel/schema"
        xmlns:form="http://namespaces.plone.org/supermodel/form">
-    
     <schema>
-
-        <!-- field definitions -->
-        
+        <field name="quote" type="zope.schema.Text" sf:field="Quote__c">
+            <title>Your Quote</title>
+            <description>Tell us and other potential donors why you were moved to donate.</description>
+        </field>
     </schema>
-    
 </model>

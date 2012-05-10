@@ -1,0 +1,54 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.salesforce.fundraising">
+<body>
+
+<metal:main fill-slot="content-title">
+  <metal:content-title define-macro="content-title">
+    <h1 class="documentFirstHeading">Thank You</h1>
+  </metal:content-title>
+</metal:main>
+
+<metal:main fill-slot="content-core">
+  <metal:content-core define-macro="content-core">
+
+    <div class="thank-you-message" tal:content="structure context/thank_you_message/output|nothing" />
+
+    <div class="next-steps">
+
+      <h2 class="next-steps-header">Amplify Your Donation</h2>
+
+      <div class="next-steps-step step-share">
+        <h2>Share with Friends and Family</h2>
+        <p>Click on the buttons below to let your friends and family know you donated and encourage them to donate too</p>
+      </div>
+
+      <div class="next-steps-step step-quote" tal:condition="context/can_add_donor_quote">
+        <h2>Tell Your Story</h2>
+        <p>Tell other potential donors what moved you to donate.</p>
+      </div>
+     
+      <div class="next-steps-step step-matching" tal:condition="context/show_employer_matching">
+        <h2>Does Your Employer Match?</h2>
+        <p></p>
+      </div> 
+
+      <div class="next-steps-step step-matching" tal:condition="context/can_add_personal_campaign">
+        <h2>Start a Personal Campaign</h2>
+        <p>Have friends and family who would also like to donate?  Setting up your own personal campaign page is easy.  Just click the button below to get started.</p>
+
+        <a class="button button-create-personal" href="#" tal:attributes="href python: context.absolute_url() + '/@@create-personal-campaign-page'">Create Personal Campaign</a>
+      </div> 
+
+    </div>
+
+  </metal:content-core>
+</metal:main>
+
+</body>
+</html>
+

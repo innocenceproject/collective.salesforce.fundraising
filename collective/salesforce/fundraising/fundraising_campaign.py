@@ -80,6 +80,15 @@ class FundraisingCampaign(dexterity.Container):
         """ Returns the fundraising campaign object.  Useful for subobjects to easily lookup the parent campaign """
         return self
 
+    def can_add_donor_quote(self):
+        return True
+
+    def show_employer_matching(self):
+        return True
+
+    def can_add_personal_campaign(self):
+        return True
+
 
 class CampaignView(grok.View):
     grok.context(IFundraisingCampaign)
@@ -91,3 +100,11 @@ class CampaignView(grok.View):
     def addcommas(self, number):
         locale.setlocale(locale.LC_ALL, '')
         return locale.format('%d', number, 1)
+
+class ThankYouView(grok.View):
+    grok.context(IFundraisingCampaign)
+    grok.require('zope2.View')
+
+    grok.name('thank-you')
+    grok.template('thank-you')
+
