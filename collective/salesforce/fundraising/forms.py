@@ -39,8 +39,11 @@ class CreatePersonalCampaignPageForm(form.Form):
             'collective.salesforce.fundraising.personalcampaignpage',
             checkConstraints=False, **data)
 
+        mtool = getToolByName(self.context, 'portal_membership')
+        member = mtool.getAuthenticatedMember()
+        contact_id = member.getProperty('sf_object_id')
+
         # Add the campaign in Salesforce
-        # XXX Should include id of Contact for current user
         # XXX Is the default status okay?
         sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
         res = sfbc.create({
@@ -50,6 +53,7 @@ class CreatePersonalCampaignPageForm(form.Form):
             'Name': data['title'],
             'Public_Name__c': data['title'],
             'ExpectedRevenue': data['goal'],
+            'Personal_Campaign_Contact__c': contact_id,
             })
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
