@@ -16,6 +16,21 @@
             <title>Body</title>
             <description>The body of the pitch for this campaign shown above the donation form</description>
         </field>
+        <field name="thank_you_message" title="Thank You Message" type="plone.app.textfield.RichText">
+            <title>Thank You Message</title>
+            <description>This is the message displayed to a donor after they have donated.</description>
+            <default>Your donation has been received.  Thank you for your support.</default>
+        </field>
+        <field name="default_personal_appeal" title="Default Personal Appeal" type="plone.app.textfield.RichText">
+            <title>Default Personal Appeal</title>
+            <description>When someone creates a personal campaign, this text is the default value in the Personal Appeal field.  The user can choose to keep the default or edit it to personalize their appeal</description>
+            <default>Please join me in my efforts to raise money for a wonderful organization.</default>
+        </field>
+        <field name="default_personal_thank_you" title="Default Personal Thank You" type="plone.app.textfield.RichText">
+            <title>Default Personal Thank You</title>
+            <description>When someone creates a personal campaign, this text is the default value in the Thank You Message field.  The user can choose to keep the default or edit it to personalize their thank you to their donors</description>
+            <default>Thank you for donating to my campaign.  Your donation helps me towards achieving my fundraising goal for a great organization.</default>
+        </field>
         <field name="status" title="Status" type="zope.schema.TextLine" sf:field="Status">
             <title>Status</title>
             <description>The current status of the campaign (From Status field on Campaign in Salesforce)</description>
