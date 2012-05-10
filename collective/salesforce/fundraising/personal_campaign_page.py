@@ -9,7 +9,10 @@ from zope.app.content.interfaces import IContentType
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
 
+from plone.app.textfield import RichText
 from plone.namedfile.interfaces import IImageScaleTraversable
+
+from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 
 
 # Interface class; used to define content-type schema.
@@ -19,14 +22,30 @@ class IPersonalCampaignPage(form.Schema, IImageScaleTraversable):
     A personal fundraising page
     """
 
-    # If you want a schema-defined interface, delete the form.model
-    # line below and delete the matching file in the models sub-directory.
-    # If you want a model-based interface, edit
-    # models/personal_campaign_page.xml to define the content type
-    # and add directives here as necessary.
+    personal_appeal = RichText(
+        title=u"Personal Appeal",
+        description=u"Your donors will want to know why to donate to your campaign.  You can use the default text or personalize your appeal.  Remember, your page will mostly be visited by people who know you so a personalized message is often more effective",
+    )    
 
+    thank_you_message = RichText(
+        title=u"Thank You Message",
+        description=u"This message will be shown to your donors after they donate.  You can use the default text or personalize your thank you message",
+    )    
     form.model("models/personal_campaign_page.xml")
+
+
 alsoProvides(IPersonalCampaignPage, IContentType)
+
+@form.default_value(field=IPersonalCampaignPage['personal_appeal'])
+def personalAppealDefaultValue(data):
+    context = data.context
+    return context.default_personal_appeal
+        
+@form.default_value(field=IPersonalCampaignPage['thank_you_message'])
+def thankYouDefaultValue(data):
+    context = data.context
+    return context.default_personal_thank_you
+        
 
 
 # Custom content-type class; objects created for this content type will

@@ -40,9 +40,9 @@
             <title>End Date</title>
             <description>The date this campaign ends</description>
         </field>
-        <field name="personal_appeal" type="plone.app.textfield.RichText">
-            <title>Personal Appeal</title>
-            <description>Provide your personal pitch to donors.  Explain why you created your page and why your friends, family, and colleagues should donate.</description>
+        <field name="thank_you_message" type="plone.app.textfield.RichText">
+            <title>Thank You Message</title>
+            <description>Provide a personalized thank you message after someone donates to your campaign.  You can use the prewritten text or edit it to make it your own</description>
         </field>
         <field name="parent_sf_id" type="zope.schema.TextLine" sf:field="ParentId">
             <title>Parent Salesforce ID</title>
