@@ -32,6 +32,7 @@
 
   <!-- -*- extra stuff goes here -*- -->
   <include package=".api" />
+  <include package=".controlpanel" />
   <include package=".portlets" />
 
   <!-- Grok the package to initialise schema interfaces and content classes -->

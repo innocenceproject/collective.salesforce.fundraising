@@ -1,0 +1,15 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="collective.salesforce.fundraising">
+   
+    <include package="plone.app.registry" />
+
+    <!-- Control panel -->
+    <browser:page
+        name="fundraising-settings"
+        for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+        class=".controlpanel.FundraisingSettingsControlPanel"
+        permission="cmf.ManagePortal"
+        />
+</configure>

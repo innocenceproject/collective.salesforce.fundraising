@@ -6,9 +6,15 @@ from plone.directives import dexterity, form
 
 from zope.interface import alsoProvides
 from zope.app.content.interfaces import IContentType
+from zope.app.container.interfaces import IObjectAddedEvent
 
+from zope.component import getUtility
+from plone.registry.interfaces import IRegistry
+
+from plone.app.textfield import RichText
 from plone.namedfile.interfaces import IImageScaleTraversable
 
+from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
 
 # Interface class; used to define content-type schema.
 
@@ -16,11 +22,56 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
     """
     A Fundraising Campaign linked to a Campaign in Salesforce.com
     """
+    body = RichText(
+        title=u"Fundraising Pitch",
+        description=u"The body of the pitch for this campaign shown above the donation form",
+    )
+
+    thank_you_message = RichText(
+        title=u"Thank You Message",
+        description=u"This is the message displayed to a donor after they have donated.",
+    )
+
+    default_personal_appeal = RichText(
+        title=u"Default Personal Appeal",
+        description=u"When someone creates a personal campaign, this text is the default value in the Personal Appeal field.  The user can choose to keep the default or edit it.",
+    )
+
+    default_personal_thank_you = RichText(
+        title=u"Default Personal Thank You Message",
+        description=u"When someone creates a personal campaign, this text is the default value in the Thank You Message field.  The user can choose to keep the default or edit it.",
+    )
 
     form.model("models/fundraising_campaign.xml")
 
 alsoProvides(IFundraisingCampaign, IContentType)
 
+@form.default_value(field=IFundraisingCampaign['thank_you_message'])
+def thankYouDefaultValue(data):
+    registry = getUtility(IRegistry)
+    settings = registry.forInterface(IFundraisingSettings)
+    return settings.default_thank_you_message
+
+@form.default_value(field=IFundraisingCampaign['default_personal_appeal'])
+def defaultPersonalAppealDefaultValue(data):
+    registry = getUtility(IRegistry)
+    settings = registry.forInterface(IFundraisingSettings)
+    return settings.default_personal_appeal
+
+@form.default_value(field=IFundraisingCampaign['default_personal_thank_you'])
+def defaultPersonalThankYouDefaultValue(data):
+    registry = getUtility(IRegistry)
+    settings = registry.forInterface(IFundraisingSettings)
+    return settings.default_personal_thank_you_message
+
+# This is necessary because collective.salesforce.content never loads the
+# form and thus never loads the default values on creation
+@grok.subscribe(IFundraisingCampaign, IObjectAddedEvent)
+def fillDefaultValues(campaign, event):
+    if not campaign.thank_you_message:
+        campaign.thank_you_message = thankYouDefaultValue(None)
+        campaign.default_personal_appeal = defaultPersonalAppealDefaultValue(None)
+        campaign.default_personal_thank_you = defaultPersonalThankYouDefaultValue(None)
 
 class FundraisingCampaign(dexterity.Container):
     grok.implements(IFundraisingCampaign)
