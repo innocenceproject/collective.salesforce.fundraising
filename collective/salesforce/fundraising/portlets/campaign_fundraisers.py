@@ -16,7 +16,7 @@ from collective.salesforce.fundraising import MessageFactory as _
 from zope.i18nmessageid import MessageFactory
 __ = MessageFactory("plone")
 
-class ICampaignGoalPortlet(IPortletDataProvider):
+class ICampaignFundraisersPortlet(IPortletDataProvider):
     """A portlet
 
     It inherits from IPortletDataProvider because for this portlet, the
@@ -24,15 +24,8 @@ class ICampaignGoalPortlet(IPortletDataProvider):
     same.
     """
 
-    # TODO: Add any zope.schema fields here to capture portlet configuration
-    # information. Alternatively, if there are no settings, leave this as an
-    # empty interface - see also notes around the add form and edit form
-    # below.
-
-    # some_field = schema.TextLine(title=_(u"Some field"),
-    #                              description=_(u"A field to use"),
-    #                              required=True)
-
+    title = schema.TextLine(title=_(u"Title"),
+                                 required=True)
 
 class Assignment(base.Assignment):
     """Portlet assignment.
@@ -41,8 +34,9 @@ class Assignment(base.Assignment):
     with columns.
     """
 
-    implements(ICampaignGoalPortlet)
+    implements(ICampaignFundraisersPortlet)
 
+    title = u"Fundraisers"
     # TODO: Set default values for the configurable parameters here
 
     # some_field = u""
@@ -51,15 +45,8 @@ class Assignment(base.Assignment):
     # def __init__(self, some_field=u''):
     #    self.some_field = some_field
 
-    def __init__(self):
-        pass
-
-    @property
-    def title(self):
-        """This property is used to give the title of the portlet in the
-        "manage portlets" screen.
-        """
-        return __(u"Campaign Goal")
+    def __init__(self, title=u''):
+        self.title = title
 
 
 class Renderer(base.Renderer):
@@ -70,12 +57,7 @@ class Renderer(base.Renderer):
     of this class. Other methods can be added and referenced in the template.
     """
 
-    render = ViewPageTemplateFile('campaign_goal.pt')
-
-    def addcommas(self, num):
-        locale.setlocale(locale.LC_ALL, '')
-        return locale.format('%d', num, 1)
-
+    render = ViewPageTemplateFile('campaign_fundraisers.pt')
 
 # NOTE: If this portlet does not have any configurable parameters, you can
 # inherit from NullAddForm and remove the form_fields variable.
@@ -87,7 +69,7 @@ class AddForm(base.AddForm):
     zope.formlib which fields to display. The create() method actually
     constructs the assignment that is being added.
     """
-    form_fields = form.Fields(ICampaignGoalPortlet)
+    form_fields = form.Fields(ICampaignFundraisersPortlet)
 
     def create(self, data):
         return Assignment(**data)
@@ -103,4 +85,4 @@ class EditForm(base.EditForm):
     This is registered with configure.zcml. The form_fields variable tells
     zope.formlib which fields to display.
     """
-    form_fields = form.Fields(ICampaignGoalPortlet)
+    form_fields = form.Fields(ICampaignFundraisersPortlet)

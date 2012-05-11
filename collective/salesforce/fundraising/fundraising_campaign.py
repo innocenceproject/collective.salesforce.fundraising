@@ -55,7 +55,6 @@ class FundraisingCampaign(dexterity.Container):
 
     def render_goal_bar_js(self):
         if self.get_percent_goal():
-            #return '<script type="text/javascript">$(".campaign-progress-bar .progress-bar").progressBar(%i, {width: 250, height: 30, showText: false, boxImage: "++resource++collective.salesforce.fundraising/jquery.progressbar/images/progressbar-background.png", barImages: {0: "++resource++collective.salesforce.fundraising/jquery.progressbar/images/progressbar-green.png"}});</script>' % self.get_percent_goal()
             return '<script type="text/javascript">$(".campaign-progress-bar .progress-bar").progressbar({ value: %i});</script>' % self.get_percent_goal()
 
     def render_timeline_bar_js(self):
@@ -79,6 +78,17 @@ class FundraisingCampaign(dexterity.Container):
     def get_fundraising_campaign(self):
         """ Returns the fundraising campaign object.  Useful for subobjects to easily lookup the parent campaign """
         return self
+
+    def personal_fundraisers_count(self):
+        """ Returns the number of personal campaign pages created off this campaign """
+        return len(self.listFolderContents(contentFilter = {'portal_type': 'collective.salesforce.fundraising.personalcampaignpage'}))
+
+    def create_personal_campaign_page_link(self):
+        return self.absolute_url() + '/@@create-personal-campaign-page'
+
+    def can_create_personal_campaign_page(self):
+        # FIXME: add logic here to check for campaign status.  Only allow if the campaign is active
+        return self.allow_personal
 
 
 class CampaignView(grok.View):

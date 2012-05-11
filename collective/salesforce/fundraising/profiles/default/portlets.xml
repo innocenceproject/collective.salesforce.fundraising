@@ -23,6 +23,13 @@
      i18n:attributes="title; description"
    />
 
+   <portlet
+     addview="collective.salesforce.fundraising.portlets.CampaignFundraisers"
+     title="Campaign Fundraisers"
+     description=""
+     i18n:attributes="title; description"
+   />
+
    <assignment
      type="collective.salesforce.fundraising.portlets.CampaignGoal"
      manager="plone.rightcolumn"
@@ -43,6 +50,50 @@
      insert-before="*"
      >
      <property name="title">Timeline</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignFundraisers"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.fundraisingcampaign"
+     name="campaign.fundraisers.portlet"
+     insert-before="*"
+     >
+     <property name="title">Fundraisers</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignGoal"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.personalcampaignpage"
+     name="campaign.goal.portlet"
+     insert-before="*"
+     >
+     <property name="title">Goal</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignTimeline"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.personalcampaignpage"
+     name="campaign.timeline.portlet"
+     insert-before="*"
+     >
+     <property name="title">Timeline</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignFundraisers"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.personalcampaignpage"
+     name="campaign.fundraisers.portlet"
+     insert-before="*"
+     >
+     <property name="title">Fundraisers</property>
    </assignment> 
 
 </portlets>
