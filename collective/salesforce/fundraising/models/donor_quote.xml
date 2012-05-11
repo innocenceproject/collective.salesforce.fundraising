@@ -1,10 +1,29 @@
 <?xml version="1.0" ?>
 <model xmlns="http://namespaces.plone.org/supermodel/schema"
+       xmlns:sf="http://namespaces.plone.org/salesforce/schema"
        xmlns:form="http://namespaces.plone.org/supermodel/form">
-    <schema>
+    
+    <schema sf:object="Constituent_Quote__c" sf:criteria="" sf:container="get_container">
         <field name="quote" type="zope.schema.Text" sf:field="Quote__c">
             <title>Your Quote</title>
             <description>Tell us and other potential donors why you were moved to donate.</description>
+        </field>
+        <field name="name" type="zope.schema.TextLine" sf:field="Name__c">
+            <title>Name</title>
+            <description>Enter your name as you would like it displayed to other potential donors.</description>
+        </field>
+        <field name="image" type="plone.namedfile.field.NamedImage">
+            <title>Photo</title>
+            <description>(optional) Upload a photo to show with your quote.</description>
+            <required>False</required>
+        </field>
+        <field name="campaign_sf_id" type="zope.schema.TextLine" sf:field="Campaign__c">
+            <title>Campaign Salesforce ID</title>
+            <description>The ID of the Salesforce Campaign the quote relates to</description>
+        </field>
+        <field name="contact_sf_id" type="zope.schema.TextLine" sf:field="Contact__c">
+            <title>Contact Salesforce ID</title>
+            <description>The ID of the Salesforce Contact the quote relates to</description>
         </field>
     </schema>
 </model>

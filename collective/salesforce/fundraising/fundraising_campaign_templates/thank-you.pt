@@ -2,7 +2,6 @@
       xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-      lang="en"
       metal:use-macro="context/main_template/macros/master"
       i18n:domain="collective.salesforce.fundraising">
 <body>
@@ -11,6 +10,11 @@
   <metal:content-title define-macro="content-title">
     <h1 class="documentFirstHeading">Thank You</h1>
   </metal:content-title>
+</metal:main>
+
+<metal:main fill-slot="content-description">
+  <metal:content-description define-macro="content-description">
+  </metal:content-description>
 </metal:main>
 
 <metal:main fill-slot="content-core">
@@ -22,27 +26,45 @@
 
       <h2 class="next-steps-header">Amplify Your Donation</h2>
 
-      <div class="next-steps-step step-share">
-        <h2>Share with Friends and Family</h2>
-        <p>Click on the buttons below to let your friends and family know you donated and encourage them to donate too</p>
-      </div>
+      <dl class="collapsible" 
+          tal:attributes="class python: 'collapsible collapsedOnLoad' if 'share' in view.hide else 'collapsible'"
+          tal:condition="context/can_create_personal_campaign_page">
+        <dt class="collapsibleHeader">
+          Share with Friends and Family
+        </dt>
+        <dd class="collapsibleContent">
+          <p>Click on the buttons below to let your friends and family know you donated and encourage them to donate too</p>
+        </dd>
+      </dl>
 
-      <div class="next-steps-step step-quote" tal:condition="context/can_add_donor_quote">
-        <h2>Tell Your Story</h2>
-        <p>Tell other potential donors what moved you to donate.</p>
-      </div>
+      <dl class="collapsible" 
+          tal:attributes="class python: 'collapsible collapsedOnLoad' if 'donorquote' in view.hide else 'collapsible'"
+          tal:condition="context/can_create_personal_campaign_page">
+        <dt class="collapsibleHeader">
+          Tell Your Story
+        </dt>
+        <dd class="collapsibleContent">
+          <div tal:replace="structure view/donor_quote_form" />
+        </dd>
+      </dl>
      
-      <div class="next-steps-step step-matching" tal:condition="context/show_employer_matching">
-        <h2>Does Your Employer Match?</h2>
-        <p></p>
-      </div> 
+      <dl class="collapsible" 
+          tal:attributes="class python: 'collapsible collapsedOnLoad' if 'matching' in view.hide else 'collapsible'"
+          tal:condition="context/can_create_personal_campaign_page">
+        <dt class="collapsibleHeader">Does Your Employer Match?</dt>
+        <dd class="collapsibleContent"></dd>
+      </dl> 
 
-      <div class="next-steps-step step-matching" tal:condition="context/can_add_personal_campaign">
-        <h2>Start a Personal Campaign</h2>
-        <p>Have friends and family who would also like to donate?  Setting up your own personal campaign page is easy.  Just click the button below to get started.</p>
+      <dl class="collapsible" 
+          tal:attributes="class python: 'collapsible collapsedOnLoad' if 'fundraiser' in view.hide else 'collapsible'"
+          tal:condition="context/can_create_personal_campaign_page">
+        <dt class="collapsibleHeader">Start a Fundraiser</dt>
+        <dd class="collapsibleContent">
+          <p>Have friends and family who would also like to donate?  Setting up your own personal campaign page is easy.  Just click the button below to get started.</p>
 
-        <a class="button button-create-personal" href="#" tal:attributes="href python: context.absolute_url() + '/@@create-personal-campaign-page'">Create Personal Campaign</a>
-      </div> 
+          <a class="button button-create-personal" href="#" tal:attributes="href context/create_personal_campaign_page_link">Create Personal Campaign</a>
+        </dd>
+      </dl> 
 
     </div>
 
