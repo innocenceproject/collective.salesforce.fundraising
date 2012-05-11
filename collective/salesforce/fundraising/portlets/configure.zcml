@@ -31,4 +31,14 @@
       editview=".campaign_timeline.EditForm"
       />
 
+  <plone:portlet
+      name="collective.salesforce.fundraising.portlets.CampaignFundraisers"
+      interface=".campaign_fundraisers.ICampaignFundraisersPortlet"
+      assignment=".campaign_fundraisers.Assignment"
+      view_permission="zope2.View"
+      edit_permission="cmf.ManagePortal"
+      renderer=".campaign_fundraisers.Renderer"
+      addview=".campaign_fundraisers.AddForm"
+      editview=".campaign_fundraisers.EditForm"
+      />
 </configure>

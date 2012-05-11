@@ -4,5 +4,6 @@
         <dependency>profile-plone.app.dexterity:default</dependency>
         <dependency>profile-collective.salesforce.content:default</dependency>
         <dependency>profile-collective.pluggablelogin:default</dependency>
+        <dependency>profile-plone.app.registry:default</dependency>
     </dependencies>
 </metadata>

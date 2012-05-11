@@ -1,0 +1,34 @@
+<dl class="portlet portletCampaignGoal"
+    i18n:domain="collective.salesforce.fundraising"
+    tal:define="create_link view/context/create_personal_campaign_page_link;
+                fundraisers_count view/context/personal_fundraisers_count"
+    tal:condition="view/context/can_create_personal_campaign_page">
+
+    <dt class="portletHeader">
+        <span class="portletTopLeft"></span>
+        <span tal:content="view/data/title">
+           Fundraisers
+        </span>
+        <span class="portletTopRight"></span>
+    </dt>
+
+    <dd class="portletItem campaign-fundraisers-count" tal:condition="fundraisers_count">
+      <div class="count-large">
+        <strong tal:content="fundraisers_count">138</strong>
+        <span class="discreet">Personal Fundraisers</span>
+      </div>
+    </dd>
+
+    <dd class="portletItem campaign-fundraisers-join">
+      <p>Create your Personal Fundraising Page to help us reach our goal.</p>
+      <a class="button button-create-personal-campaign" href="#" tal:attributes="href create_link">Create My Campaign</a>
+    </dd>
+
+    <dd class="portletFooter">
+        <span class="portletBottomLeft"></span>
+        <span>
+        </span>
+        <span class="portletBottomRight"></span>
+    </dd>
+
+</dl>

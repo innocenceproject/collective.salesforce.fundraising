@@ -32,6 +32,7 @@ setup(name='collective.salesforce.fundraising',
           'plone.namedfile [blobs]',
           'collective.salesforce.content',
           'collective.pluggablelogin',
+          'plone.app.registry',
           # -*- Extra requirements: -*-
       ],
       entry_points="""
