@@ -35,3 +35,15 @@ class IFundraisingSettings(Interface):
         required=True,
     )
 
+    janrain_api_key = schema.Text(
+        title=_(u"Janrain API Key"),
+        description=_(u"If provided, Janrain integration functionality will be turned on allowing for social login and social sharing"),
+        required=False,
+    )
+
+    janrain_site_id = schema.Text(
+        title=_(u"Janrain Site ID"),
+        description=_(u"If you are using Janrain, the Site ID is the name of your instance. You can find it in the urls in the embed code provided through the Janrain control panel"),
+        required=False,
+    )
+

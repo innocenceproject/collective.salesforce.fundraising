@@ -12,6 +12,8 @@
 
     <div class="campaign-body" tal:content="structure context/body/output|nothing" />
 
+<div id="janrainEngageEmbed"></div>
+
     <div class="campaign-donate-form" tal:content="structure context/populate_form_embed">
     </div>
 
