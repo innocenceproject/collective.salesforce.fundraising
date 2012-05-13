@@ -92,7 +92,7 @@ class CreateDonorQuote(form.Form):
             self.status = self.formErrorsMessage
             return
         
-        # Add a donor quote in teh current context,
+        # Add a donor quote in the current context,
         # using the data from the form
         parent_campaign = self.context
         quote = createContentInContainer(parent_campaign,
