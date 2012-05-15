@@ -12,6 +12,11 @@
             <title>Description</title>
             <description>Provide a 1-3 sentence pitch for your campaign</description>
         </field>
+        <field name="image" type="plone.namedfile.field.NamedBlobImage">
+            <title>Image</title>
+            <description>Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks.</description>
+            <required>False</required>
+        </field>
         <field name="status" type="zope.schema.TextLine" sf:field="Status">
             <title>Status</title>
             <description>The current status of the campaign</description>
