@@ -25,7 +25,13 @@ js_template = """<script type="text/javascript">
     
     janrain.settings.tokenUrl = '%(token_url)s';
 
-    function isReady() { janrain.ready = true; };
+    function isReady() {
+        janrain.ready = true;
+        
+        janrain.events.onAuthWidgetLoad.addHandler(function () {
+            janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
+        });
+    };
     if (document.addEventListener) {
       document.addEventListener("DOMContentLoaded", isReady, false);
     } else {
@@ -44,8 +50,51 @@ js_template = """<script type="text/javascript">
 
     var s = document.getElementsByTagName('script')[0];
     s.parentNode.insertBefore(e, s);
+
+
 })();
 </script>
+
+<script type="text/javascript">
+    var rpxJsHost = (("https:" == document.location.protocol) ? "https://" : "http://static.");
+    document.write(unescape("%%3Cscript src='" + rpxJsHost + "rpxnow.com/js/lib/rpx.js' type='text/javascript'%%3E%%3C/script%%3E"));
+</script>
+
+<script type="text/javascript"><!--
+    function rpxSocial (rpxLabel, rpxSummary, rpxLink, rpxLinkText, rpxComment, rpxImageSrc){
+        RPXNOW.init({appId: '%(app_id)s', xdReceiver: '/rpx_xdcomm.html'});
+        RPXNOW.loadAndRun(['Social'], function () {
+            var activity = new RPXNOW.Social.Activity(
+            rpxLabel,
+            rpxLinkText,
+            rpxLink);
+            activity.setUserGeneratedContent(rpxComment);
+            activity.setDescription(rpxSummary);
+            activity.addActionLink('Donate', '%(came_from)s');
+            //if (document.getElementById('rpxshareimg') != undefined && (rpxImageSrc == '' || rpxImageSrc == null)) {
+            //    rpxImageSrc = document.getElementById('rpxshareimg').src;
+            //}
+            //if (rpxImageSrc != '' && rpxImageSrc != null) {
+            //    var shareImage = new RPXNOW.Social.ImageMediaCollection();
+            //    shareImage.addImage(rpxImageSrc,rpxLink);
+            //    activity.setMediaItem(shareImage);
+            //}
+            
+            RPXNOW.Social.publishActivity(activity,
+                {finishCallback:function(data){
+                    for (i in data) {
+                        if (data[i].success == true) {
+                            //do something for each share success here
+                            //e.g. recordShare(data[i].provider_name, data[i].provider_activity_url);
+                        }
+                    }
+                }
+            });
+        });
+    }
+
+    
+--></script>
 """
 
 def GenPasswd():
@@ -62,10 +111,11 @@ class RpxHeadViewlet(grok.Viewlet):
     grok.viewletmanager(IHtmlHead)
 
     def render(self):
-        # Get the site id from registry
+        # Get the site id and app_id from registry
         registry = getUtility(IRegistry)
         settings = registry.forInterface(IFundraisingSettings)
         janrain_site_id = settings.janrain_site_id
+        janrain_sharing_app_id = settings.janrain_sharing_app_id
 
         if not janrain_site_id:
             return None
@@ -80,6 +130,8 @@ class RpxHeadViewlet(grok.Viewlet):
         return js_template % {
             'site_id': janrain_site_id, 
             'token_url': token_url,  
+            'app_id': janrain_sharing_app_id,  
+            'came_from': self.context.absolute_url(),
         }
 
 class RpxPostLogin(grok.View):
@@ -114,7 +166,6 @@ class RpxPostLogin(grok.View):
         auth_info = simplejson.loads(resp.read())
 
     
-        #import pdb; pdb.set_trace()
         # See if a user already exists for the profile's email
         mtool = getToolByName(self.context, 'portal_membership')
         email = auth_info['profile']['email']
@@ -147,11 +198,21 @@ class RpxPostLogin(grok.View):
 
         # Set a status message informing the user they are logged in
         IStatusMessage(self.request).add(u'You are now logged in.')
-
+        
         # See if came_from was passed
         came_from = self.request.form.get('came_from', None)
         if came_from:
-            return self.request.RESPONSE.redirect(came_from)
+            # For some reason, came_from is getting passed twice by Janrain
+            #return self.request.RESPONSE.redirect(came_from)
+            return self.request.RESPONSE.redirect(came_from[0])
 
         # Redirect
         return self.request.RESPONSE.redirect(self.context.absolute_url())
+
+class RpxXdCommView(grok.View):
+    """ Implement the rpx_xdcomm.html cross domain file """
+ 
+    grok.name('rpx_xdcomm.html')
+    grok.context(IPloneSiteRoot)
+    grok.require('zope2.View')
+
