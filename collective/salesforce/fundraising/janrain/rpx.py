@@ -61,35 +61,40 @@ js_template = """<script type="text/javascript">
 </script>
 
 <script type="text/javascript"><!--
-    function rpxSocial (rpxLabel, rpxSummary, rpxLink, rpxLinkText, rpxComment, rpxImageSrc){
+    function rpxShareButton (rpxButtonTarget, rpxLabel, rpxSummary, rpxLink, rpxLinkText, rpxComment, rpxImageSrc){
         RPXNOW.init({appId: '%(app_id)s', xdReceiver: '/rpx_xdcomm.html'});
-        RPXNOW.loadAndRun(['Social'], function () {
-            var activity = new RPXNOW.Social.Activity(
-            rpxLabel,
-            rpxLinkText,
-            rpxLink);
-            activity.setUserGeneratedContent(rpxComment);
-            activity.setDescription(rpxSummary);
-            activity.addActionLink('Donate', '%(came_from)s');
-            //if (document.getElementById('rpxshareimg') != undefined && (rpxImageSrc == '' || rpxImageSrc == null)) {
-            //    rpxImageSrc = document.getElementById('rpxshareimg').src;
-            //}
-            //if (rpxImageSrc != '' && rpxImageSrc != null) {
-            //    var shareImage = new RPXNOW.Social.ImageMediaCollection();
-            //    shareImage.addImage(rpxImageSrc,rpxLink);
-            //    activity.setMediaItem(shareImage);
-            //}
-            
-            RPXNOW.Social.publishActivity(activity,
-                {finishCallback:function(data){
-                    for (i in data) {
-                        if (data[i].success == true) {
-                            //do something for each share success here
-                            //e.g. recordShare(data[i].provider_name, data[i].provider_activity_url);
-                        }
+        rpxButtonTarget.click(function () {
+            RPXNOW.loadAndRun(['Social'], function () {
+                var activity = new RPXNOW.Social.Activity(
+                rpxLabel,
+                rpxLinkText,
+                rpxLink);
+                activity.setUserGeneratedContent(rpxComment);
+                activity.setDescription(rpxSummary);
+                activity.addActionLink('Donate', '%(came_from)s');
+                if (rpxImageSrc.length > 0) {
+                    if (document.getElementById('rpxshareimg') != undefined && (rpxImageSrc == '' || rpxImageSrc == null)) {
+                        rpxImageSrc = document.getElementById('rpxshareimg').src;
+                    }
+                    if (rpxImageSrc != '' && rpxImageSrc != null) {
+                        var shareImage = new RPXNOW.Social.ImageMediaCollection();
+                        shareImage.addImage(rpxImageSrc,rpxLink);
+                        activity.setMediaItem(shareImage);
                     }
                 }
+                
+                RPXNOW.Social.publishActivity(activity,
+                    {finishCallback:function(data){
+                        for (i in data) {
+                            if (data[i].success == true) {
+                                //do something for each share success here
+                                //e.g. recordShare(data[i].provider_name, data[i].provider_activity_url);
+                            }
+                        }
+                    }
+                });
             });
+            return false;
         });
     }
 

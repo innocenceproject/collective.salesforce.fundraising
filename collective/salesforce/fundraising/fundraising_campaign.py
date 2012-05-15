@@ -170,6 +170,12 @@ class ThankYouView(grok.View):
     grok.template('thank-you')
 
     def update(self):
+        # Fetch some values that should have been passed from the redirector
+        self.email = self.request.form.get('email', None)
+        self.first_name = self.request.form.get('first_name', None)
+        self.last_name = self.request.form.get('last_name', None)
+        self.amount = self.request.form.get('amount', None)
+
         # Create a wrapped form for inline rendering
         from collective.salesforce.fundraising.forms import CreateDonorQuote
         if self.context.can_create_donor_quote():
@@ -181,16 +187,16 @@ class ThankYouView(grok.View):
         if self.hide:
             self.hide = self.hide.split(',')
 
-    def render_janrain_share(self, amount=None):
+    def render_janrain_share(self):
         amount_str = ''
-        if amount:
-            amount_str = _(u' $%s' % amount)
-        comment = _(u'I just donated $%s to a great cause.  You should join me.') % amount_str
+        if self.amount:
+            amount_str = _(u' $%s' % self.amount)
+        comment = _(u'I just donated%s to a great cause.  You should join me.') % amount_str
 
-        return "rpxSocial('Tell your friends you donated', '%s', '%s', '%s', '%s', '%s')" % (
+        return "rpxShareButton(jQuery('#share-message-thank-you'), 'Tell your friends you donated', '%s', '%s', '%s', '%s', '%s')" % (
             self.context.description,
             self.context.absolute_url(),
             self.context.title,
             comment,
-            None
+            self.context.absolute_url() + '/@@images/image',
         )

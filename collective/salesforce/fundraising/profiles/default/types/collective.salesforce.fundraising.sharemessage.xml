@@ -1,31 +1,22 @@
 <?xml version="1.0"?>
-<object name="collective.salesforce.fundraising.fundraisingcampaign"
+<object name="collective.salesforce.fundraising.sharemessage"
    meta_type="Dexterity FTI"
    i18n:domain="collective.salesforce.fundraising" xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
   <!-- Basic metadata -->
-  <property name="title" i18n:translate="">Fundraising Campaign</property>
+  <property name="title" i18n:translate="">Share Message</property>
   <property name="description"
-    i18n:translate="">A Fundraising Campaign linked to a Campaign in Salesforce.com</property>
-  <property name="icon_expr">string:${portal_url}/folder_icon.png</property>
-  <property name="factory">collective.salesforce.fundraising.fundraisingcampaign</property>
-  <property name="global_allow">True</property>
-  <property name="filter_content_types">True</property>  
-  <property name="allowed_content_types">
-    <element value="Document" />
-    <element value="File" />
-    <element value="Folder" />
-    <element value="Image" />
-    <element value="Link" />
-    <element value="collective.salesforce.fundraising.personalfundraisingpage" />
-    <element value="collective.salesforce.fundraising.donorquote" />
-    <element value="collective.salesforce.fundraising.sharemessage" />
-  </property>
+    i18n:translate="">A message created to promote a campaign.  These are mostly intended for sharing on social networks</property>
+  <property name="icon_expr">string:${portal_url}/document_icon.png</property>
+  <property name="factory">collective.salesforce.fundraising.sharemessage</property>
+  <property name="global_allow">False</property>
+  <property name="filter_content_types">False</property>  
+  <property name="allowed_content_types" />
   <property name="allow_discussion">False</property>
 
   <!-- schema and class used for content items -->
-  <property name="schema">collective.salesforce.fundraising.fundraising_campaign.IFundraisingCampaign</property> 
-  <property name="klass">collective.salesforce.fundraising.fundraising_campaign.FundraisingCampaign</property>
+  <property name="schema">collective.salesforce.fundraising.share_message.IShareMessage</property> 
+  <property name="klass">collective.salesforce.fundraising.share_message.ShareMessage</property>
 
   <property name="behaviors">
      <element value="plone.app.content.interfaces.INameFromTitle" />
