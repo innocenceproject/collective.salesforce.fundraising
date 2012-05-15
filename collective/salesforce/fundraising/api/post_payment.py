@@ -1,3 +1,4 @@
+import urllib
 from zope.publisher.browser import BrowserView
 from Products.CMFCore.utils import getToolByName
 
@@ -32,5 +33,13 @@ class PostPayment(BrowserView):
                     parent.donations_total = parent.donations_total + amount
                     parent.donations_count = parent.donations_count + 1
 
+        # Encode the values to pass along
+        urlargs = {
+           'amount': amount,
+           'first_name': first_name,
+           'last_name': last_name,
+           'email': email,
+        }
+
         # Redirect the user to the campaign's thank you page
-        self.request.RESPONSE.redirect(campaign.absolute_url() + '/@@thank-you')
+        self.request.RESPONSE.redirect(campaign.absolute_url() + '/@@thank-you?' + urllib.urlencode(urlargs))
