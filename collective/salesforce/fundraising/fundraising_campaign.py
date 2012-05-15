@@ -10,6 +10,7 @@ from zope.app.container.interfaces import IObjectAddedEvent
 
 from zope.component import getUtility
 from plone.registry.interfaces import IRegistry
+from plone.z3cform.interfaces import IWrappedForm
 
 from plone.app.textfield import RichText
 from plone.namedfile.interfaces import IImageScaleTraversable
@@ -141,6 +142,12 @@ class FundraisingCampaign(dexterity.Container):
         # FIXME: add logic here to check for campaign status.  Only allow if the campaign is active
         return self.allow_personal
 
+    def can_create_donor_quote(self):
+        # FIXME: make sure the donor just donated (check session) and that they don't already have a quote for this campaign
+        return True
+
+    def show_employer_matching(self):
+        return True
 
 class CampaignView(grok.View):
     grok.context(IFundraisingCampaign)
@@ -152,3 +159,23 @@ class CampaignView(grok.View):
     def addcommas(self, number):
         locale.setlocale(locale.LC_ALL, '')
         return locale.format('%d', number, 1)
+
+class ThankYouView(grok.View):
+    grok.context(IFundraisingCampaign)
+    grok.require('zope2.View')
+
+    grok.name('thank-you')
+    grok.template('thank-you')
+
+    def update(self):
+        # Create a wrapped form for inline rendering
+        from collective.salesforce.fundraising.forms import CreateDonorQuote
+        if self.context.can_create_donor_quote():
+            self.donor_quote_form = CreateDonorQuote(self.context, self.request)
+            alsoProvides(self.donor_quote_form, IWrappedForm)
+
+        # Determine any sections that should be collapsed
+        self.hide = self.request.form.get('hide', [])
+        if self.hide:
+            self.hide = self.hide.split(',')
+
