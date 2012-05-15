@@ -47,3 +47,9 @@ class IFundraisingSettings(Interface):
         required=False,
     )
 
+    janrain_sharing_app_id = schema.Text(
+        title=_(u"Janrain App ID"),
+        description=_(u"If you are using Janrain, enter the value for appId in the embed code provided for your sharing widget"),
+        required=False,
+    )
+

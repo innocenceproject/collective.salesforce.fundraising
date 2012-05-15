@@ -34,6 +34,9 @@
         </dt>
         <dd class="collapsibleContent">
           <p>Click on the buttons below to let your friends and family know you donated and encourage them to donate too</p>
+          <script type="text/javascript" tal:content="structure view/render_janrain_share">
+            // Janrain share widget js code gets merged into here
+          </script>
         </dd>
       </dl>
 

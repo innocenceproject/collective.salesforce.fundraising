@@ -13,8 +13,10 @@ from plone.registry.interfaces import IRegistry
 from plone.z3cform.interfaces import IWrappedForm
 
 from plone.app.textfield import RichText
+from plone.namedfile import NamedBlobImage
 from plone.namedfile.interfaces import IImageScaleTraversable
 
+from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
 
 # Interface class; used to define content-type schema.
@@ -179,3 +181,16 @@ class ThankYouView(grok.View):
         if self.hide:
             self.hide = self.hide.split(',')
 
+    def render_janrain_share(self, amount=None):
+        amount_str = ''
+        if amount:
+            amount_str = _(u' $%s' % amount)
+        comment = _(u'I just donated $%s to a great cause.  You should join me.') % amount_str
+
+        return "rpxSocial('Tell your friends you donated', '%s', '%s', '%s', '%s', '%s')" % (
+            self.context.description,
+            self.context.absolute_url(),
+            self.context.title,
+            comment,
+            None
+        )
