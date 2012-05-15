@@ -3,26 +3,28 @@ from AccessControl.SecurityManagement import newSecurityManager
 from Products.CMFCore.utils import getToolByName
 from zope.site.hooks import getSite
 from collective.salesforce.fundraising.interfaces import IMemberCreated
+from collective.salesforce.fundraising.nameparser import HumanName
 
 
-def split_name(name):
+def split_name(fullname):
     """Try to split a full name into first and last names.
-
-    Currently it splits on spaces and counts the last word as the last name,
-    unless the penultimate word starts with a lowercase letter (e.g. 'van Dyk'),
-    in which case the penultimate word is included in the last name.
-
-    We'll see if this is good enough.
     """
-    parts = [part for part in name.strip().split(' ') if part]
-    if len(parts) <= 1:
-        return '', name
-    try:
-        if parts[-2][0].islower():
-            return ' '.join(parts[:-2]), ' '.join(parts[-2:])
-        return ' '.join(parts[:-1]), parts[-1]
-    except IndexError:
-        return '', ''
+
+    name = HumanName(fullname)
+    first = getattr(name, 'first', None)
+    middle = getattr(name, 'middle', None)
+    last = getattr(name, 'last', None)
+    suffix = getattr(name, 'suffix', None)
+
+    # Combine first with middle
+    if middle:
+        first = first + ' ' + middle
+
+    # Combine last with suffix
+    if suffix:
+        last = last + ' ' + suffix
+
+    return first, last
 
 
 @grok.subscribe(IMemberCreated)
