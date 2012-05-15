@@ -20,6 +20,14 @@
       <role name="Manager" />
   </permission>
 
+  <permission
+      id="collective.salesforce.fundraising.AddDonorQuote"
+      title="collective.salesforce.fundraising: Add donor quote">
+      <role name="Member" />
+      <role name="Site Administrator" />
+      <role name="Manager" />
+  </permission>
+
   <!-- Register an extension profile to make the product installable
        in Plone -->
   <genericsetup:registerProfile

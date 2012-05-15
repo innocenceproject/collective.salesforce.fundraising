@@ -41,4 +41,5 @@
       addview=".campaign_fundraisers.AddForm"
       editview=".campaign_fundraisers.EditForm"
       />
+
 </configure>

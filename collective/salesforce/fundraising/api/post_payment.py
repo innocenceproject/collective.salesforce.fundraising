@@ -7,7 +7,7 @@ class PostPayment(BrowserView):
     should redirect to this view and pass values
     """
 
-    def __call__(self, campaign_id, amount, first_name, last_name, **kwargs):
+    def __call__(self, campaign_id, amount, **kwargs):
 
         # Fetch the campaign by campaign_id
         pc = getToolByName(self.context, 'portal_catalog')
