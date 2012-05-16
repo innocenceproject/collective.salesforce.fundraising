@@ -1,9 +1,11 @@
 import locale
+import random
 from datetime import date
 
 from five import grok
 from plone.directives import dexterity, form
 
+from zope.interface import Interface
 from zope.interface import alsoProvides
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
@@ -49,6 +51,9 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
 
 alsoProvides(IFundraisingCampaign, IContentType)
 
+class IFundraisingCampaignPage(Interface):
+    """ Marker interface for campaigns that act like a fundraising campaign """
+
 @form.default_value(field=IFundraisingCampaign['thank_you_message'])
 def thankYouDefaultValue(data):
     registry = getUtility(IRegistry)
@@ -77,7 +82,7 @@ def fillDefaultValues(campaign, event):
         campaign.default_personal_thank_you = defaultPersonalThankYouDefaultValue(None)
 
 class FundraisingCampaign(dexterity.Container):
-    grok.implements(IFundraisingCampaign)
+    grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
 
     def get_percent_goal(self):
         if self.goal and self.donations_total:
@@ -115,15 +120,31 @@ class FundraisingCampaign(dexterity.Container):
         if self.date_end:
             return '<script type="text/javascript">$(".campaign-timeline .progress-bar").progressbar({ value: %i});</script>' % self.get_percent_timeline()
 
-    def get_source_code(self):
-        return 'Plone'
+    def get_source_campaign(self):
+        source_campaign = self.REQUEST.get('source_campaign', '')
+        if not source_campaign:
+            source_campaign = self.REQUEST.get('collective.salesforce.fundraising.source_campaign', '')
+        return source_campaign
+
+    def get_source_url(self):
+        # Check if there is a cookie that captures the referrer of first entry for the session
+        source_url = self.REQUEST.get('collective.salesforce.fundraising.source_url', None)
+        if source_url:
+            return source_url
+        # If not, use the current request's HTTP_REFERER
+        referrer = self.REQUEST.get('HTTP_REFERER', '')
+        if referrer:
+            return referrer
+
+        # If all else fails, return the campaign's url
+        return self.absolute_url()
 
     def populate_form_embed(self):
         if self.form_embed:
             form_embed = self.form_embed
             form_embed = form_embed.replace('{{CAMPAIGN_ID}}', getattr(self, 'sf_object_id', ''))
-            form_embed = form_embed.replace('{{SOURCE_CODE}}', self.get_source_code())
-            form_embed = form_embed.replace('{{SOURCE_URL}}', self.absolute_url())
+            form_embed = form_embed.replace('{{SOURCE_CAMPAIGN}}', self.get_source_campaign())
+            form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
             return form_embed
 
     def get_parent_sfid(self):
@@ -152,7 +173,7 @@ class FundraisingCampaign(dexterity.Container):
         return True
 
 class CampaignView(grok.View):
-    grok.context(IFundraisingCampaign)
+    grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
 
     grok.name('view')
@@ -161,9 +182,23 @@ class CampaignView(grok.View):
     def addcommas(self, number):
         locale.setlocale(locale.LC_ALL, '')
         return locale.format('%d', number, 1)
+       
+    def update(self):
+        # Set a cookie with referrer as source_url if no cookie has yet been set for the session
+        source_url = self.request.get('collective.salesforce.fundraising.source_url', None)
+        if not source_url:
+            referrer = self.request.get_header('referrer')
+            if referrer:
+                self.request.response.setCookie('collective.salesforce.fundraising.source_url', referrer)
+
+        # Set a cookie with the source code if it was passed in the request
+        self.source_campaign = self.request.get('source_campaign', None)
+        if self.source_campaign:
+            self.request.response.setCookie('collective.salesforce.fundraising.source_campaign', self.source_campaign)
+
 
 class ThankYouView(grok.View):
-    grok.context(IFundraisingCampaign)
+    grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
 
     grok.name('thank-you')
@@ -200,3 +235,34 @@ class ThankYouView(grok.View):
             comment,
             self.context.absolute_url() + '/@@images/image',
         )
+
+class ShareView(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.require('zope2.View')
+    
+    grok.name('share-campaign')
+    grok.template('share-campaign')
+
+    def update(self):
+        # Get all the messages in the current context
+        self.messages = []
+        res = self.context.listFolderContents(contentFilter = {
+            'portal_type': 'collective.salesforce.fundraising.sharemessage'
+        })
+
+        # If there are less than 3 messages found, check if this is a child campaign
+        if len(res) < 3:
+            if hasattr(self.context, 'parent_sf_id'):
+                # Add parent messages until a total of 3 messages are selected
+                parent_res = self.context.__parent__.listFolderContents(contentFilter = {
+                    'portal_type': 'collective.salesforce.fundraising.sharemessage'
+                })
+                if len(parent_res) + len(res) > 3:
+                    res = res + random.sample(parent_res, 3 - len(res))
+                elif len(parent_res) + len(res) <= 3:
+                    res = res + parent_res
+        # If there are more than 3 messages are found, select 3 at random from the list
+        if len(res) > 3:
+            res = random.sample(res, 3)
+
+        self.messages = res

@@ -8,7 +8,7 @@ class PostPayment(BrowserView):
     should redirect to this view and pass values
     """
 
-    def __call__(self, campaign_id, amount, **kwargs):
+    def __call__(self, campaign_id, amount, name, email, **kwargs):
 
         # Fetch the campaign by campaign_id
         pc = getToolByName(self.context, 'portal_catalog')
@@ -33,12 +33,15 @@ class PostPayment(BrowserView):
                     parent.donations_total = parent.donations_total + amount
                     parent.donations_count = parent.donations_count + 1
 
-        # Encode the values to pass along
+        # This is specific to Formstack.  The name field is a split field that comes through
+        # as a combined value with urlencoding.  Check for this format and parse if so
+        if name.find('%0Alast+%3D+') != -1:
+            name = name.replace('first+%3D+','').replace('%0Alast+%3D+', ' ').replace
+
         urlargs = {
            'amount': amount,
-           'first_name': first_name,
-           'last_name': last_name,
-           'email': email,
+           'form.widget.name': name,
+           'form.widget.email': email,
         }
 
         # Redirect the user to the campaign's thank you page

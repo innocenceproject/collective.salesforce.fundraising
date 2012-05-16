@@ -19,7 +19,7 @@ class CreatePersonalCampaignPageForm(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IPersonalCampaignPage).select('title', 'goal', 'image', 'personal_appeal', 'thank_you_message')
+        return field.Fields(IPersonalCampaignPage).select('title', 'goal', 'image', 'personal_appeal', 'thank_you_message', 'email')
 
     ignoreContext = True
 
