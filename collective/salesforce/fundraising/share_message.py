@@ -1,4 +1,6 @@
 from five import grok
+from zope.interface import alsoProvides
+from zope.app.content.interfaces import IContentType
 from plone.directives import dexterity, form
 from zope.app.container.interfaces import IObjectAddedEvent
 from Products.CMFCore.utils import getToolByName
@@ -15,6 +17,7 @@ class IShareMessage(form.Schema, IImageScaleTraversable):
     """
 
     form.model("models/share_message.xml")
+alsoProvides(IShareMessage, IContentType)
 
 class ShareMessage(dexterity.Item):
     grok.implements(IShareMessage)
@@ -22,7 +25,7 @@ class ShareMessage(dexterity.Item):
     def get_container(self):
         if not self.parent_sf_id:
             return None
-        site = getUtility(ISiteRoot)
+        site = getSite()
         pc = getToolByName(site, 'portal_catalog')
         res = pc.searchResults(sf_object_id=self.parent_sf_id)
         if not res:
@@ -52,8 +55,20 @@ def createSalesforceCampaign(message, event):
     message.sf_object_id = res[0]['id']
 
 
-#class SampleView(grok.View):
-#    grok.context(IDonorQuote)
-#    grok.require('zope2.View')
+class JanrainView(grok.View):
+    grok.context(IShareMessage)
+    grok.require('zope2.View')
+    grok.name('view')
 
-    # grok.name('view')
+    def update(self):
+        self.message_js = "rpxShareButton(jQuery('#message-%s'), '%s', '%s', '%s', '%s', '%s', '%s');" % (
+            self.context.id,
+            'Share this message',
+            self.context.description,
+            self.context.aq_parent.absolute_url() + '?source_campaign=' + self.context.sf_object_id,
+            self.context.title,
+            self.context.comment,
+            self.context.absolute_url() + '/@@images/image',
+        )
+
+

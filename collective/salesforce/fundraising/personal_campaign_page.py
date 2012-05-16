@@ -9,10 +9,14 @@ from zope.app.content.interfaces import IContentType
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
 
+from plone.z3cform.interfaces import IWrappedForm
 from plone.app.textfield import RichText
 from plone.namedfile.interfaces import IImageScaleTraversable
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
+from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
+
+from collective.salesforce.fundraising import MessageFactory as _
 
 
 # Interface class; used to define content-type schema.
@@ -54,7 +58,7 @@ def thankYouDefaultValue(data):
 # in separate view classes.
 
 class PersonalCampaignPage(dexterity.Container):
-    grok.implements(IPersonalCampaignPage)
+    grok.implements(IPersonalCampaignPage, IFundraisingCampaignPage)
 
     def get_container(self):
         if not self.parent_sf_id:
@@ -102,73 +106,16 @@ class PersonalCampaignPage(dexterity.Container):
         if self.date_end:
             return '<script type="text/javascript">$(".campaign-timeline .progress-bar").progressBar(%i);</script>' % self.get_percent_timeline()
 
-    def get_source_code(self):
+    def get_source_campaign(self):
         return 'Plone'
 
     def populate_form_embed(self):
         if self.form_embed:
             form_embed = self.form_embed
             form_embed = form_embed.replace('{{CAMPAIGN_ID}}', self.sf_object_id)
-            form_embed = form_embed.replace('{{SOURCE_CODE}}', self.get_source_code())
+            form_embed = form_embed.replace('{{SOURCE_CODE}}', self.get_source_campaign())
             form_embed = form_embed.replace('{{SOURCE_URL}}', self.absolute_url())
             return form_embed
 
     def get_parent_sfid(self):
         return self.sf_object_id
-
-# View class
-# The view will automatically use a similarly named template in
-# personal_campaign_page_templates.
-# Template filenames should be all lower case.
-# The view will render when you request a content object with this
-# interface with "/@@sampleview" appended.
-# You may make this the default view for content objects
-# of this type by uncommenting the grok.name line below or by
-# changing the view class name and template filename to View / view.pt.
-
-
-class SampleView(grok.View):
-    grok.context(IPersonalCampaignPage)
-    grok.require('zope2.View')
-
-    # grok.name('view')
-
-
-class ThankYouView(grok.View):
-    grok.context(IFundraisingCampaign)
-    grok.require('zope2.View')
-
-    grok.name('thank-you')
-    grok.template('thank-you')
-
-    def update(self):
-        # Fetch some values that should have been passed from the redirector
-        self.email = self.request.form.get('email', None)
-        self.first_name = self.request.form.get('first_name', None)
-        self.last_name = self.request.form.get('last_name', None)
-        self.amount = self.request.form.get('amount', None)
-
-        # Create a wrapped form for inline rendering
-        from collective.salesforce.fundraising.forms import CreateDonorQuote
-        if self.context.can_create_donor_quote():
-            self.donor_quote_form = CreateDonorQuote(self.context, self.request)
-            alsoProvides(self.donor_quote_form, IWrappedForm)
-
-        # Determine any sections that should be collapsed
-        self.hide = self.request.form.get('hide', [])
-        if self.hide:
-            self.hide = self.hide.split(',')
-
-    def render_janrain_share(self):
-        amount_str = ''
-        if self.amount:
-            amount_str = _(u' $%s' % self.amount)
-        comment = _(u'I just donated%s to a great cause.  You should join me.') % amount_str
-
-        return "rpxShareButton(jQuery('#share-message-thank-you'), 'Tell your friends you donated', '%s', '%s', '%s', '%s', '%s')" % (
-            self.context.description,
-            self.context.absolute_url(),
-            self.context.title,
-            comment,
-            self.context.absolute_url() + '/@@images/image',
-        )
