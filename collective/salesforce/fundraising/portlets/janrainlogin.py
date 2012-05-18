@@ -5,21 +5,21 @@ from Products.CMFCore.utils import getToolByName
 
 from collective.pluggablelogin import _
 from plone.app.portlets.portlets import base
+from plone.app.portlets.portlets import login
 
-
-class IJanrainLoginRegisterPortlet(IPortletDataProvider):
-    """A portlet which renders the registration and login forms
+class IJanrainLoginPortlet(IPortletDataProvider):
+    """A portlet which renders the login form
        along with the Janrain social sign in widget
     """
 
 
-class Assignment(base.Assignment):
-    implements(IJanrainLoginRegisterPortlet)
+class Assignment(login.Assignment):
+    implements(IJanrainLoginPortlet)
 
-    title = _(u'label_register_or_login', default=u'Register or Log In')
+    title = _(u'label_login', default=u'Log In')
 
 
-class Renderer(base.Renderer):
+class Renderer(login.Renderer):
 
     @property
     def registration_available(self):
@@ -36,13 +36,7 @@ class Renderer(base.Renderer):
         form.update()
         return form
 
-    @property
-    def login_form(self):
-        form = self.context.restrictedTraverse('@@login_form')
-        form.update()
-        return form
-
-    render = ViewPageTemplateFile('janrainloginregister.pt')
+    render = ViewPageTemplateFile('janrainlogin.pt')
 
 
 class AddForm(base.NullAddForm):

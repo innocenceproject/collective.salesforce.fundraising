@@ -19,7 +19,7 @@ class CreatePersonalCampaignPageForm(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IPersonalCampaignPage).select('title', 'goal', 'image', 'personal_appeal', 'thank_you_message', 'email')
+        return field.Fields(IPersonalCampaignPage).select('title', 'goal', 'image', 'personal_appeal', 'thank_you_message')
 
     ignoreContext = True
 
@@ -78,7 +78,7 @@ class CreateDonorQuote(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IDonorQuote).select('quote','name','image')
+        return field.Fields(IDonorQuote).select('quote','name','image','email')
 
     ignoreContext = True
 

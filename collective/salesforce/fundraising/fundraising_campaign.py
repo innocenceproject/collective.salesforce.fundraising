@@ -54,6 +54,9 @@ alsoProvides(IFundraisingCampaign, IContentType)
 class IFundraisingCampaignPage(Interface):
     """ Marker interface for campaigns that act like a fundraising campaign """
 
+class IHideDonationForm(Interface):
+    """ Marker interface for views where the donation form viewlet should not be shown """
+
 @form.default_value(field=IFundraisingCampaign['thank_you_message'])
 def thankYouDefaultValue(data):
     registry = getUtility(IRegistry)
@@ -201,6 +204,7 @@ class CampaignView(grok.View):
 class ThankYouView(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
+    grok.implements(IHideDonationForm)
 
     grok.name('thank-you')
     grok.template('thank-you')
@@ -240,9 +244,11 @@ class ThankYouView(grok.View):
 class ShareView(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
+    grok.implements(IHideDonationForm)
     
     grok.name('share-campaign')
     grok.template('share-campaign')
+
 
     def update(self):
         # Get all the messages in the current context

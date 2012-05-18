@@ -43,13 +43,13 @@
       />
 
   <plone:portlet
-      name="collective.salesforce.fundraising.portlets.JanrainLoginRegister"
-      interface=".janrainloginregister.IJanrainLoginRegisterPortlet"
-      assignment=".janrainloginregister.Assignment"
+      name="collective.salesforce.fundraising.portlets.JanrainLogin"
+      interface=".janrainlogin.IJanrainLoginPortlet"
+      assignment=".janrainlogin.Assignment"
       view_permission="zope2.View"
       edit_permission="cmf.ManagePortal"
-      renderer=".janrainloginregister.Renderer"
-      addview=".janrainloginregister.AddForm"
+      renderer=".janrainlogin.Renderer"
+      addview=".janrainlogin.AddForm"
       />
 
 </configure>

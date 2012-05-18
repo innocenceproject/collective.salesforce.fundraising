@@ -31,8 +31,8 @@
    />
 
    <portlet
-     addview="collective.salesforce.fundraising.portlets.JanrainLoginRegister"
-     title="Log In or Register"
+     addview="collective.salesforce.fundraising.portlets.JanrainLogin"
+     title="Janrain Log In"
      description=""
      i18n:attributes="title; description"
    />

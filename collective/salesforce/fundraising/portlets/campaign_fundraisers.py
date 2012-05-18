@@ -59,6 +59,10 @@ class Renderer(base.Renderer):
 
     render = ViewPageTemplateFile('campaign_fundraisers.pt')
 
+    def is_anonymous(self):
+        mt = getToolByName(self.context, 'portal_membership')
+        return mt.isAnonymousUser()
+
 # NOTE: If this portlet does not have any configurable parameters, you can
 # inherit from NullAddForm and remove the form_fields variable.
 

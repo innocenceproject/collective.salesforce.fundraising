@@ -13,8 +13,6 @@
     <img src="@@images/image/mini" />
     <div class="campaign-body" tal:content="structure context/body/output|nothing" />
 
-<div id="janrainEngageEmbed"></div>
-
   </metal:content-core>
 </metal:main>
 
