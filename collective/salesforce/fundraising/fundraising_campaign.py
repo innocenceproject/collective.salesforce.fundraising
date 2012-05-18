@@ -81,9 +81,7 @@ def fillDefaultValues(campaign, event):
         campaign.default_personal_appeal = defaultPersonalAppealDefaultValue(None)
         campaign.default_personal_thank_you = defaultPersonalThankYouDefaultValue(None)
 
-class FundraisingCampaign(dexterity.Container):
-    grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
-
+class FundraisingCampaignPage(object):
     def get_percent_goal(self):
         if self.goal and self.donations_total:
             return (self.donations_total * 100) / self.goal
@@ -147,6 +145,16 @@ class FundraisingCampaign(dexterity.Container):
             form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
             return form_embed
 
+    def can_create_donor_quote(self):
+        # FIXME: make sure the donor just donated (check session) and that they don't already have a quote for this campaign
+        return True
+
+    def show_employer_matching(self):
+        return True
+
+class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
+    grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
+
     def get_parent_sfid(self):
         return self.sf_object_id
 
@@ -164,13 +172,6 @@ class FundraisingCampaign(dexterity.Container):
     def can_create_personal_campaign_page(self):
         # FIXME: add logic here to check for campaign status.  Only allow if the campaign is active
         return self.allow_personal
-
-    def can_create_donor_quote(self):
-        # FIXME: make sure the donor just donated (check session) and that they don't already have a quote for this campaign
-        return True
-
-    def show_employer_matching(self):
-        return True
 
 class CampaignView(grok.View):
     grok.context(IFundraisingCampaignPage)

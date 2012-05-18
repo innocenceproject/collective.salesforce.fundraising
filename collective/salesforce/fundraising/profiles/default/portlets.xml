@@ -30,6 +30,13 @@
      i18n:attributes="title; description"
    />
 
+   <portlet
+     addview="collective.salesforce.fundraising.portlets.JanrainLoginRegister"
+     title="Log In or Register"
+     description=""
+     i18n:attributes="title; description"
+   />
+
    <assignment
      type="collective.salesforce.fundraising.portlets.CampaignGoal"
      manager="plone.rightcolumn"

@@ -28,8 +28,8 @@ class PostPayment(BrowserView):
             # If this is a child campaign and its parent campaign is the parent
             # in Plone, add the value to the parent's donations_total
             if hasattr(campaign, 'parent_sf_id'):
-                parent = campaign.aq_parent()
-                if parent.sf_id == campaign.parent_sf_id:
+                parent = campaign.aq_parent
+                if parent.sf_object_id == campaign.parent_sf_id:
                     parent.donations_total = parent.donations_total + amount
                     parent.donations_count = parent.donations_count + 1
 

@@ -42,4 +42,14 @@
       editview=".campaign_fundraisers.EditForm"
       />
 
+  <plone:portlet
+      name="collective.salesforce.fundraising.portlets.JanrainLoginRegister"
+      interface=".janrainloginregister.IJanrainLoginRegisterPortlet"
+      assignment=".janrainloginregister.Assignment"
+      view_permission="zope2.View"
+      edit_permission="cmf.ManagePortal"
+      renderer=".janrainloginregister.Renderer"
+      addview=".janrainloginregister.AddForm"
+      />
+
 </configure>
