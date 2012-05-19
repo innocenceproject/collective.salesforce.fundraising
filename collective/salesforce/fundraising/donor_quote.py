@@ -1,4 +1,10 @@
 from five import grok
+from zope import schema
+from zope.interface import alsoProvides
+from zope.component import getUtility
+from zope.site.hooks import getSite
+from zope.app.content.interfaces import IContentType
+from Products.CMFCore.utils import getToolByName
 from plone.directives import dexterity, form
 
 from plone.namedfile.interfaces import IImageScaleTraversable
@@ -13,15 +19,20 @@ class IDonorQuote(form.Schema, IImageScaleTraversable):
 
     form.model("models/donor_quote.xml")
 
+    form.mode(email = 'hidden')
+    email = schema.TextLine(title=u"Email")
+alsoProvides(IDonorQuote, IContentType)
+
+
 class DonorQuote(dexterity.Item):
     grok.implements(IDonorQuote)
 
     def get_container(self):
-        if not self.parent_sf_id:
+        if not self.campaign_sf_id:
             return None
-        site = getUtility(ISiteRoot)
+        site = getSite()
         pc = getToolByName(site, 'portal_catalog')
-        res = pc.searchResults(sf_object_id=self.parent_sf_id)
+        res = pc.searchResults(sf_object_id=self.campaign_sf_id)
         if not res:
             return None
         return res[0].getObject()

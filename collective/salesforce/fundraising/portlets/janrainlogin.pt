@@ -1,0 +1,157 @@
+<style type="text/css">
+  #janrainEngageWrapper {
+    height: 200px;
+    width: 400px;
+    float: left;
+    border-right: 1px dotted #ccc;
+    padding-right: 15px;
+  }
+  .divider-or {
+    float: left;
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 70px;
+    margin-left: -15px;
+    background-color: white;
+  }
+  #form-login {
+    width: 300px;
+    float: left;
+    margin-left: 15px;
+  }
+  #form-register {
+    clear: both;
+  }
+</style>
+
+<dl class="portlet portletJanrainLoginRegister">
+  <dd class="portletItem">
+    <div id="janrainEngageWrapper">
+      <div id="janrainEngageEmbed"></div>
+    </div>
+
+    <div class="divider divider-or">or</div>
+
+
+    <div id="form-login">
+        <tal:block condition="view/show" i18n:domain="plone"
+           define="ac_name view/login_name; ac_password view/login_password">
+
+        <form action="login_form"
+              id="loginform"
+              method="post"
+              tal:attributes="action view/login_form">
+
+            <div>
+                <input type="hidden" name="form.submitted" value="1" />
+                <input type="hidden" name="came_from" value=""
+                       tal:attributes="value context/@@plone_context_state/current_page_url" />
+                <input type="hidden" name="js_enabled" id="js_enabled" value="0" />
+                <input type="hidden" name="cookies_enabled" id="cookies_enabled" value="" />
+                <input type="hidden" name="login_name" id="login_name" value="" />
+                <input type="hidden" name="pwd_empty" id="pwd_empty" value="0" />
+            </div>
+
+            <div class="field"
+                 tal:define="use_email_as_login context/portal_properties/site_properties/use_email_as_login|nothing;">
+
+              <tal:loginname condition="not:use_email_as_login">
+                <label for=""
+                       tal:attributes="for ac_name"
+                       i18n:translate="label_login_name">Login Name</label>
+                <br />
+                <input type="text"
+                       size="10"
+                       alt="Login Name"
+                       tal:attributes="name ac_name; id ac_name;
+                                       value python:request.get(ac_name, '');"
+                       i18n:attributes="alt label_login_name;"/>
+              </tal:loginname>
+              <tal:email condition="use_email_as_login">
+                <label for=""
+                       tal:attributes="for ac_name"
+                       i18n:translate="label_email">E-mail</label>
+                <br />
+                <input type="text"
+                       size="10"
+                       alt="E-mail"
+                       tal:attributes="name ac_name; id ac_name;
+                                       value python:request.get(ac_name, '');"
+                       i18n:attributes="alt label_email;"/>
+              </tal:email>
+            </div>
+
+            <div class="field">
+                <label for=""
+                       tal:attributes="for ac_password"
+                       i18n:translate="label_password">Password</label>
+                <br />
+                <input type="password"
+                       size="10"
+                       alt="Password"
+                       tal:attributes="name ac_password; id ac_password;"
+                       i18n:attributes="alt label_password;"/>
+            </div>
+
+            <div i18n:translate="enable_cookies_message_before_login"
+                 class="cookiesMessage portalMessage"
+                 style="display:none">
+                Cookies are not enabled. You must enable cookies before you
+                can log in.
+            </div>
+
+            <div class="formControls">
+
+                <input class="context"
+                       type="submit"
+                       name="submit"
+                       value="Log in"
+                       alt="Log in"
+                       i18n:attributes="value label_log_in; alt label_log_in;"/>
+            </div>
+        </form>
+
+        <a href="mail_password_form"
+           class="tile"
+           tal:attributes="href view/mail_password_form">
+           <tal:block replace="structure context/info_icon.gif"/>
+           <span tal:omit-tag="" i18n:translate="box_forgot_password_option">Forgot your password?</span>
+        </a>
+    </tal:block>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+<tal:comment condition="nothing">
+    <div id="form-register" tal:condition="view/registration_available">
+      <h2>Create a new account</h2>
+      <form tal:attributes="action string:${context/portal_url}/@@register"
+          method="post"
+          enctype="multipart/form-data"
+          tal:define="view nocall:view/registration_form">
+          <div metal:use-macro="context/base-subpageform.html/form" />
+          <input tal:define="came_from request/form/came_from|nothing"
+              tal:condition="came_from"
+              type="hidden"
+              name="came_from"
+              tal:attributes="value came_from" />
+          <input tal:replace="structure context/@@authenticator/authenticator" />
+      </form>
+    </div>
+    <div class="visualClear"></div> 
+</tal:comment>
+  </dd>
+</dl>
+
+<script type="text/javascript">
+  janrain.ready = true;
+</script>

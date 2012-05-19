@@ -10,10 +10,8 @@
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">
 
+    <img src="@@images/image/mini" />
     <div class="campaign-body" tal:content="structure context/body/output|nothing" />
-
-    <div class="campaign-donate-form" tal:content="structure context/populate_form_embed">
-    </div>
 
   </metal:content-core>
 </metal:main>

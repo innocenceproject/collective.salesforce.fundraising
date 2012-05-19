@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<object>
+
+  <order manager="plone.htmlhead" skinname="*">
+    <viewlet name="collective.salesforce.fundraising.browser.customheadviewlet.CustomFormHeadViewlet"
+             insert-after="*"/>
+  </order>
+
+</object>

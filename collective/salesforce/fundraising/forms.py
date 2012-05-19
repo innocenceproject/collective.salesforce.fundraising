@@ -19,7 +19,7 @@ class CreatePersonalCampaignPageForm(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IPersonalCampaignPage).select('title', 'goal', 'personal_appeal', 'thank_you_message')
+        return field.Fields(IPersonalCampaignPage).select('title', 'goal', 'image', 'personal_appeal', 'thank_you_message')
 
     ignoreContext = True
 
@@ -78,7 +78,7 @@ class CreateDonorQuote(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IDonorQuote).select('quote','name','image')
+        return field.Fields(IDonorQuote).select('quote','name','image','email')
 
     ignoreContext = True
 
@@ -92,7 +92,7 @@ class CreateDonorQuote(form.Form):
             self.status = self.formErrorsMessage
             return
         
-        # Add a donor quote in teh current context,
+        # Add a donor quote in the current context,
         # using the data from the form
         parent_campaign = self.context
         quote = createContentInContainer(parent_campaign,

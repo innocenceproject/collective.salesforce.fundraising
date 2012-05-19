@@ -1,0 +1,36 @@
+<?xml version="1.0" ?>
+<model xmlns="http://namespaces.plone.org/supermodel/schema"
+       xmlns:sf="http://namespaces.plone.org/salesforce/schema"
+       xmlns:form="http://namespaces.plone.org/supermodel/form">
+    
+    <schema sf:object="Campaign" sf:criteria="Type = 'Share Message'" sf:container="get_container">
+        <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c">
+            <title>Title</title>
+            <description>The title of the link being shared</description>
+        </field>
+        <field name="description" type="zope.schema.Text" sf:field="Description">
+            <title>Description</title>
+            <description>The description of the link being shared</description>
+        </field>
+        <field name="image" type="plone.namedfile.field.NamedBlobImage">
+            <title>Image</title>
+            <description>The image for the share message</description>
+        </field>
+        <field name="comment" type="zope.schema.Text">
+            <title>User comment</title>
+            <description>Provide an example comment for the user.  The user can edit this text so it's just a suggestion</description>
+            <required>False</required>
+        </field>
+        <field name="status" type="zope.schema.TextLine" sf:field="Status">
+            <title>Status</title>
+            <description>The status of this message</description>
+            <required>False</required>
+        </field>
+        <field name="parent_sf_id" type="zope.schema.TextLine" sf:field="ParentId">
+            <title>Parent Salesforce ID</title>
+            <description>The Salesforce ID of the parent Campaign</description>
+            <required>False</required>
+        </field>
+
+    </schema>
+</model>

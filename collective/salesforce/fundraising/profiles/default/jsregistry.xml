@@ -1,0 +1,6 @@
+<object name="portal_javascripts" meta_type="JavaScripts Registry">
+    <javascript
+        id="++resource++collective.salesforce.fundraising.static/fundraising.js"
+        cacheable="True" compression="safe" cookable="True"
+        enabled="True" expression=""  inline="False" insert-after="*"/>
+</object>

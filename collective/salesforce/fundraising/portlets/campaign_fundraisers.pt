@@ -20,8 +20,10 @@
     </dd>
 
     <dd class="portletItem campaign-fundraisers-join">
+      <span class="login-required" tal:omit-tag="not: view/is_anonymous">
       <p>Create your Personal Fundraising Page to help us reach our goal.</p>
       <a class="button button-create-personal-campaign" href="#" tal:attributes="href create_link">Create My Campaign</a>
+      </span>
     </dd>
 
     <dd class="portletFooter">

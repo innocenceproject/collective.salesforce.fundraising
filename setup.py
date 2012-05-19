@@ -26,6 +26,7 @@ setup(name='collective.salesforce.fundraising',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'simplejson',
           'five.globalrequest',
           'plone.app.dexterity',
           'plone.app.users >= 1.1.4dev',
