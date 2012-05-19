@@ -123,7 +123,7 @@ class RpxHeadViewlet(grok.Viewlet):
         janrain_sharing_app_id = settings.janrain_sharing_app_id
 
         if not janrain_site_id:
-            return None
+            return ''
 
         # Get callback url
         context = aq_inner(self.context)
