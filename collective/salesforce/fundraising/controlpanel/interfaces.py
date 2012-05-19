@@ -35,3 +35,28 @@ class IFundraisingSettings(Interface):
         required=True,
     )
 
+    custom_form_head = schema.Text(
+        title=_(u"Custom Form Head"),
+        description=_(u"Whatever is entered here is added to the end of the <head> tag on pages where the donation form is displayed.  Use this if you need custom css or javascript for your donation form."),
+        default=u"",
+        required=False,
+    )
+
+    janrain_api_key = schema.Text(
+        title=_(u"Janrain API Key"),
+        description=_(u"If provided, Janrain integration functionality will be turned on allowing for social login and social sharing"),
+        required=False,
+    )
+
+    janrain_site_id = schema.Text(
+        title=_(u"Janrain Site ID"),
+        description=_(u"If you are using Janrain, the Site ID is the name of your instance. You can find it in the urls in the embed code provided through the Janrain control panel"),
+        required=False,
+    )
+
+    janrain_sharing_app_id = schema.Text(
+        title=_(u"Janrain App ID"),
+        description=_(u"If you are using Janrain, enter the value for appId in the embed code provided for your sharing widget"),
+        required=False,
+    )
+

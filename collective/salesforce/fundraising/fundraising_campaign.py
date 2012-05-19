@@ -1,9 +1,11 @@
 import locale
+import random
 from datetime import date
 
 from five import grok
 from plone.directives import dexterity, form
 
+from zope.interface import Interface
 from zope.interface import alsoProvides
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
@@ -13,8 +15,10 @@ from plone.registry.interfaces import IRegistry
 from plone.z3cform.interfaces import IWrappedForm
 
 from plone.app.textfield import RichText
+from plone.namedfile import NamedBlobImage
 from plone.namedfile.interfaces import IImageScaleTraversable
 
+from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
 
 # Interface class; used to define content-type schema.
@@ -47,6 +51,12 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
 
 alsoProvides(IFundraisingCampaign, IContentType)
 
+class IFundraisingCampaignPage(Interface):
+    """ Marker interface for campaigns that act like a fundraising campaign """
+
+class IHideDonationForm(Interface):
+    """ Marker interface for views where the donation form viewlet should not be shown """
+
 @form.default_value(field=IFundraisingCampaign['thank_you_message'])
 def thankYouDefaultValue(data):
     registry = getUtility(IRegistry)
@@ -74,9 +84,7 @@ def fillDefaultValues(campaign, event):
         campaign.default_personal_appeal = defaultPersonalAppealDefaultValue(None)
         campaign.default_personal_thank_you = defaultPersonalThankYouDefaultValue(None)
 
-class FundraisingCampaign(dexterity.Container):
-    grok.implements(IFundraisingCampaign)
-
+class FundraisingCampaignPage(object):
     def get_percent_goal(self):
         if self.goal and self.donations_total:
             return (self.donations_total * 100) / self.goal
@@ -113,16 +121,42 @@ class FundraisingCampaign(dexterity.Container):
         if self.date_end:
             return '<script type="text/javascript">$(".campaign-timeline .progress-bar").progressbar({ value: %i});</script>' % self.get_percent_timeline()
 
-    def get_source_code(self):
-        return 'Plone'
+    def get_source_campaign(self):
+        source_campaign = self.REQUEST.get('source_campaign', '')
+        if not source_campaign:
+            source_campaign = self.REQUEST.get('collective.salesforce.fundraising.source_campaign', '')
+        return source_campaign
+
+    def get_source_url(self):
+        # Check if there is a cookie that captures the referrer of first entry for the session
+        source_url = self.REQUEST.get('collective.salesforce.fundraising.source_url', None)
+        if source_url:
+            return source_url
+        # If not, use the current request's HTTP_REFERER
+        referrer = self.REQUEST.get('HTTP_REFERER', '')
+        if referrer:
+            return referrer
+
+        # If all else fails, return the campaign's url
+        return self.absolute_url()
 
     def populate_form_embed(self):
         if self.form_embed:
             form_embed = self.form_embed
             form_embed = form_embed.replace('{{CAMPAIGN_ID}}', getattr(self, 'sf_object_id', ''))
-            form_embed = form_embed.replace('{{SOURCE_CODE}}', self.get_source_code())
-            form_embed = form_embed.replace('{{SOURCE_URL}}', self.absolute_url())
+            form_embed = form_embed.replace('{{SOURCE_CAMPAIGN}}', self.get_source_campaign())
+            form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
             return form_embed
+
+    def can_create_donor_quote(self):
+        # FIXME: make sure the donor just donated (check session) and that they don't already have a quote for this campaign
+        return True
+
+    def show_employer_matching(self):
+        return True
+
+class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
+    grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
 
     def get_parent_sfid(self):
         return self.sf_object_id
@@ -142,15 +176,8 @@ class FundraisingCampaign(dexterity.Container):
         # FIXME: add logic here to check for campaign status.  Only allow if the campaign is active
         return self.allow_personal
 
-    def can_create_donor_quote(self):
-        # FIXME: make sure the donor just donated (check session) and that they don't already have a quote for this campaign
-        return True
-
-    def show_employer_matching(self):
-        return True
-
 class CampaignView(grok.View):
-    grok.context(IFundraisingCampaign)
+    grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
 
     grok.name('view')
@@ -159,15 +186,36 @@ class CampaignView(grok.View):
     def addcommas(self, number):
         locale.setlocale(locale.LC_ALL, '')
         return locale.format('%d', number, 1)
+       
+    def update(self):
+        # Set a cookie with referrer as source_url if no cookie has yet been set for the session
+        source_url = self.request.get('collective.salesforce.fundraising.source_url', None)
+        if not source_url:
+            referrer = self.request.get_header('referrer')
+            if referrer:
+                self.request.response.setCookie('collective.salesforce.fundraising.source_url', referrer)
+
+        # Set a cookie with the source code if it was passed in the request
+        self.source_campaign = self.request.get('source_campaign', None)
+        if self.source_campaign:
+            self.request.response.setCookie('collective.salesforce.fundraising.source_campaign', self.source_campaign)
+
 
 class ThankYouView(grok.View):
-    grok.context(IFundraisingCampaign)
+    grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
+    grok.implements(IHideDonationForm)
 
     grok.name('thank-you')
     grok.template('thank-you')
 
     def update(self):
+        # Fetch some values that should have been passed from the redirector
+        self.email = self.request.form.get('email', None)
+        self.first_name = self.request.form.get('first_name', None)
+        self.last_name = self.request.form.get('last_name', None)
+        self.amount = self.request.form.get('amount', None)
+
         # Create a wrapped form for inline rendering
         from collective.salesforce.fundraising.forms import CreateDonorQuote
         if self.context.can_create_donor_quote():
@@ -179,3 +227,49 @@ class ThankYouView(grok.View):
         if self.hide:
             self.hide = self.hide.split(',')
 
+    def render_janrain_share(self):
+        amount_str = ''
+        if self.amount:
+            amount_str = _(u' $%s' % self.amount)
+        comment = _(u'I just donated%s to a great cause.  You should join me.') % amount_str
+
+        return "rpxShareButton(jQuery('#share-message-thank-you'), 'Tell your friends you donated', '%s', '%s', '%s', '%s', '%s')" % (
+            self.context.description,
+            self.context.absolute_url(),
+            self.context.title,
+            comment,
+            self.context.absolute_url() + '/@@images/image',
+        )
+
+class ShareView(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.require('zope2.View')
+    grok.implements(IHideDonationForm)
+    
+    grok.name('share-campaign')
+    grok.template('share-campaign')
+
+
+    def update(self):
+        # Get all the messages in the current context
+        self.messages = []
+        res = self.context.listFolderContents(contentFilter = {
+            'portal_type': 'collective.salesforce.fundraising.sharemessage'
+        })
+
+        # If there are less than 3 messages found, check if this is a child campaign
+        if len(res) < 3:
+            if hasattr(self.context, 'parent_sf_id'):
+                # Add parent messages until a total of 3 messages are selected
+                parent_res = self.context.__parent__.listFolderContents(contentFilter = {
+                    'portal_type': 'collective.salesforce.fundraising.sharemessage'
+                })
+                if len(parent_res) + len(res) > 3:
+                    res = res + random.sample(parent_res, 3 - len(res))
+                elif len(parent_res) + len(res) <= 3:
+                    res = res + parent_res
+        # If there are more than 3 messages are found, select 3 at random from the list
+        if len(res) > 3:
+            res = random.sample(res, 3)
+
+        self.messages = res
