@@ -6,6 +6,7 @@ from Products.statusmessages.interfaces import IStatusMessage
 from Products.CMFCore.utils import getToolByName
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
+from collective.salesforce.fundraising.fundraising_campaign import IHideDonationForm
 from collective.salesforce.fundraising.personal_campaign_page import IPersonalCampaignPage
 from collective.salesforce.fundraising.donor_quote import IDonorQuote
 
@@ -16,10 +17,11 @@ class CreatePersonalCampaignPageForm(form.Form):
     grok.name('create-personal-campaign-page')
     grok.require('collective.salesforce.fundraising.AddPersonalCampaign')
     grok.context(IFundraisingCampaign)
+    grok.implements(IHideDonationForm)
 
     @property
     def fields(self):
-        return field.Fields(IPersonalCampaignPage).select('title', 'goal', 'image', 'personal_appeal', 'thank_you_message')
+        return field.Fields(IPersonalCampaignPage).select('title', 'description', 'image', 'goal', 'personal_appeal', 'thank_you_message')
 
     ignoreContext = True
 
@@ -45,7 +47,6 @@ class CreatePersonalCampaignPageForm(form.Form):
         contact_id = member.getProperty('sf_object_id')
 
         # Add the campaign in Salesforce
-        # XXX Is the default status okay?
         sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
         res = sfbc.create({
             'type': 'Campaign',
@@ -55,11 +56,14 @@ class CreatePersonalCampaignPageForm(form.Form):
             'Public_Name__c': data['title'],
             'ExpectedRevenue': data['goal'],
             'Personal_Campaign_Contact__c': contact_id,
+            'IsActive': True,
+            'Status': 'In Progress',
             })
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
 
         # Save the Id of the new campaign so it can be updated later.
+        campaign.parent_sf_id = parent_campaign.sf_object_id
         campaign.sf_object_id = res[0]['id']
         campaign.reindexObject(idxs=['sf_object_id'])
 
@@ -75,6 +79,7 @@ class CreateDonorQuote(form.Form):
     grok.name('create-donor-quote')
     grok.require('collective.salesforce.fundraising.AddDonorQuote')
     grok.context(IFundraisingCampaign)
+    grok.implements(IHideDonationForm)
 
     @property
     def fields(self):
@@ -120,6 +125,7 @@ class CreateDonorQuote(form.Form):
 
         # Save the Id of the constituent quote so it can be updated
         quote.sf_object_id = res[0]['id']
+        quote.parent_sf_id = parent_campaign.sf_object_id
         quote.reindexObject(idxs=['sf_object_id'])
 
         # Send the user back to the thank you page with a note about their quote

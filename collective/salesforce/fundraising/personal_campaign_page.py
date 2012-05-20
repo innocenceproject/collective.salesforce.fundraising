@@ -82,3 +82,9 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
             form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
             return form_embed
 
+class PersonalCampaignPagesList(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.require('zope2.View')
+
+    grok.name('compact_view')
+    grok.template('compact_view')

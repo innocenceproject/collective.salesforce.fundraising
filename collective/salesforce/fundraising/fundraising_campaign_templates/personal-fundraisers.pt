@@ -1,0 +1,31 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.salesforce.fundraising">
+<body>
+
+<metal:main fill-slot="content-description">
+  <metal:content-description define-macro="content-description">
+    Personal Fundraisers 
+  </metal:content-description>
+</metal:main>
+
+<metal:main fill-slot="content-core">
+  <metal:content-core define-macro="content-core">
+
+    <div class="personal-fundraisers-wrapper">
+
+      <tal:message_loop repeat="b view/campaigns">
+        <tal:message define="campaign b/getObject" replace="structure campaign/@@compact_view" />
+      </tal:message_loop>
+
+    </div>
+
+  </metal:content-core>
+</metal:main>
+
+</body>
+</html>
+

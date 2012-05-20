@@ -14,8 +14,7 @@ class PostPayment(BrowserView):
         pc = getToolByName(self.context, 'portal_catalog')
         res = pc.searchResults(sf_object_id = campaign_id)
         if not res:
-            # FIXME - Raise an error instead of returning an error string
-            return 'ERROR: No fundraising campaign was found with the id %s' % campaign_id
+            raise ValueError('ERROR: No fundraising campaign was found with the id %s' % campaign_id)
         campaign = res[0].getObject()
 
         # Add the donation's amount to the campaign and increment donations count
@@ -35,13 +34,13 @@ class PostPayment(BrowserView):
 
         # This is specific to Formstack.  The name field is a split field that comes through
         # as a combined value with urlencoding.  Check for this format and parse if so
-        if name.find('%0Alast+%3D+') != -1:
-            name = name.replace('first+%3D+','').replace('%0Alast+%3D+', ' ').replace
+        if name.find('first = ') != -1:
+            name = name.replace('first = ','').replace('\nlast = ', ' ')
 
         urlargs = {
            'amount': amount,
-           'form.widget.name': name,
-           'form.widget.email': email,
+           'form.widgets.name': name,
+           'form.widgets.email': email,
         }
 
         # Redirect the user to the campaign's thank you page

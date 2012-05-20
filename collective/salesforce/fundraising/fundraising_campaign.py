@@ -18,6 +18,8 @@ from plone.app.textfield import RichText
 from plone.namedfile import NamedBlobImage
 from plone.namedfile.interfaces import IImageScaleTraversable
 
+from Products.CMFCore.utils import getToolByName
+
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
 
@@ -87,7 +89,8 @@ def fillDefaultValues(campaign, event):
 class FundraisingCampaignPage(object):
     def get_percent_goal(self):
         if self.goal and self.donations_total:
-            return (self.donations_total * 100) / self.goal
+            return int((self.donations_total * 100) / self.goal)
+        return 0
 
     def get_percent_timeline(self):
         if self.date_start and self.date_end:
@@ -99,7 +102,8 @@ class FundraisingCampaignPage(object):
 
             delta_range = self.date_end - self.date_start
             delta_current = today - self.date_start
-            return (delta_current.days * 100) / delta_range.days
+            return int((delta_current.days * 100) / delta_range.days)
+        return 0
 
     def get_days_remaining(self):
         if self.date_end:
@@ -112,14 +116,6 @@ class FundraisingCampaignPage(object):
             if not self.donations_total:
                 return self.goal
             return self.goal - self.donations_total
-
-    def render_goal_bar_js(self):
-        if self.get_percent_goal():
-            return '<script type="text/javascript">$(".campaign-progress-bar .progress-bar").progressbar({ value: %i});</script>' % self.get_percent_goal()
-
-    def render_timeline_bar_js(self):
-        if self.date_end:
-            return '<script type="text/javascript">$(".campaign-timeline .progress-bar").progressbar({ value: %i});</script>' % self.get_percent_timeline()
 
     def get_source_campaign(self):
         source_campaign = self.REQUEST.get('source_campaign', '')
@@ -170,7 +166,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
         return len(self.listFolderContents(contentFilter = {'portal_type': 'collective.salesforce.fundraising.personalcampaignpage'}))
 
     def create_personal_campaign_page_link(self):
-        return self.absolute_url() + '/@@create-personal-campaign-page'
+        return self.absolute_url() + '/@@create-or-view-personal-campaign'
 
     def can_create_personal_campaign_page(self):
         # FIXME: add logic here to check for campaign status.  Only allow if the campaign is active
@@ -273,3 +269,50 @@ class ShareView(grok.View):
             res = random.sample(res, 3)
 
         self.messages = res
+
+class CreateOrViewPersonalCampaignView(grok.View):
+    grok.context(IFundraisingCampaign)
+    grok.require('collective.salesforce.fundraising.AddPersonalCampaign')
+
+    grok.name('create-or-view-personal-campaign')
+    
+    def render(self):
+        mt = getToolByName(self.context, 'portal_membership')
+        create_url = self.context.absolute_url() + '/@@create-personal-campaign-page'
+        if mt.isAnonymousUser():
+            return self.request.RESPONSE.redirect(create_url)
+
+        member = mt.getAuthenticatedMember()
+        pc = getToolByName(self.context, 'portal_catalog')
+        res = pc.searchResults(
+            portal_type = 'collective.salesforce.fundraising.personalcampaignpage', 
+            path = '/'.join(self.context.getPhysicalPath()),
+            Creator = member.getId()
+        )
+
+        # If the user already has a personal campaign, redirect them to their campaign
+        if res:
+            return self.request.RESPONSE.redirect(res[0].getURL())
+
+        # If not, redirect them to the create form
+        return self.request.RESPONSE.redirect(create_url)
+
+class PersonalCampaignPagesList(grok.View):
+    grok.context(IFundraisingCampaign)
+    grok.require('zope2.View')
+    grok.implements(IHideDonationForm)
+    
+    grok.name('personal-fundraisers')
+    grok.template('personal-fundraisers')
+
+    def update(self):
+        # fetch the list
+        pc = getToolByName(self.context, 'portal_catalog')
+        query = {
+            'portal_type': 'collective.salesforce.fundraising.personalcampaignpage', 
+            'path': '/'.join(self.context.getPhysicalPath()),
+        }
+        query['sort_on'] = self.request.get('sort_on', 'donations_total')
+        query['sort_order'] = 'descending'
+        self.campaigns = pc.searchResults(**query) 
+

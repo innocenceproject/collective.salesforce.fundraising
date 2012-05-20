@@ -1,0 +1,6 @@
+<object name="portal_css" meta_type="CSS Registry">
+    <stylesheet
+        id="++resource++collective.salesforce.fundraising.static/fundraising.css"
+        cacheable="True" compression="safe" cookable="True"
+        enabled="True" expression=""  insert-after="*"/>
+</object>

@@ -136,7 +136,7 @@ class RpxHeadViewlet(grok.Viewlet):
             'site_id': janrain_site_id, 
             'token_url': token_url,  
             'app_id': janrain_sharing_app_id,  
-            'came_from': self.context.absolute_url(),
+            'came_from': self.request.get('came_from', self.context.absolute_url()),
         }
 
 class RpxPostLogin(grok.View):

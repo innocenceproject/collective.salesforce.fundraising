@@ -4,6 +4,7 @@
         $('#portal-personaltools a[href$="/login"], #portal-personaltools a[href$="/login_form"], .discussion a[href$="/login"], .discussion a[href$="/login_form"]').each(function () {
             pb.remove_overlay($(this));
         });
+/*
         $('.login-required a.button-create-personal-campaign, #portal-personaltools a[href$="/login"], #portal-personaltools a[href$="/login_form"], .discussion a[href$="/login"], .discussion a[href$="/login_form"]').prepOverlay({
             subtype: 'ajax',
             filter: common_content_filter,
@@ -29,5 +30,12 @@
                 }
             }
         });
+*/
+        $('.progress-bar').each(function () {
+            var percent = $(this).find('span.value').text();
+            $(this).reportprogress(percent);
+            //$(this).text('');
+        });
+    
     });
 })(jQuery);

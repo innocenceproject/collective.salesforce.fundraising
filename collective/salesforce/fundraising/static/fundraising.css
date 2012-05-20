@@ -1,0 +1,79 @@
+.fundraising-campaign.compact {
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px dotted #ccc;
+  border-top: 1px solid #aaa;
+}
+
+.fundraising-campaign.compact .campaign-image {
+  float: left;
+  margin: 0 20px 20px 0;
+  width: 200px;
+  height: 200px;
+  background-color: #eaeaea;
+  text-align: center;
+  padding: 5px;
+}
+
+.fundraising-campaign.compact .campaign-text {
+  width: 400px;
+  float: left;
+}
+
+.fundraising-campaign.compact h2.campaign-title {
+  margin: 0;
+  padding: 0;
+}
+
+.fundraising-campaign.compact .campaign-metrics {
+  color: white;
+  background-color: black;
+  float: right;
+  padding: 20px;
+}
+.fundraising-campaign.compact .campaign-metrics dt {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  display: block;
+  width: 90px;
+}
+.fundraising-campaign.compact .campaign-metrics dd {
+  font-size: 10px;
+  text-align: center;
+  display: block;
+  width: 90px;
+}
+
+/* progress bar container */
+.progress-bar{
+  border:1px solid black;
+  width:200px;
+  height:20px;
+  position:relative;
+  color:black; 
+}
+.progress-bar span.value{
+  display: none;
+}
+/* color bar */
+.progress-bar div.progress{
+  position:absolute;
+  width:0;
+  height:100%;
+  overflow:hidden;
+  background-color:#666;
+}
+/* text on bar */
+.progress-bar div.progress .text{
+  position:absolute;
+  text-align:center;
+  color:white;
+}
+/* text off bar */
+.progress-bar div.text{
+  position:absolute;
+  width:100%;
+  height:100%;
+  text-align:center;
+}

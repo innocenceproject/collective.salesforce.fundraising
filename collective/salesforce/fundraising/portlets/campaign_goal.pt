@@ -16,12 +16,7 @@
     </dt>
 
     <dd class="portletItem campaign-progress-bar">
-      <div class="progress-bar" />
-      <span tal:replace="structure view/context/render_goal_bar_js" />
-    </dd>
-
-    <dd class="portletItem campaign-goal-percent" style="margin: -44px 0 0 20px; color: black">
-      <span class="goal-percent" tal:content="percent">100</span><span class="symbol-percent">%</span>
+      <div class="progress-bar"><span class="value" tal:content="percent" /></div>
     </dd>
 
     <dd class="portletItem fundraising-goal">
