@@ -20,29 +20,37 @@
             <title>Status</title>
             <description>The current status of the campaign (From Status field on Campaign in Salesforce)</description>
         </field>
-        <field name="goal" title="Goal" type="zope.schema.Float" sf:field="ExpectedRevenue">
+        <field name="goal" title="Goal" type="zope.schema.Int" sf:field="ExpectedRevenue">
             <title>Goal</title>
             <description>The dollar amount goal for this campaign (from Expected Revenue field on Campaign in Salesforce)</description>
         </field>
-        <field name="donations_total" title="Total Raised" type="zope.schema.Float" sf:field="AmountWonOpportunities">
+        <field name="donations_total" title="Total Raised" type="zope.schema.Int" sf:field="HierarchyAmountWonOpportunities">
             <title>Total Raised</title>
             <description>The total dollar amount raised thus far (from Amount Won Opportunities on Campaign in Salesforce)</description>
         </field>
-        <field name="donations_count" title="Total Donations" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
+        <field name="donations_count" title="Total Donations" type="zope.schema.Int" sf:field="HierarchyNumberOfWonOpportunities">
             <title>Number of Donations</title>
-            <description>Total count of donations (from Number of Won Opportunities field on Campaign in Salesforce)</description>
+            <description>Total count of donations</description>
+        </field>
+        <field name="direct_donations_total" title="Total Raised Directly" type="zope.schema.Int" sf:field="AmountWonOpportunities">
+            <title>Direct Total Raised</title>
+            <description>The total dollar amount raised thus far donated directly to this campaign</description>
+        </field>
+        <field name="direct_donations_count" title="Total Direct Donations" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
+            <title>Number of Direct Donations</title>
+            <description>Total count of donations made directly to this campaign</description>
         </field>
         <field name="form_embed" title="Form Embed Code" type="zope.schema.Text" sf:field="Form_Embed_Code__c">
             <title>Form Embed Code</title>
-            <description>The embed code for the donation form used by this campaign (from the Form Embed Code field on Campaign in Salesforce)</description>
+            <description>The embed code for the donation form used by this campaign</description>
         </field>
         <field name="form_embed_recurring" title="Form Embed Code" type="zope.schema.Text" sf:field="Recurring_Form_Embed_Code__c">
             <title>Recurring Form Embed Code</title>
-            <description>The embed code for the recurring donation form used by this campaign (from the Form Embed Code field on Campaign in Salesforce)</description>
+            <description>The embed code for the recurring donation form used by this campaign</description>
         </field>
         <field name="allow_personal" title="Allow Personal Fundraising?" type="zope.schema.Bool" sf:field="Allow_Personal__c">
             <title>Allow Personal?</title>
-            <description>If checked, allow the creation of personal campaign pages for this campaign (from the Allow Personal field on Campaign in Salesforce)</description>
+            <description>If checked, allow the creation of personal campaign pages for this campaign</description>
         </field>
         <field name="date_start" title="Start Date" type="zope.schema.Date" sf:field="StartDate">
             <title>Start Date</title>

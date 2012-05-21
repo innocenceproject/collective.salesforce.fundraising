@@ -19,4 +19,4 @@ class DonationFormViewlet(grok.Viewlet):
     def render(self):
         if IHideDonationForm.implementedBy(self.view.__class__):
             return ''
-        return '<div class="campaign-donate-form">%s</div>' % self.context.populate_form_embed()
+        return '<div class="campaign-donate-form"><h2>Make a Donation</h2>%s</div>' % self.context.populate_form_embed()

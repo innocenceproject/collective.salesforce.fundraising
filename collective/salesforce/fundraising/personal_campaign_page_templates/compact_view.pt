@@ -1,18 +1,21 @@
     <div class="fundraising-campaign personal-campaign compact" id="personal-campaign" tal:attributes="id string:personal-campaign-${view/context/id}">
-        <div class="campaign-image"><img src="" tal:attributes="src string:${view/context/absolute_url}/@@images/image/thumb" /></div>
+        <dl class="campaign-metrics">
+            <dt class="progress-bar">
+              <span class="value">66</span>
+            </dt>
+            <dt class="campaign-donations-total" tal:content="python: '$%i' % view.context.donations_total">$300</dt>
+            <dd class="campaign-donations-total">Raised</dd>
+            <dt class="campaign-donations-count" tal:content="string:${view/context/donations_count}">20</dt>
+            <dd class="campaign-donations-count">Donations</dd>
+            <dt class="campaign-goal" tal:content="python: '$%i' % view.context.goal">$300</dt>
+            <dd class="campaign-goal">Goal</dd>
+        </dl>
+        <div class="campaign-image"><img src="" tal:attributes="src string:${view/context/absolute_url}/@@images/image/mini" /></div>
         <div class="campaign-text">
             <h2 class="campaign-title">
                 <a href="#" tal:attributes="href view/context/absolute_url" tal:content="view/context/title">Campaign Title</a>
             </h2>
             <p class="campaign-description" tal:content="view/context/description"></p>
         </div>
-        <dl class="campaign-metrics">
-            <dt class="campaign-donations-total" tal:content="string:${view/context/donations_total}">$300</dt>
-            <dd class="campaign-donations-total">Raised</dd>
-            <dt class="campaign-donations-count" tal:content="string:${view/context/donations_count}">20</dt>
-            <dd class="campaign-donations-count">Donations</dd>
-            <dt class="campaign-goal" tal:content="string:${view/context/goal}">$300</dt>
-            <dd class="campaign-goal">Goal</dd>
-        </dl>
         <div class="visualClear"></div>
     </div>

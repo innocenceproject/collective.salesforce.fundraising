@@ -53,6 +53,7 @@ class CreatePersonalCampaignPageForm(form.Form):
             'Type': 'Personal Fundraising',
             'ParentId': parent_campaign.sf_object_id,
             'Name': data['title'],
+            'Description': data['description'],
             'Public_Name__c': data['title'],
             'ExpectedRevenue': data['goal'],
             'Personal_Campaign_Contact__c': contact_id,

@@ -1,33 +1,43 @@
-<dl class="portlet portletCampaignGoal"
+<dl class="portlet portletCampaignFundraisers"
     i18n:domain="collective.salesforce.fundraising"
     tal:define="create_link view/context/create_personal_campaign_page_link;
+                campaign python: view.context.get_fundraising_campaign();
                 fundraisers_count view/context/personal_fundraisers_count;
+                fundraisers_raised python: '$%i' % (int(campaign.donations_total) - int(campaign.direct_donations_total));
                 view_all python:view.context.get_fundraising_campaign().absolute_url() + '/personal-fundraisers'"
-    tal:condition="view/context/can_create_personal_campaign_page">
+    tal:condition="view/context/allow_personal">
 
     <dt class="portletHeader">
-        <span class="portletTopLeft"></span>
-        <span>
-          <a href="#" tal:attributes="href view_all" tal:content="view/data/title">
-            Fundraisers
-          </a>
-        </span>
-        <span class="portletTopRight"></span>
+      <span class="portletTopLeft"></span>
+      <span>
+        <a href="#" tal:attributes="href view_all" tal:content="view/data/title">
+          Fundraisers
+        </a>
+      </span>
+      <span class="portletTopRight"></span>
     </dt>
 
     <dd class="portletItem campaign-fundraisers-count" tal:condition="fundraisers_count">
-      <div class="count-large">
-        <a href="#" tal:attributes="href view_all">
+      <a class="count-link" href="#" tal:attributes="href view_all">
+        <div class="count-large">
           <strong tal:content="fundraisers_count">138</strong>
           <span class="discreet">Personal Fundraisers</span>
-        </a>
-      </div>
+        </div>
+      </a>
+      <a class="count-link" href="#" tal:attributes="href view_all">
+        <div class="count-large">
+          <strong tal:content="fundraisers_raised">138</strong>
+          <span class="discreet">Amount Raised</span>
+        </div>
+      </a>
+      <div class="visualClear"></div>
     </dd>
 
     <dd class="portletItem campaign-fundraisers-join">
       <span class="login-required" tal:omit-tag="not: view/is_anonymous">
-      <p>Create your Personal Fundraising Page to help us reach our goal.</p>
       <a class="button button-create-personal-campaign" href="#" tal:attributes="href create_link">Create My Campaign</a>
+      <div class="visualClear"></div>
+      <p>Create your Personal Fundraising Page to help us reach our goal.</p>
       </span>
     </dd>
 
