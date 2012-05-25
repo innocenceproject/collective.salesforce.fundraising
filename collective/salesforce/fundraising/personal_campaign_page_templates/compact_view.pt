@@ -1,7 +1,7 @@
     <div class="fundraising-campaign personal-campaign compact" id="personal-campaign" tal:attributes="id string:personal-campaign-${view/context/id}">
         <dl class="campaign-metrics">
             <dt class="progress-bar">
-              <span class="value">66</span>
+              <span class="value" tal:content="context/get_percent_goal">66</span>
             </dt>
             <dt class="campaign-donations-total" tal:content="python: '$%i' % view.context.donations_total">$300</dt>
             <dd class="campaign-donations-total">Raised</dd>

@@ -82,6 +82,11 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
             form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
             return form_embed
 
+    def get_percent_goal(self):
+        if self.goal and self.donations_total:
+            return int((self.donations_total * 100) / self.goal)
+        return 0
+
 class PersonalCampaignPagesList(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
