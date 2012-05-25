@@ -21,8 +21,8 @@
 }
 
 .fundraising-campaign.compact .campaign-metrics {
-  color: white;
-  background-color: #999;
+  color: #777;
+  background-color: #ddd;
   float: left;
   padding: 20px;
   width: 100px;
@@ -111,19 +111,20 @@
   width: 90px;
   padding: 10px;
   float: left;
-  background-color: #777777;
+  background-color: #ddd;
   margin-right: 10px;
   margin-bottom: 7px;
   height: 70px;
 }
 .count-large strong {
   font-size: 24px;
-  color: white;
+  color: #777;
   display: block;
   padding-top: 14px;
 }
+.campaign-metrics .discreet,
 .count-large .discreet {
-  color: black;
+  color: #999;
 }
 .count-large.right {
   clear: right;
@@ -143,6 +144,7 @@ body.template-create-personal-campaign-page #edit-bar{
 
 .campaign-donate-form {
   background-color: #eee;
+  border: 2px solid #ddd;
   padding: 15px;
   border-radius: 10px;
   -moz-border-radius: 20px;
@@ -155,7 +157,8 @@ a.button-create-personal-campaign {
   float: left;
   color: black;
   background-color: #eee;
-  font-size: 21px;
+  border: 3px solid #eaeaea;
+  font-size: 19px;
   font-weight: bold;
   padding: 7px 15px;
   border-radius: 10px;
@@ -163,5 +166,18 @@ a.button-create-personal-campaign {
   margin: 0 15px 15px 0;
 }
 a.button-create-personal-campaign:hover {
-  background-color: #e3e3e3;
+  border: #ddd;
+}
+
+.campaign-dates {
+  margin-top: 5px;
+}
+
+.campaign-dates .start-date {
+  display: block;
+  float: left;
+}
+.campaign-dates .end-date {
+  display: block;
+  text-align: right;
 }

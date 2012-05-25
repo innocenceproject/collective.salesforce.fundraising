@@ -22,8 +22,8 @@
     <dd class="portletItem odd campaign-timeline">
       <div class="progress-bar"><span class="value" tal:content="percent" /></div>
       <div class="campaign-dates">
-        <span class="start-date" tal:content="python: view.context.date_start.strftime('%b %d')" />
-        <span class="end-date" tal:content="python: view.context.date_end.strftime('%b %d')" />
+        <span class="start-date" tal:content="python: view.context.date_start.strftime('%B %d')" />
+        <span class="end-date" tal:content="python: view.context.date_end.strftime('%B %d')" />
       </div>
     </dd>
 
