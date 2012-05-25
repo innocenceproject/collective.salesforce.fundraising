@@ -172,6 +172,22 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
         # FIXME: add logic here to check for campaign status.  Only allow if the campaign is active
         return self.allow_personal
 
+    def get_personal_fundraising_campaign_url(self):
+        """ Return the current user's personal fundraising campaign, if they already have one. """
+        mtool = getToolByName(self, 'portal_membership')
+        if mtool.isAnonymousUser():
+            return
+
+        member = mtool.getAuthenticatedMember()
+        catalog = getToolByName(self, 'portal_catalog')
+        res = catalog.searchResults(
+            portal_type = 'collective.salesforce.fundraising.personalcampaignpage', 
+            path = '/'.join(self.getPhysicalPath()),
+            Creator = member.getId()
+        )
+        if res:
+            return res[0].getURL()
+
 class CampaignView(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
@@ -279,23 +295,14 @@ class CreateOrViewPersonalCampaignView(grok.View):
     def render(self):
         mt = getToolByName(self.context, 'portal_membership')
         create_url = self.context.absolute_url() + '/@@create-personal-campaign-page'
-        if mt.isAnonymousUser():
-            return self.request.RESPONSE.redirect(create_url)
 
-        member = mt.getAuthenticatedMember()
-        pc = getToolByName(self.context, 'portal_catalog')
-        res = pc.searchResults(
-            portal_type = 'collective.salesforce.fundraising.personalcampaignpage', 
-            path = '/'.join(self.context.getPhysicalPath()),
-            Creator = member.getId()
-        )
-
-        # If the user already has a personal campaign, redirect them to their campaign
-        if res:
-            return self.request.RESPONSE.redirect(res[0].getURL())
+        existing_campaign_url = self.context.get_personal_fundraising_campaign_url()
+        if existing_campaign_url:
+            return self.request.RESPONSE.redirect(existing_campaign_url)
 
         # If not, redirect them to the create form
         return self.request.RESPONSE.redirect(create_url)
+
 
 class PersonalCampaignPagesList(grok.View):
     grok.context(IFundraisingCampaign)

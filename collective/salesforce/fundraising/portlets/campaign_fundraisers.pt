@@ -1,6 +1,8 @@
 <dl class="portlet portletCampaignFundraisers"
     i18n:domain="collective.salesforce.fundraising"
-    tal:define="create_link view/context/create_personal_campaign_page_link;
+    tal:define="existing_campaign view/context/get_personal_fundraising_campaign_url|nothing;
+                create_link python:existing_campaign or view.context.absolute_url() + '/@@create-or-view-personal-campaign';
+                create_text python:'View My Fundraiser' if existing_campaign else 'Create My Campaign';
                 campaign python: view.context.get_fundraising_campaign();
                 fundraisers_count view/context/personal_fundraisers_count;
                 fundraisers_raised python: '$%i' % (int(campaign.donations_total) - int(campaign.direct_donations_total));
@@ -33,11 +35,15 @@
       <div class="visualClear"></div>
     </dd>
 
-    <dd class="portletItem campaign-fundraisers-join">
+    <dd class="portletItem campaign-fundraisers-join"
+        tal:define="existing_campaign context/get_personal_fundraising_campaign_url|nothing">
       <span class="login-required" tal:omit-tag="not: view/is_anonymous">
-      <a class="button button-create-personal-campaign" href="#" tal:attributes="href create_link">Create My Campaign</a>
-      <div class="visualClear"></div>
-      <p>Create your Personal Fundraising Page to help us reach our goal.</p>
+        <a class="button button-create-personal-campaign"
+           tal:condition="existing_campaign"
+           tal:attributes="href create_link"
+           tal:content="create_text">Create My Campaign</a>
+        <div class="visualClear"></div>
+        <p>Create your Personal Fundraising Page to help us reach our goal.</p>
       </span>
     </dd>
 
