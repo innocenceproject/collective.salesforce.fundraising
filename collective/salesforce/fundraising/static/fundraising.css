@@ -1,8 +1,13 @@
-.fundraising-campaign.compact {
+.fundraising-campaign.compact,
+.share-message {
   margin-bottom: 10px;
   border-bottom: 1px dotted #ccc;
   border: 1px solid #aaa;
   min-width: 400px;
+}
+
+.share-message {
+  padding: 1em;
 }
 
 .fundraising-campaign.compact .campaign-image {
@@ -152,18 +157,21 @@ body.template-create-personal-campaign-page #edit-bar{
 .campaign-donate-form h2 {
   margin-left: 10px;
 }
-a.button-create-personal-campaign {
-  display: block;
-  float: left;
+a.button {
+  display: inline-block;
   color: black;
   background-color: #eee;
   border: 3px solid #eaeaea;
-  font-size: 19px;
   font-weight: bold;
   padding: 7px 15px;
   border-radius: 10px;
   -moz-border-radius: 10px;
   margin: 0 15px 15px 0;
+}
+a.button-create-personal-campaign {
+  display: block;
+  float: left;
+  font-size: 19px;
 }
 a.button-create-personal-campaign:hover {
   border: #ddd;

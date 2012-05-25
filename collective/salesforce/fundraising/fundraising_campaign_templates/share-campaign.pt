@@ -6,24 +6,42 @@
       i18n:domain="collective.salesforce.fundraising">
 <body>
 
-<metal:main fill-slot="content-description">
-  <metal:content-description define-macro="content-description">
-    Share This Campaign
-  </metal:content-description>
-</metal:main>
+<metal:js fill-slot="javascript_head_slot">
+<script type='text/javascript'>
+jQuery(function($) {
+  $('a.email-campaign').prepOverlay({
+    selector: '#content>*',
+    subtype: 'ajax',
+    formselector: '#form',
+    noform: 'reload'
+  });
+});
+</script>
+</metal:js>
 
-<metal:main fill-slot="content-core">
-  <metal:content-core define-macro="content-core">
+<metal:main fill-slot="content">
+  <metal:content define-macro="content">
 
-    <div class="share-campaign-wrapper">
+    <div metal:use-macro="context/global_statusmessage/macros/portal_message" />
 
-      <tal:message_loop repeat="message view/messages">
-        <tal:message content="structure message/@@view" />
-      </tal:message_loop>
+    <h1 class="documentFirstHeading">Share this campaign</h1>
+
+    <div id="content">
+
+      <p>Choose a message and promote it to your network via social media or email.</p>
+
+      <form class="share-campaign-wrapper"
+            tal:attributes="action string:${context/absolute_url}/share-campaign" method="POST">
+
+        <tal:message_loop repeat="message view/messages">
+          <tal:message content="structure message/@@view" />
+        </tal:message_loop>
+
+      </form>
 
     </div>
 
-  </metal:content-core>
+  </metal:content>
 </metal:main>
 
 </body>
