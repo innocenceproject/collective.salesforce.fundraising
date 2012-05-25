@@ -1,6 +1,7 @@
 from Products.CMFCore.utils import getToolByName
 from collective.salesforce.fundraising import logger
 
+
 def addCatalogIndexes(context):
     """
     Add indexes to portal_catalog.
@@ -27,12 +28,13 @@ def addCatalogIndexes(context):
         logger.info("Indexing new indexes %s.", ', '.join(added))
         catalog.manage_reindexIndex(ids=added)
 
+
 def import_various(context):
     """
     Import step for configuration that is not handled in xml files.
     """
     
     # Only run step if a flag file is present
-    if context.readDataFile('collective-salesforce-fundraising-various.txt') is not None:
+    if context.readDataFile('collective-salesforce-fundraising.txt') is not None:
         portal = context.getSite()
         addCatalogIndexes(portal)

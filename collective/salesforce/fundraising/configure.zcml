@@ -39,6 +39,14 @@
       provides="Products.GenericSetup.interfaces.EXTENSION"
       />
 
+  <genericsetup:importStep
+      name="collective.salesforce.fundraising_various"
+      title="collective.salesforce.fundraising various"
+      description="Various setup steps for collective.salesforce.fundraising"
+      handler="collective.salesforce.fundraising.setuphandlers.import_various">
+    <depends name="catalog"/>
+  </genericsetup:importStep>
+
   <browser:resourceDirectory
       name="collective.salesforce.fundraising.static"
       directory="static"

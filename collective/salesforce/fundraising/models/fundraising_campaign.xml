@@ -27,6 +27,7 @@
         <field name="donations_total" title="Total Raised" type="zope.schema.Int" sf:field="HierarchyAmountWonOpportunities">
             <title>Total Raised</title>
             <description>The total dollar amount raised thus far (from Amount Won Opportunities on Campaign in Salesforce)</description>
+            <default>0</default>
         </field>
         <field name="donations_count" title="Total Donations" type="zope.schema.Int" sf:field="HierarchyNumberOfWonOpportunities">
             <title>Number of Donations</title>
@@ -35,6 +36,7 @@
         <field name="direct_donations_total" title="Total Raised Directly" type="zope.schema.Int" sf:field="AmountWonOpportunities">
             <title>Direct Total Raised</title>
             <description>The total dollar amount raised thus far donated directly to this campaign</description>
+            <default>0</default>
         </field>
         <field name="direct_donations_count" title="Total Direct Donations" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
             <title>Number of Direct Donations</title>

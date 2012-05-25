@@ -47,7 +47,7 @@ class PersonalCampaignFunctionalTest(unittest.TestCase):
         browser.open('http://nohost/plone/test-campaign')
         browser.getLink('Create My Campaign').click()
         # We are redirected to log in
-        self.assertEqual('http://nohost/plone/acl_users/credentials_cookie_auth/require_login?came_from=http%3A//nohost/plone/test-campaign/%40%40create-personal-campaign-page',
+        self.assertEqual('http://nohost/plone/acl_users/credentials_cookie_auth/require_login?came_from=http%3A//nohost/plone/test-campaign/%40%40create-or-view-personal-campaign',
             browser.url)
 
         # Now we need to create a user
@@ -68,6 +68,7 @@ class PersonalCampaignFunctionalTest(unittest.TestCase):
         # Create the personal campaign
         browser.getControl('Title').value = 'My campaign'
         browser.getControl('Goal').value = '42'
+        browser.getControl(name='form.widgets.description').value = 'pitch'
         browser.getControl(name='form.widgets.personal_appeal').value = 'Please contribute.'
         browser.getControl(name='form.widgets.thank_you_message').value = 'Thank you'
         browser.handleErrors = False

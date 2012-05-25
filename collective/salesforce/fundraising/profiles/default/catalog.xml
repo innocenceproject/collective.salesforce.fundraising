@@ -1,29 +1,7 @@
 <?xml version="1.0"?>
 <object name="portal_catalog" meta_type="Plone Catalog Tool">
-
- <index name="parent_sf_id" meta_type="FieldIndex">
-  <indexed_attr value="parent_sf_id"/>
- </index>
-
- <index name="donations_total" meta_type="FieldIndex">
-  <indexed_attr value="donations_total"/>
- </index>
-
- <index name="donations_count" meta_type="FieldIndex">
-  <indexed_attr value="donations_count"/>
- </index>
-
- <index name="goal" meta_type="FieldIndex">
-  <indexed_attr value="goal"/>
- </index>
-
- <index name="percent_goal" meta_type="FieldIndex">
-  <indexed_attr value="get_percent_goal"/>
- </index>
-
  <column value="donations_total"/>
  <column value="donations_count"/>
  <column value="goal"/>
  <column value="get_percent_goal"/>
-
 </object>
