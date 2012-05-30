@@ -10,8 +10,6 @@ from zope.interface import alsoProvides
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
 
-from zope.component import getUtility
-from plone.registry.interfaces import IRegistry
 from plone.z3cform.interfaces import IWrappedForm
 
 from plone.app.textfield import RichText
@@ -21,7 +19,7 @@ from plone.namedfile.interfaces import IImageScaleTraversable
 from Products.CMFCore.utils import getToolByName
 
 from collective.salesforce.fundraising import MessageFactory as _
-from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
+from collective.salesforce.fundraising.utils import get_settings
 
 # Interface class; used to define content-type schema.
 
@@ -61,30 +59,46 @@ class IHideDonationForm(Interface):
 
 @form.default_value(field=IFundraisingCampaign['thank_you_message'])
 def thankYouDefaultValue(data):
-    registry = getUtility(IRegistry)
-    settings = registry.forInterface(IFundraisingSettings)
-    return settings.default_thank_you_message
+    return get_settings().default_thank_you_message
 
 @form.default_value(field=IFundraisingCampaign['default_personal_appeal'])
 def defaultPersonalAppealDefaultValue(data):
-    registry = getUtility(IRegistry)
-    settings = registry.forInterface(IFundraisingSettings)
-    return settings.default_personal_appeal
+    return get_settings().default_personal_appeal
 
 @form.default_value(field=IFundraisingCampaign['default_personal_thank_you'])
 def defaultPersonalThankYouDefaultValue(data):
-    registry = getUtility(IRegistry)
-    settings = registry.forInterface(IFundraisingSettings)
-    return settings.default_personal_thank_you_message
+    return get_settings().default_personal_thank_you_message
 
-# This is necessary because collective.salesforce.content never loads the
-# form and thus never loads the default values on creation
+
 @grok.subscribe(IFundraisingCampaign, IObjectAddedEvent)
-def fillDefaultValues(campaign, event):
+def handleFundraisingCampaignCreated(campaign, event):
+    # This is necessary because collective.salesforce.content never loads the
+    # form and thus never loads the default values on creation
     if not campaign.thank_you_message:
         campaign.thank_you_message = thankYouDefaultValue(None)
         campaign.default_personal_appeal = defaultPersonalAppealDefaultValue(None)
         campaign.default_personal_thank_you = defaultPersonalThankYouDefaultValue(None)
+
+    # Add campaign in Salesforce if it doesn't have a Salesforce id yet
+    if getattr(campaign, 'sf_object_id', None) is None:
+        sfbc = getToolByName(campaign, 'portal_salesforcebaseconnector')
+        res = sfbc.create({
+            'type': 'Campaign',
+            'Type': 'Fundraising',
+            'Name': campaign.title,
+            'Public_Name__c': campaign.title,
+            'Description': campaign.description,
+            'Status': campaign.status,
+            'ExpectedRevenue': campaign.goal,
+            'Allow_Personal__c': campaign.allow_personal,
+            'StartDate': campaign.date_start.isoformat(),
+            'EndDate': campaign.date_end.isoformat(),
+            })
+        if not res[0]['success']:
+            raise Exception(res[0]['errors'][0]['message'])
+        campaign.sf_object_id = res[0]['id']
+        campaign.reindexObject(idxs=['sf_object_id'])
+
 
 class FundraisingCampaignPage(object):
     def get_percent_goal(self):
@@ -139,10 +153,13 @@ class FundraisingCampaignPage(object):
     def populate_form_embed(self):
         if self.form_embed:
             form_embed = self.form_embed
-            form_embed = form_embed.replace('{{CAMPAIGN_ID}}', getattr(self, 'sf_object_id', ''))
-            form_embed = form_embed.replace('{{SOURCE_CAMPAIGN}}', self.get_source_campaign())
-            form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
-            return form_embed
+        else:
+            form_embed = get_settings().default_form_embed
+
+        form_embed = form_embed.replace('{{CAMPAIGN_ID}}', getattr(self, 'sf_object_id', ''))
+        form_embed = form_embed.replace('{{SOURCE_CAMPAIGN}}', self.get_source_campaign())
+        form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
+        return form_embed
 
     def can_create_donor_quote(self):
         # FIXME: make sure the donor just donated (check session) and that they don't already have a quote for this campaign

@@ -2,7 +2,6 @@ import os, random, string
 import urllib2
 import simplejson
 from zope.interface import Interface
-from zope.component import getUtility
 from zope.event import notify
 from five import grok
 from Acquisition import aq_inner
@@ -12,9 +11,8 @@ from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.interfaces import IPloneSiteRoot
 from Products.statusmessages.interfaces import IStatusMessage
 from plone.app.layout.viewlets.interfaces import IHtmlHead
-from plone.registry.interfaces import IRegistry
-from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
 from collective.salesforce.fundraising.interfaces import MemberCreated
+from collective.salesforce.fundraising.utils import get_settings
 
 JANRAIN_API_BASE_URL = 'https://rpxnow.com/api/v2'
 
@@ -117,8 +115,7 @@ class RpxHeadViewlet(grok.Viewlet):
 
     def render(self):
         # Get the site id and app_id from registry
-        registry = getUtility(IRegistry)
-        settings = registry.forInterface(IFundraisingSettings)
+        settings = get_settings()
         janrain_site_id = settings.janrain_site_id
         janrain_sharing_app_id = settings.janrain_sharing_app_id
 
@@ -148,8 +145,7 @@ class RpxPostLogin(grok.View):
 
     def render(self):
         # Get the api key from registry
-        registry = getUtility(IRegistry)
-        settings = registry.forInterface(IFundraisingSettings)
+        settings = get_settings()
         janrain_api_key = settings.janrain_api_key
 
         if not janrain_api_key:

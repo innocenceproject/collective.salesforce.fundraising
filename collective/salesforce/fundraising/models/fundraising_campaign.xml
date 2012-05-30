@@ -42,13 +42,15 @@
             <title>Number of Direct Donations</title>
             <description>Total count of donations made directly to this campaign</description>
         </field>
-        <field name="form_embed" title="Form Embed Code" type="zope.schema.Text" sf:field="Form_Embed_Code__c">
+        <field name="form_embed" title="Form Embed Code" type="zope.schema.Text">
             <title>Form Embed Code</title>
-            <description>The embed code for the donation form used by this campaign</description>
+            <description>The embed code for the donation form used by this campaign. If not specified, the sitewide default will be used.</description>
+            <required>False</required>
         </field>
-        <field name="form_embed_recurring" title="Form Embed Code" type="zope.schema.Text" sf:field="Recurring_Form_Embed_Code__c">
+        <field name="form_embed_recurring" title="Form Embed Code" type="zope.schema.Text">
             <title>Recurring Form Embed Code</title>
-            <description>The embed code for the recurring donation form used by this campaign</description>
+            <description>The embed code for the recurring donation form used by this campaign. If not specified, the sitewide default will be used.</description>
+            <required>False</required>
         </field>
         <field name="allow_personal" title="Allow Personal Fundraising?" type="zope.schema.Bool" sf:field="Allow_Personal__c">
             <title>Allow Personal?</title>

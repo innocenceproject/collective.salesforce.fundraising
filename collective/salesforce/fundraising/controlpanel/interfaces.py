@@ -14,6 +14,14 @@ class IFundraisingSettings(Interface):
     configuration registry and obtainable via plone.registry.
     """
 
+    default_form_embed = schema.Text(
+        title=_(u'Default Form Embed Code'),
+        description=_(u'The markup to display a one-time donation form from some external service. '
+            u'This is a default which can be overridden for a particular fundraising campaign. '
+            u'CAMPAIGN_ID, SOURCE_CAMPAIGN, and SOURCE_URL can be used as placeholders that will '
+            u'be filled in automatically.'),
+    )
+
     default_thank_you_message = schema.Text(
         title=_(u"Default Thank You Message"),
         description=_(u"The default Thank You Message for Fundraising Campaigns"),
