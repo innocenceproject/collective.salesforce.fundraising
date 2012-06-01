@@ -16,7 +16,7 @@ from collective.salesforce.fundraising import MessageFactory as _
 from zope.i18nmessageid import MessageFactory
 __ = MessageFactory("plone")
 
-class ICampaignGoalPortlet(IPortletDataProvider):
+class ICampaignMediaPortlet(IPortletDataProvider):
     """A portlet
 
     It inherits from IPortletDataProvider because for this portlet, the
@@ -41,7 +41,7 @@ class Assignment(base.Assignment):
     with columns.
     """
 
-    implements(ICampaignGoalPortlet)
+    implements(ICampaignMediaPortlet)
 
     # TODO: Set default values for the configurable parameters here
 
@@ -59,7 +59,7 @@ class Assignment(base.Assignment):
         """This property is used to give the title of the portlet in the
         "manage portlets" screen.
         """
-        return __(u"Campaign Goal")
+        return __(u"What People Are Saying")
 
 
 class Renderer(base.Renderer):
@@ -70,7 +70,7 @@ class Renderer(base.Renderer):
     of this class. Other methods can be added and referenced in the template.
     """
 
-    render = ViewPageTemplateFile('campaign_goal.pt')
+    render = ViewPageTemplateFile('campaign_media.pt')
 
     def addcommas(self, num):
         locale.setlocale(locale.LC_ALL, '')
@@ -87,7 +87,7 @@ class AddForm(base.AddForm):
     zope.formlib which fields to display. The create() method actually
     constructs the assignment that is being added.
     """
-    form_fields = form.Fields(ICampaignGoalPortlet)
+    form_fields = form.Fields(ICampaignMediaPortlet)
 
     def create(self, data):
         return Assignment(**data)
@@ -103,4 +103,4 @@ class EditForm(base.EditForm):
     This is registered with configure.zcml. The form_fields variable tells
     zope.formlib which fields to display.
     """
-    form_fields = form.Fields(ICampaignGoalPortlet)
+    form_fields = form.Fields(ICampaignMediaPortlet)

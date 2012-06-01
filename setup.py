@@ -34,6 +34,7 @@ setup(name='collective.salesforce.fundraising',
           'collective.salesforce.content',
           'collective.pluggablelogin',
           'plone.app.registry',
+          'collective.oembed',
           # -*- Extra requirements: -*-
       ],
       extras_require={

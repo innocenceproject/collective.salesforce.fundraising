@@ -24,8 +24,8 @@
    />
 
    <portlet
-     addview="collective.salesforce.fundraising.portlets.CampaignGoal"
-     title="Campaign Goal"
+     addview="collective.salesforce.fundraising.portlets.CampaignStatus"
+     title="Campaign Status"
      description=""
      i18n:attributes="title; description"
    />
@@ -38,14 +38,25 @@
    />
 
    <assignment
-     type="collective.salesforce.fundraising.portlets.CampaignTimeline"
+     type="collective.salesforce.fundraising.portlets.CampaignMedia"
      manager="plone.rightcolumn"
      category="content_type"
      key="collective.salesforce.fundraising.fundraisingcampaign"
-     name="campaign.timeline.portlet"
+     name="campaign.media.portlet"
      insert-before="*"
      >
-     <property name="title">Timeline</property>
+     <property name="title">Campaign Media</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignStatus"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.fundraisingcampaign"
+     name="campaign.status.portlet"
+     insert-after="campaign.media.portlet"
+     >
+     <property name="title">Our Progress</property>
    </assignment> 
 
    <assignment
@@ -54,31 +65,31 @@
      category="content_type"
      key="collective.salesforce.fundraising.fundraisingcampaign"
      name="campaign.fundraisers.portlet"
-     insert-before="*"
+     insert-after="campaign.status.portlet"
      >
      <property name="title">Fundraisers</property>
    </assignment> 
 
    <assignment
-     type="collective.salesforce.fundraising.portlets.CampaignGoal"
-     manager="plone.rightcolumn"
-     category="content_type"
-     key="collective.salesforce.fundraising.fundraisingcampaign"
-     name="campaign.goal.portlet"
-     insert-before="*"
-     >
-     <property name="title">Goal</property>
-   </assignment> 
-
-   <assignment
-     type="collective.salesforce.fundraising.portlets.CampaignTimeline"
+     type="collective.salesforce.fundraising.portlets.CampaignStatus"
      manager="plone.rightcolumn"
      category="content_type"
      key="collective.salesforce.fundraising.personalcampaignpage"
-     name="campaign.timeline.portlet"
+     name="campaign.status.portlet"
      insert-before="*"
      >
-     <property name="title">Timeline</property>
+     <property name="title">Our Progress</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignMedia"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.personalcampaignpage"
+     name="campaign.media.portlet"
+     insert-before="*"
+     >
+     <property name="title">Campaign Media</property>
    </assignment> 
 
    <assignment
@@ -87,21 +98,9 @@
      category="content_type"
      key="collective.salesforce.fundraising.personalcampaignpage"
      name="campaign.fundraisers.portlet"
-     insert-before="*"
+     insert-after="campaign.status.portlet"
      >
      <property name="title">Fundraisers</property>
    </assignment> 
-
-   <assignment
-     type="collective.salesforce.fundraising.portlets.CampaignGoal"
-     manager="plone.rightcolumn"
-     category="content_type"
-     key="collective.salesforce.fundraising.personalcampaignpage"
-     name="campaign.goal.portlet"
-     insert-before="*"
-     >
-     <property name="title">Goal</property>
-   </assignment> 
-
 
 </portlets>

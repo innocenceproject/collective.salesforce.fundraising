@@ -11,14 +11,12 @@ from zope.formlib import form
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from Products.CMFCore.utils import getToolByName
 
-from plone.app.textfield import RichText
-
 from collective.salesforce.fundraising import MessageFactory as _
 
 from zope.i18nmessageid import MessageFactory
 __ = MessageFactory("plone")
 
-class ICampaignDonatePortlet(IPortletDataProvider):
+class ICampaignStatusPortlet(IPortletDataProvider):
     """A portlet
 
     It inherits from IPortletDataProvider because for this portlet, the
@@ -34,22 +32,6 @@ class ICampaignDonatePortlet(IPortletDataProvider):
     # some_field = schema.TextLine(title=_(u"Some field"),
     #                              description=_(u"A field to use"),
     #                              required=True)
-    button_text = schema.TextLine(
-        title=_(u"Button Text"),
-        description=_(u"The text shown on the donate button"),
-        default=_(u'Donate Now'),
-        required=True,
-    )
-
-    content = RichText(
-        title=_(u"Content"),
-        description=_(u"Any additional content you would like to display"),
-    )
-
-    button_above_content = schema.Bool(
-        title=_(u""),
-        description=_(u""),
-    )
 
 
 class Assignment(base.Assignment):
@@ -59,7 +41,7 @@ class Assignment(base.Assignment):
     with columns.
     """
 
-    implements(ICampaignDonatePortlet)
+    implements(ICampaignStatusPortlet)
 
     # TODO: Set default values for the configurable parameters here
 
@@ -77,7 +59,7 @@ class Assignment(base.Assignment):
         """This property is used to give the title of the portlet in the
         "manage portlets" screen.
         """
-        return __(u"Donate")
+        return __(u"Our Progress")
 
 
 class Renderer(base.Renderer):
@@ -88,7 +70,7 @@ class Renderer(base.Renderer):
     of this class. Other methods can be added and referenced in the template.
     """
 
-    render = ViewPageTemplateFile('campaign_donate.pt')
+    render = ViewPageTemplateFile('campaign_status.pt')
 
     def addcommas(self, num):
         locale.setlocale(locale.LC_ALL, '')
@@ -105,8 +87,7 @@ class AddForm(base.AddForm):
     zope.formlib which fields to display. The create() method actually
     constructs the assignment that is being added.
     """
-    form_fields = form.Fields(ICampaignDonatePortlet)
-
+    form_fields = form.Fields(ICampaignStatusPortlet)
 
     def create(self, data):
         return Assignment(**data)
@@ -122,4 +103,4 @@ class EditForm(base.EditForm):
     This is registered with configure.zcml. The form_fields variable tells
     zope.formlib which fields to display.
     """
-    form_fields = form.Fields(ICampaignDonatePortlet)
+    form_fields = form.Fields(ICampaignStatusPortlet)

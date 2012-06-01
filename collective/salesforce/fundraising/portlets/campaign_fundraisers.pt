@@ -13,38 +13,28 @@
       <span class="portletTopLeft"></span>
       <span>
         <a href="#" tal:attributes="href view_all" tal:content="view/data/title">
-          Fundraisers
+          Get Involved
         </a>
       </span>
       <span class="portletTopRight"></span>
     </dt>
 
-    <dd class="portletItem campaign-fundraisers-count" tal:condition="fundraisers_count">
-      <a class="count-link" href="#" tal:attributes="href view_all">
-        <div class="count-large">
-          <strong tal:content="fundraisers_count">138</strong>
-          <span class="discreet">Personal Fundraisers</span>
-        </div>
-      </a>
-      <a class="count-link" href="#" tal:attributes="href view_all">
-        <div class="count-large">
-          <strong tal:content="fundraisers_raised">138</strong>
-          <span class="discreet">Amount Raised</span>
-        </div>
-      </a>
-      <div class="visualClear"></div>
-    </dd>
+    <dd class="portletItem">
+      <tal:if_count condition="fundraisers_count">
+      <a href="#" tal:attributes="href view_all"><span class="count" tal:content="fundraisers_count">17</span></a>
+      <span class="count-text">people have started fundraisers to help us</span>
+      </tal:if_count>
+      <tal:if_not_count condition="not: fundraisers_count">
+        <span>Be the first to create your own fundraiser to help us</span>
+      </tal:if_not_count>
+      <div class="clear"></div>
 
-    <dd class="portletItem campaign-fundraisers-join"
-        tal:define="existing_campaign context/get_personal_fundraising_campaign_url|nothing">
-      <span class="login-required" tal:omit-tag="not: view/is_anonymous">
-        <a class="button button-create-personal-campaign"
-           tal:condition="existing_campaign"
+      <a class="button button-create-personal-campaign" href="#"
+           tal:condition="python: view.context.allow_personal or existing_campaign"
            tal:attributes="href create_link"
            tal:content="create_text">Create My Campaign</a>
-        <div class="visualClear"></div>
-        <p>Create your Personal Fundraising Page to help us reach our goal.</p>
-      </span>
+
+      <div class="clear"></div>
     </dd>
 
     <dd class="portletFooter">

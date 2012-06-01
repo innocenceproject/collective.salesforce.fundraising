@@ -10,25 +10,25 @@
     <!-- -*- extra stuff goes here -*- -->
 
   <plone:portlet
-      name="collective.salesforce.fundraising.portlets.CampaignGoal"
-      interface=".campaign_goal.ICampaignGoalPortlet"
-      assignment=".campaign_goal.Assignment"
+      name="collective.salesforce.fundraising.portlets.CampaignMedia"
+      interface=".campaign_media.ICampaignMediaPortlet"
+      assignment=".campaign_media.Assignment"
       view_permission="zope2.View"
       edit_permission="cmf.ManagePortal"
-      renderer=".campaign_goal.Renderer"
-      addview=".campaign_goal.AddForm"
-      editview=".campaign_goal.EditForm"
+      renderer=".campaign_media.Renderer"
+      addview=".campaign_media.AddForm"
+      editview=".campaign_media.EditForm"
       />
 
   <plone:portlet
-      name="collective.salesforce.fundraising.portlets.CampaignTimeline"
-      interface=".campaign_timeline.ICampaignTimelinePortlet"
-      assignment=".campaign_timeline.Assignment"
+      name="collective.salesforce.fundraising.portlets.CampaignStatus"
+      interface=".campaign_status.ICampaignStatusPortlet"
+      assignment=".campaign_status.Assignment"
       view_permission="zope2.View"
       edit_permission="cmf.ManagePortal"
-      renderer=".campaign_timeline.Renderer"
-      addview=".campaign_timeline.AddForm"
-      editview=".campaign_timeline.EditForm"
+      renderer=".campaign_status.Renderer"
+      addview=".campaign_status.AddForm"
+      editview=".campaign_status.EditForm"
       />
 
   <plone:portlet

@@ -1,0 +1,55 @@
+<dl class="portlet portletCampaignStatus"
+    i18n:domain="collective.salesforce.fundraising"
+    tal:define="goal view/context/goal;
+                goal_percent view/context/get_percent_goal;
+                raised view/context/donations_total;
+                days_remaining view/context/get_days_remaining;
+                timeline_percent view/context/get_percent_timeline;
+                donors view/context/donations_count;
+                show_goal python: goal_percent > 3;
+                show_timeline python: days_remaining >= 0 and days_remaining < 90;
+                show_portlet python: show_goal or show_timeline;
+                addcommas nocall: view/addcommas;"
+    tal:condition="show_portlet">
+
+    <dt class="portletHeader">
+        <span class="portletTopLeft"></span>
+        <span>
+           Our Progress
+        </span>
+        <span class="portletTopRight"></span>
+    </dt>
+
+    <dd class="portletItem" tal:condition="show_goal">
+      <span class="campaign-goal-text">Help us reach our goal of <strong tal:content="python: '$%s' % addcommas(goal)">$10,000</strong></span>
+      <div class="progress-bar">
+        <span class="value" tal:content="goal_percent">56</span>
+      </div>
+      <span class="campaign-raised-text">We've raised <strong tal:content="python: '$%s' % addcommas(raised)">$5,675</strong> so far!</span>
+    </dd>
+
+    <dd class="portletItem" tal:condition="show_timeline">
+      <span class="campaign-days-left-text"><strong tal:content="days_remaining">26</strong> days left to reach our goal!</span>
+      <div class="progress-bar">
+        <span class="value" tal:content="timeline_percent">23</span>
+      </div>
+      <span class="campaign-start-date" tal:content="python: view.context.date_start.strftime('%B %d')">May 1</span>
+      <span class="campaign-end-date" tal:content="python: view.context.date_end.strftime('%B %d')">June 24</span>
+    </dd>
+
+    <dd class="portletItem" tal:condition="donors">
+      <div class="count">
+        <span class="value" tal:content="donors">102</span>
+        <h5>Donors</h5>
+      </div>
+    </dd>
+
+    <dd class="portletFooter">
+        <span class="portletBottomLeft"></span>
+        <span>
+        </span>
+        <span class="portletBottomRight"></span>
+    </dd>
+
+</dl>
+<div class="visualClear"></div>

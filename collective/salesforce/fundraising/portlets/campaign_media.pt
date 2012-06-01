@@ -1,0 +1,29 @@
+<dl class="portlet portletCampaignStatus"
+    i18n:domain="collective.salesforce.fundraising"
+    tal:define="image view/context/image;
+                external_media_url view/context/external_media_url"
+    tal:condition="python: image or external_media_url">
+
+    <dt class="portletHeader">
+        <span class="portletTopLeft"></span>
+        <span>
+           Campaign Media
+        </span>
+        <span class="portletTopRight"></span>
+    </dt>
+
+    <dd class="portletItem">
+      <tal:if_image condition="view/context/image/size">
+      <img src="" tal:attributes="src python: view.context.absolute_url() + '/@@images/image/mini'" />
+      </tal:if_image>
+    </dd>
+
+    <dd class="portletFooter">
+        <span class="portletBottomLeft"></span>
+        <span>
+        </span>
+        <span class="portletBottomRight"></span>
+    </dd>
+
+</dl>
+<div class="visualClear"></div>

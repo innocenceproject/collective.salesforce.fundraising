@@ -7,13 +7,6 @@
       i18n:domain="collective.salesforce.fundraising">
 <body>
 
-<metal:main fill-slot="content-description">
-  <metal:content-description define-macro="content-description">
-    <img class="image-right" src="@@images/image/mini" />
-    <div class="documentDescription" tal:content="context/description">Description Goes Here</div>
-  </metal:content-description>
-</metal:main>
-
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">
 

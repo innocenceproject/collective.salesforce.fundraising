@@ -151,9 +151,8 @@ class FundraisingCampaignPage(object):
         return self.absolute_url()
 
     def populate_form_embed(self):
-        if self.form_embed:
-            form_embed = self.form_embed
-        else:
+        form_embed = getattr(self, 'form_embed', None)
+        if not form_embed:
             form_embed = get_settings().default_form_embed
 
         form_embed = form_embed.replace('{{CAMPAIGN_ID}}', getattr(self, 'sf_object_id', ''))
