@@ -49,6 +49,7 @@ def handleNewAccount(event):
         sfbc = getToolByName(site, 'portal_salesforcebaseconnector')
         first, last = split_name(member.getProperty('fullname'))
         email = member.getProperty('email')
+        
         res = sfbc.upsert('Email', {
             'type': 'Contact',
             'FirstName': first,

@@ -5,5 +5,7 @@
         <dependency>profile-collective.salesforce.content:default</dependency>
         <dependency>profile-collective.pluggablelogin:default</dependency>
         <dependency>profile-plone.app.registry:default</dependency>
+        <dependency>profile-collective.oembed:default</dependency>
+        <dependency>profile-dexterity.membrane:default</dependency>
     </dependencies>
 </metadata>

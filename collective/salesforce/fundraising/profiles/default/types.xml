@@ -8,6 +8,7 @@
   -->
 <object name="portal_types" meta_type="Plone Types Tool">
   <!-- -*- extra stuff goes here -*- -->
+  <object name="collective.salesforce.fundraising.person" meta_type="Dexterity FTI" />
   <object name="collective.salesforce.fundraising.fundraisingcampaign" meta_type="Dexterity FTI" />
   <object name="collective.salesforce.fundraising.personalcampaignpage" meta_type="Dexterity FTI" />
   <object name="collective.salesforce.fundraising.donorquote" meta_type="Dexterity FTI" />

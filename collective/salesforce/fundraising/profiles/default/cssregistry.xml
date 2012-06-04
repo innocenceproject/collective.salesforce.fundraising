@@ -1,5 +1,9 @@
 <object name="portal_css" meta_type="CSS Registry">
     <stylesheet
+        id="++resource++collective.salesforce.fundraising.static/recurly-theme/recurly.css"
+        cacheable="True" compression="safe" cookable="True"
+        enabled="True" expression=""  insert-after="*"/>
+    <stylesheet
         id="++resource++collective.salesforce.fundraising.static/fundraising.css"
         cacheable="True" compression="safe" cookable="True"
         enabled="True" expression=""  insert-after="*"/>

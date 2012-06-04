@@ -1,0 +1,34 @@
+    <form method="post" action="" id="donation-form" class="donation-form-recurly">
+      <fieldset>
+
+        <div class="field compound" id="field-donation-amount">
+
+          <label class="field-label" for="amount"><span class="required">(required)</span> Select an Amount</label>
+
+          <div id="field-amount">
+            <label for="amount">or Enter an Amount</label>
+            <label for="amount" class="currency">$</label>
+            <input name="x_amount" type="text" size="6" class="validate[required,min[5]]" />
+            <label for="amount">($5 minimum)</label>
+          </div>
+
+          <div class="options">
+
+            <div class="option" tal:repeat="level view/levels">
+              <input id="donation-level-xx" type="radio" name="donation-level" value="xx"
+                tal:attributes="value level; id string:donation-level-${level}" />
+              <label for="donation-level-xx" tal:attributes="for string:donation-level-${level}" tal:content="level">xx</label>
+            </div>
+
+            <div class="clear"></div>
+          </div>
+
+        </div>
+
+      </fieldset>    
+    </form>
+
+    <div id="recurly-subscribe" class="after-amount"></div>
+
+    <script type="text/javascript" tal:content="structure view/recurly_js"></script>
+

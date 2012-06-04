@@ -12,6 +12,20 @@
 
     <div class="campaign-body" tal:content="structure context/body/output|nothing" />
 
+    <div class="donation-form-wrapper">
+      <ul class="tabs">
+        <li tal:repeat="tab view/donation_form_tabs" tal:content="tab/label">
+          One-time donation
+        </li>
+      </ul>
+    
+      <div class="panels"> 
+        <div class="panel" tal:repeat="tab view/donation_form_tabs" tal:content="structure tab/html">
+          FORM PANEL GOES HERE
+        </div> 
+      </div>
+    </div>
+
   </metal:content-core>
 </metal:main>
 

@@ -35,6 +35,9 @@ setup(name='collective.salesforce.fundraising',
           'collective.pluggablelogin',
           'plone.app.registry',
           'collective.oembed',
+          'iso8601',
+          'recurly',
+          'dexterity.membrane',
           # -*- Extra requirements: -*-
       ],
       extras_require={

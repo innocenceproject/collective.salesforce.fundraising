@@ -1,0 +1,52 @@
+<?xml version="1.0" ?>
+<model xmlns="http://namespaces.plone.org/supermodel/schema"
+       xmlns:sf="http://namespaces.plone.org/salesforce/schema"
+       xmlns:form="http://namespaces.plone.org/supermodel/form">
+    
+    <schema sf:object="Contact" sf:criteria="Online_Fundraising_User__c = true" sf:container="/people">
+        <field name="first_name" title="" type="zope.schema.TextLine" sf:field="FirstName">
+            <title>First Name</title>
+            <required>True</required>
+        </field>
+        <field name="last_name" title="" type="zope.schema.TextLine" sf:field="LastName">
+            <title>Last Name</title>
+            <required>True</required>
+        </field>
+        <field name="email" title="" type="zope.schema.TextLine" sf:field="Email">
+            <title>Email Address</title>
+            <required>True</required>
+        </field>
+        <field name="address" title="" type="zope.schema.TextLine" sf:field="MailingStreet">
+            <title>Street Address</title>
+            <required>False</required>
+        </field>
+        <field name="city" title="" type="zope.schema.TextLine" sf:field="MailingCity">
+            <title>City</title>
+            <required>False</required>
+        </field>
+        <field name="state" title="" type="zope.schema.TextLine" sf:field="MailingState">
+            <title>State</title>
+            <required>False</required>
+        </field>
+        <field name="zip" title="" type="zope.schema.TextLine" sf:field="MailingPostalCode">
+            <title>Zip</title>
+            <required>False</required>
+        </field>
+        <field name="country" title="" type="zope.schema.TextLine" sf:field="MailingCountry">
+            <title>Country</title>
+            <required>False</required>
+        </field>
+
+        <field name="portrait" type="plone.namedfile.field.NamedBlobImage">
+            <title>Portrait</title>
+            <description>The photo used to identify you on the site</description>
+            <required>False</required>
+        </field>
+
+        <field name="gender" title="" type="zope.schema.TextLine" sf:field="Gender__c">
+            <title>Gender</title>
+            <required>False</required>
+        </field>
+    </schema>
+    
+</model>

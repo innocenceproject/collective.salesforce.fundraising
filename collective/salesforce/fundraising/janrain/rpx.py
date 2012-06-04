@@ -13,6 +13,10 @@ from Products.statusmessages.interfaces import IStatusMessage
 from plone.app.layout.viewlets.interfaces import IHtmlHead
 from collective.salesforce.fundraising.interfaces import MemberCreated
 from collective.salesforce.fundraising.utils import get_settings
+from dexterity.membrane.membrane_helpers import get_brains_for_email
+from plone.dexterity.utils import createContentInContainer
+from zope.app.component.hooks import getSite
+from plone.namedfile import NamedBlobImage
 
 JANRAIN_API_BASE_URL = 'https://rpxnow.com/api/v2'
 
@@ -163,40 +167,79 @@ class RpxPostLogin(grok.View):
             token,
         )
         
+        if settings.janrain_use_extended_profile:
+            auth_info_url = auth_info_url + '&extended=true'
+        
         resp = urllib2.urlopen(auth_info_url)
         auth_info = simplejson.loads(resp.read())
 
     
         # See if a user already exists for the profile's email
-        mtool = getToolByName(self.context, 'portal_membership')
-        email = auth_info['profile']['email']
-        member = None
-        if email:
-            member = mtool.getMemberById(email)
-       
-        # If no user exists, create one
-        if member:
-            # Authenticate the user
-            newSecurityManager(None, member.getUser())
-            mtool.loginUser()    
+        #email = auth_info['profile']['email']
+        #member = None
+        #if email:
+            #member = mtool.getMemberById(email)
 
-        else:
-            # Create the member
-            rtool = getToolByName(self.context, 'portal_registration')
-            member = rtool.addMember(
-                email, 
-                GenPasswd(), 
-                properties={
-                    'username': email.lower(),
-                    'fullname': auth_info['profile']['name']['formatted'], 
-                    'email': email.lower(),
-                },
+        # See if user already exists using dexterity.membrane
+        profile = auth_info.get('profile',{})
+
+        email = profile.get('verifiedEmail', None)
+        if not email:
+            email = profile.get('email', None)
+        if not email:
+            raise AttributeError('No email provided from social profile, unable to create account')
+
+        res = get_brains_for_email(self.context, email, self.request)
+        if not res:
+            # create new Person if no existing Person was found with the same email
+            name = profile.get('name',{})
+            address = profile.get('address',{})
+            if not address:
+                addresses = profile.get('addresses', [])
+                if addresses:
+                    address = addresses[0]
+        
+            data = {
+                'first_name': name.get('givenName', None),
+                'last_name': name.get('familyName', None),
+                'email': email,
+                'street_address': address.get('streetAddress', None),
+                'city': address.get('locality', None),
+                'state': address.get('region', None),
+                'zip': address.get('postalCode', None),
+                'country': address.get('country', None),
+                'gender': profile.get('gender', None),
+            }
+
+            # Create the user
+            people_container = getattr(getSite(), 'people')
+            person = createContentInContainer(
+                people_container,
+                'collective.salesforce.fundraising.person',
+                checkConstraints=False,
+                **data
             )
 
-            # Raise the MemberCreated event to trigger SF sync and 
-            # auto log the user in
-            notify(MemberCreated(member))  
+        # or use the existing Person if found
+        else:
+            person = res[0].getObject()
+            
+        # Authenticate the user
+        mtool = getToolByName(self.context, 'portal_membership')
+        acl = getToolByName(self.context, 'acl_users')
+        newSecurityManager(None, acl.getUser(email))
+        mtool.loginUser()
 
+        # Set the photo
+        photo = profile.get('photo', None)
+        if not photo:
+            photos = profile.get('photos',[])
+            if photos:
+                photo = photos[0]
+        if photo and (not person.portrait or not person.portrait.size):
+            img_data = urllib2.urlopen(photo).read()
+            person.portrait = NamedBlobImage(img_data)
+       
         # Set a status message informing the user they are logged in
         IStatusMessage(self.request).add(u'You are now logged in.')
         

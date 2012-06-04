@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<object name="portal_workflow">
+  <object name="fundraising_person_workflow" meta_type="Workflow" />
+  <bindings>
+    <type type_id="collective.salesforce.fundraising.person">
+      <bound-workflow workflow_id="fundraising_person_workflow" />
+    </type>
+  </bindings>
+</object>

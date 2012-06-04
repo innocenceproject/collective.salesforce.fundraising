@@ -1,0 +1,127 @@
+    <form method="post" action="https://secure.authorize.net/gateway/transact.dll" id="donation-form" class="donation-form-authnet-dpm">
+      <input type="hidden" name="x_type" value="AUTH_CAPTURE" />
+      <input type="hidden" name="x_description" value="Donation" />
+      <input type="hidden" name="x_login" value="" />
+      <input type="hidden" name="x_fp_hash" value="" />
+      <input type="hidden" name="x_fp_sequence" value="" tal:attributes="value view/sequence" />
+      <input type="hidden" name="x_fp_timestamp" value="" tal:attributes="value view/timestamp" />
+
+      <fieldset>
+
+        <div class="field radio-tabs">
+          <input id="recurring-billing-no" type="radio" name="x_recurring_billing" value="NO" checked="checked" />
+          <label for="recurring-billing-no">One Time</label>
+          <input id="recurring-billing-no" type="radio" name="x_recurring_billing" value="YES" />
+          <label for="recurring-billing-no">Monthly</label>
+        </div>
+
+        <div class="field compound" id="field-donation-amount">
+    
+          <label class="field-label" for="amount"><span class="required">(required)</span> Select an Amount</label>
+   
+          <div id="field-amount">
+            <label for="amount">or Enter an Amount</label>
+            <label for="amount" class="currency">$</label>
+            <input name="x_amount" type="text" size="6" class="validate[required,min[5]]" />
+            <label for="amount">($5 minimum)</label>
+          </div>
+  
+          <div class="options">
+
+            <div class="option" tal:repeat="level view/levels">
+              <input id="donation-level-xx" type="radio" name="donation-level" value="xx"
+                tal:attributes="value level; id string:donation-level-${level}" />
+              <label for="donation-level-xx" tal:attributes="for string:donation-level-${level}" tal:content="level">xx</label>
+            </div>
+    
+            <div class="clear"></div>
+          </div>
+ 
+        </div>
+
+        <div class="field after-amount" id="field-name">
+          <label class="field-label"><span class="required">(required)</span> Name</label>
+          <div class="field-inputs">
+            <input type="text" name="x_first_name" class="validate[required]" placeholder="First Name" size="24" />
+            <input type="text" name="x_last_name" class="validate[required]" placeholder="Last Name" size="24" />
+          </div>
+        </div>
+
+        <div class="field after-amount" id="field-address">
+          <label class="field-label"><span class="required">(required)</span> Billing Address</label>
+          <div class="field-inputs">
+            <input type="text" name="x_address" class="validate[required]" placeholder="Street Address" size="57" />
+            <input type="text" name="x_city" class="validate[required]" placeholder="City" size="20" />
+            <select name="x_state" class="validate[required]" placeholder="State">
+              <option value="NY">New York</option>
+            </select>
+            <input type="text" name="x_zip" size="7" class="validate[required]" placeholder="Zip" />
+          </div>
+        </div>
+
+        <div class="field after-amount" id="field-email">
+          <label class="field-label"><span class="required">(required)</span> Email</label>
+          <div class="field-inputs">
+            <input type="text" name="x_email" class="validate[required,custom[email]]" size="32" />
+            <div class="option">
+              <input id="field-email-signup" type="checkbox" name="email_signup" checked="checked" value="YES" />
+              <label for="field-email-signup">Yes, I would like to receive email updates</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="field after-amount" id="field-phone">
+          <label class="field-label">Phone</label>
+          <div class="field-inputs">
+            <input type="text" name="x_phone" size="16" />
+          </div>
+        </div>
+
+      </fieldset>
+        
+      <fieldset class="after-amount">
+        <legend>Honorary or Memorial Donation</legend>
+    
+        <div class="field" id="field-is-honorary">
+          <label class="field-label wide">Is this donation in honor or in memory of someone?</label>
+          <input type="radio" name="is-honorary" value="yes" />
+          <label class="option-label">Yes</label>
+          <input type="radio" name="is-honorary" value="no" />
+          <label class="option-label">No</label>
+        </div>
+
+      </fieldset>
+
+      <fieldset class="after-amount">
+        <legend>Credit Card Information</legend>
+        
+        <div class="field" id="field-card-number">
+          <label class="field-label">Card #</label>
+          <div class="field-inputs">
+            <input type="text" name="x_card_num" size="32" class="validate[required,creditCard]" placeholder="Credit Card Number" />
+            <img src="++theme++ip.theme.fundraising/img/credit-cards.png" alt="Visa, Mastercard, American Express, and Discover" />
+          </div>
+        </div>
+
+        <div class="field" id="field-card-expiration">
+          <label class="field-label">Expiration</label>
+          <div class="field-inputs">
+            <select name="card-expiration-month" class="validate[required]">
+              <option value="01">01 - January</option>
+            </select>
+            <select name="card-expiration-month" class="validate[required]">
+              <option value="2013">2013</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="field" id="field-card-ccv">
+          <label class="field-label">CCV</label>
+          <div class="field-inputs">
+            <input type="text" size="10" name="card-ccv" class="validate[required]" />
+            <div class="field-help">The 3 or 4 digit verification number for your credit card</div>
+          </div>
+        </div>
+      </fieldset>
+
+    </form>

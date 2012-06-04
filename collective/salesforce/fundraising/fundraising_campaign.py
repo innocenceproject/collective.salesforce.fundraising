@@ -7,6 +7,7 @@ from plone.directives import dexterity, form
 
 from zope.interface import Interface
 from zope.interface import alsoProvides
+from zope import schema
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
 
@@ -20,6 +21,8 @@ from Products.CMFCore.utils import getToolByName
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
+
+import recurly
 
 # Interface class; used to define content-type schema.
 
@@ -47,6 +50,12 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         description=u"When someone creates a personal campaign, this text is the default value in the Thank You Message field.  The user can choose to keep the default or edit it.",
     )
 
+    donation_form_tabs = schema.List(
+        title=u"Donation Form Tabs",
+        description=u"Enter the view names for each tab you wish to display with this form.  You can provide a friendly name for the tab by using the format VIEWNAME|LABEL",
+        value_type=schema.TextLine(),
+    )
+
     form.model("models/fundraising_campaign.xml")
 
 alsoProvides(IFundraisingCampaign, IContentType)
@@ -69,6 +78,9 @@ def defaultPersonalAppealDefaultValue(data):
 def defaultPersonalThankYouDefaultValue(data):
     return get_settings().default_personal_thank_you_message
 
+@form.default_value(field=IFundraisingCampaign['donation_form_tabs'])
+def defaultDonationFormTabsValue(data):
+    return get_settings().default_donation_form_tabs
 
 @grok.subscribe(IFundraisingCampaign, IObjectAddedEvent)
 def handleFundraisingCampaignCreated(campaign, event):
@@ -76,8 +88,12 @@ def handleFundraisingCampaignCreated(campaign, event):
     # form and thus never loads the default values on creation
     if not campaign.thank_you_message:
         campaign.thank_you_message = thankYouDefaultValue(None)
+    if not campaign.default_personal_appeal:
         campaign.default_personal_appeal = defaultPersonalAppealDefaultValue(None)
+    if not campaign.default_personal_thank_you:
         campaign.default_personal_thank_you = defaultPersonalThankYouDefaultValue(None)
+    if not campaign.donation_form_tabs:
+        campaign.donation_form_tabs = defaultDonationFormTabsValue(None)
 
     # Add campaign in Salesforce if it doesn't have a Salesforce id yet
     if getattr(campaign, 'sf_object_id', None) is None:
@@ -167,6 +183,28 @@ class FundraisingCampaignPage(object):
     def show_employer_matching(self):
         return True
 
+    def add_donation(self, amount):
+        """ Accepts an amount and adds the amount to the donations_total for this
+            campaign and the parent campaign if this is a child campaign.  Also increments
+            the donations_count by 1 for this campaign and the parent (if applicable).
+
+            This should be considered temporary as the real amount will be synced periodically
+            from salesforce via collective.salesforce.content.
+        """
+        if amount:
+            amount = int(amount)
+            self.donations_total = self.donations_total + amount
+            self.donations_count = self.donations_count + 1
+
+            # If this is a child campaign and its parent campaign is the parent
+            # in Plone, add the value to the parent's donations_total
+            if hasattr(self, 'parent_sf_id'):
+                parent = self.aq_parent
+                if parent.sf_object_id == self.parent_sf_id:
+                    parent.donations_total = parent.donations_total + amount
+                    parent.donations_count = parent.donations_count + 1
+
+
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
 
@@ -228,6 +266,22 @@ class CampaignView(grok.View):
         if self.source_campaign:
             self.request.response.setCookie('collective.salesforce.fundraising.source_campaign', self.source_campaign)
 
+        tabs = []
+        if self.context.donation_form_tabs:
+            for tab in self.context.donation_form_tabs:
+                parts = tab.split('|')
+                if len(parts) == 1:
+                    label = parts[0]
+                else:
+                    label = parts[1]
+                view_name = parts[0]
+           
+                html = self.context.unrestrictedTraverse([view_name,])
+                tabs.append({
+                    'label': label,
+                    'html': html,
+                })
+        self.donation_form_tabs = tabs
 
 class ThankYouView(grok.View):
     grok.context(IFundraisingCampaignPage)
@@ -338,4 +392,17 @@ class PersonalCampaignPagesList(grok.View):
         query['sort_on'] = self.request.get('sort_on', 'donations_total')
         query['sort_order'] = 'descending'
         self.campaigns = pc.searchResults(**query) 
+
+class DonationFormAuthnetDPM(grok.View):
+    """ Renders a donation form setup to submit through Authorize.net's Direct Post Method (DPM) """
+    grok.context(IFundraisingCampaign)
+    grok.require('zope2.View')
+
+    grok.name('donation_form_authnet_dpm')
+    grok.template('donation_form_authnet_dpm')
+
+    def update(self):
+        self.levels = [25,50,100,250,500,1000]
+        self.timestamp = 'TESTING'
+        self.sequence = 0
 

@@ -16,6 +16,10 @@ def addCatalogIndexes(context):
     
     wanted = (
         ('sf_object_id', 'FieldIndex', None),
+        ('donations_total', 'FieldIndex', None),
+        ('donations_count', 'FieldIndex', None),
+        ('goal', 'FieldIndex', None),
+        ('get_percent_goal', 'FieldIndex', None),
     )
 
     added = []
@@ -35,6 +39,6 @@ def import_various(context):
     """
     
     # Only run step if a flag file is present
-    if context.readDataFile('collective-salesforce-fundraising.txt') is not None:
+    if context.readDataFile('collective-salesforce-fundraising-various.txt') is not None:
         portal = context.getSite()
         addCatalogIndexes(portal)
