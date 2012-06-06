@@ -82,6 +82,18 @@ class IFundraisingSettings(Interface):
         required=False,
     )
 
+    authnet_login_key = schema.TextLine(
+        title=_(u"Authorize.net Login Key"),
+        description=_(u"The login key from your Authorize.net account. If not provided, the Authorize.net DPM donation form will not render"),
+        required=False,
+    )
+
+    authnet_transaction_key = schema.TextLine(
+        title=_(u"Authorize.net Transaction Key"),
+        description=_(u"The transaction key from your Authorize.net account. If not provided, the Authorize.net DPM donation form will not render"),
+        required=False,
+    )
+
     recurly_subdomain = schema.TextLine(
         title=_(u"Recurly Subdomain"),
         description=_(u"If you want to use Recurly for recurring donation management, enter your subdomain key here."),

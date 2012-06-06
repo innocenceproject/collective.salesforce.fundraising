@@ -1,7 +1,7 @@
-<dl class="portlet portletCampaignStatus"
+<dl class="portlet portletCampaignMedia"
     i18n:domain="collective.salesforce.fundraising"
     tal:define="image view/context/image;
-                external_media_url view/context/external_media_url"
+                external_media view/context/get_external_media_oembed"
     tal:condition="python: image or external_media_url">
 
     <dt class="portletHeader">
@@ -13,9 +13,15 @@
     </dt>
 
     <dd class="portletItem">
-      <tal:if_image condition="view/context/image/size">
+
+      <tal:if_external_media condition="external_media">
+      <div class="oembed" tal:content="structure external_media"></div>
+      </tal:if_external_media>
+
+      <tal:if_image condition="python: not external_media and image.size">
       <img src="" tal:attributes="src python: view.context.absolute_url() + '/@@images/image/mini'" />
       </tal:if_image>
+
     </dd>
 
     <dd class="portletFooter">

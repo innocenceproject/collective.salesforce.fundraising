@@ -5,6 +5,8 @@ from datetime import date
 from five import grok
 from plone.directives import dexterity, form
 
+from zope.component import getUtility
+
 from zope.interface import Interface
 from zope.interface import alsoProvides
 from zope import schema
@@ -22,7 +24,7 @@ from Products.CMFCore.utils import getToolByName
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 
-import recurly
+from collective.oembed.interfaces import IConsumer
 
 # Interface class; used to define content-type schema.
 
@@ -98,6 +100,15 @@ def handleFundraisingCampaignCreated(campaign, event):
     # Add campaign in Salesforce if it doesn't have a Salesforce id yet
     if getattr(campaign, 'sf_object_id', None) is None:
         sfbc = getToolByName(campaign, 'portal_salesforcebaseconnector')
+
+        # Only parse the dates if they have a value
+        start_date = campaign.date_start
+        if start_date:
+            start_date = start_date.isoformat()
+        end_date = campaign.date_end
+        if end_date:
+            end_date = end_date.isoformat()
+
         res = sfbc.create({
             'type': 'Campaign',
             'Type': 'Fundraising',
@@ -107,8 +118,8 @@ def handleFundraisingCampaignCreated(campaign, event):
             'Status': campaign.status,
             'ExpectedRevenue': campaign.goal,
             'Allow_Personal__c': campaign.allow_personal,
-            'StartDate': campaign.date_start.isoformat(),
-            'EndDate': campaign.date_end.isoformat(),
+            'StartDate': start_date,
+            'EndDate': end_date,
             })
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
@@ -204,6 +215,14 @@ class FundraisingCampaignPage(object):
                     parent.donations_total = parent.donations_total + amount
                     parent.donations_count = parent.donations_count + 1
 
+    def get_external_media_oembed(self):
+        external_media = getattr(self.context, 'external_media_url', None)
+        if external_media:
+            consumer = getUtility(IConsumer)
+            # FIXME - don't hard code maxwidth
+            return consumer.get_data(self.external_media_url, maxwidth=270).get('html')
+            
+
 
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
@@ -252,7 +271,7 @@ class CampaignView(grok.View):
     def addcommas(self, number):
         locale.setlocale(locale.LC_ALL, '')
         return locale.format('%d', number, 1)
-       
+
     def update(self):
         # Set a cookie with referrer as source_url if no cookie has yet been set for the session
         source_url = self.request.get('collective.salesforce.fundraising.source_url', None)
@@ -392,17 +411,3 @@ class PersonalCampaignPagesList(grok.View):
         query['sort_on'] = self.request.get('sort_on', 'donations_total')
         query['sort_order'] = 'descending'
         self.campaigns = pc.searchResults(**query) 
-
-class DonationFormAuthnetDPM(grok.View):
-    """ Renders a donation form setup to submit through Authorize.net's Direct Post Method (DPM) """
-    grok.context(IFundraisingCampaign)
-    grok.require('zope2.View')
-
-    grok.name('donation_form_authnet_dpm')
-    grok.template('donation_form_authnet_dpm')
-
-    def update(self):
-        self.levels = [25,50,100,250,500,1000]
-        self.timestamp = 'TESTING'
-        self.sequence = 0
-

@@ -6,17 +6,21 @@
       metal:use-macro="context/main_template/macros/master"
       i18n:domain="collective.salesforce.fundraising">
 <body>
-
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">
 
-    <div class="campaign-body" tal:content="structure context/body/output|nothing" />
-
     <div class="donation-form-wrapper">
+      <h2 class="page-section-header">Make a Donation</h2>
       <ul class="tabs">
-        <li tal:repeat="tab view/donation_form_tabs" tal:content="tab/label">
-          One-time donation
+        <li tal:repeat="tab view/donation_form_tabs">
+          <span class="label-wrapper">
+            <span class="selected-indicator"></span>
+            <span class="label" tal:content="tab/label">
+              One-time donation
+            </span>
+          </span>
         </li>
+        <div class="visualClear"></div>
       </ul>
     
       <div class="panels"> 
@@ -26,9 +30,10 @@
       </div>
     </div>
 
+    <div id="campaign-body" tal:content="structure context/body/output|nothing" />
+
   </metal:content-core>
 </metal:main>
-
 </body>
 </html>
 

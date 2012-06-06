@@ -61,6 +61,10 @@ def thankYouDefaultValue(data):
 class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IPersonalCampaignPage, IFundraisingCampaignPage)
 
+    @property
+    def donation_form_tabs(self):
+        return self.__parent__.donation_form_tabs
+
     def get_container(self):
         if not self.parent_sf_id:
             return None

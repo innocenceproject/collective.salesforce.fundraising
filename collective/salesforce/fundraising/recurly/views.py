@@ -45,7 +45,7 @@ class DonationFormRecurly(grok.View):
     grok.template('donation_form_recurly')
 
     def update(self):
-        self.levels = [25,50,100,250,500,1000]
+        self.levels = [10,25,50,100,250,500]
 
         settings = get_settings()
         recurly_subdomain = settings.recurly_subdomain
@@ -83,6 +83,9 @@ class PostRecurlySubscription(grok.View):
         # subscription creations per day with the standard nonprofit 10k calls per day
 
         token = self.request.form.get('recurly_token')
+
+        if not token:
+            return 'ERROR: No token provided'
 
         # workaround for http://bugs.python.org/issue5285, map unicode to strings
         settings = get_settings()
