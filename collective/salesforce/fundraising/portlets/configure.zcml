@@ -32,6 +32,17 @@
       />
 
   <plone:portlet
+      name="collective.salesforce.fundraising.portlets.CampaignQuotes"
+      interface=".campaign_quotes.ICampaignQuotesPortlet"
+      assignment=".campaign_quotes.Assignment"
+      view_permission="zope2.View"
+      edit_permission="cmf.ManagePortal"
+      renderer=".campaign_quotes.Renderer"
+      addview=".campaign_quotes.AddForm"
+      editview=".campaign_quotes.EditForm"
+      />
+
+  <plone:portlet
       name="collective.salesforce.fundraising.portlets.CampaignFundraisers"
       interface=".campaign_fundraisers.ICampaignFundraisersPortlet"
       assignment=".campaign_fundraisers.Assignment"

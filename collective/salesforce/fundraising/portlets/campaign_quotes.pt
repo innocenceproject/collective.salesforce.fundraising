@@ -1,0 +1,29 @@
+<dl class="portlet portletCampaignFundraisers"
+    i18n:domain="collective.salesforce.fundraising"
+    tal:define="quote view/get_quote"
+    tal:condition="quote">
+
+    <dt class="portletHeader">
+      <span class="portletTopLeft"></span>
+      <span>
+          What people are saying
+      </span>
+      <span class="portletTopRight"></span>
+    </dt>
+
+    <dd class="portletItem">
+      <div class="donor-quote">
+        <img src="" tal:attributes="src string:${quote/absolute_url}/@@images/image/icon" />
+        <p><span class="quote-start">"</span><span tal:replace="quote/quote" /><span class="quote-end">"</span></p>
+        <div class="donor-name" tal:content="quote/name">John Doe</div>
+      </div>
+    </dd>
+
+    <dd class="portletFooter">
+        <span class="portletBottomLeft"></span>
+        <span>
+        </span>
+        <span class="portletBottomRight"></span>
+    </dd>
+
+</dl>

@@ -1,6 +1,3 @@
-<!--
-<form method="post" action="https://developer.authorize.net/tools/paramdump/index.php" id="donation-form-single" class="donation-form donation-form-authnet-dpm">
--->
     <form method="post" action="https://secure.authorize.net/gateway/transact.dll" id="donation-form-single" class="donation-form donation-form-authnet-dpm">
       <input type="hidden" name="x_recurring_billing" value="FALSE" />
       <input type="hidden" name="x_type" value="AUTH_CAPTURE" />
@@ -24,7 +21,7 @@
           <div class="field-amount">
             <label for="amount">or Enter an Amount</label>
             <label for="amount" class="currency">$</label>
-            <input name="x_amount" type="number" size="5" required="required" class="validate[required,min[5]]" tal:attributes="value python: view.request.form.get('x_amount', None)" />
+            <input name="x_amount" type="number" required="required" min="5" class="validate[required,min[5]]" tal:attributes="value python: view.request.form.get('x_amount', None)" />
             <label for="amount">($5 minimum)</label>
           </div>
   
@@ -43,6 +40,12 @@
 
       </fieldset>
 
+      <div class="donation-form-error" tal:condition="view/reason_text">
+        <h5>Processing Error</h5>
+        <p>There was an issue processing your gift.  The error message from the payment processor was:</p>
+        <em><span tal:replace="view/response_text" />: <span tal:replace="view/reason_text/text" /></em>
+      </div>   
+ 
       <fieldset class="fieldset-contact-info after-amount">
         <legend>Contact Info</legend>
         <div class="field field-name">
@@ -66,7 +69,7 @@
             </div>
             <div class="subfield subfield-email-signup">
               <div class="option">
-                <input id="field-email-signup" type="checkbox" name="c_email_signup" checked="checked" value="YES" tal:attributes="checked python: not view.request.form.get('c_email_signup', 'checked')" />
+                <input id="field-email-signup" type="checkbox" name="c_email_signup" checked="checked" value="YES" />
                 <label for="field-email-signup">Yes, I would like to receive email updates</label>
               </div>
             </div>
@@ -82,13 +85,13 @@
         
       <fieldset class="after-amount fieldset-honorary collapsed">
         <legend>Honorary / Memorial</legend>
-    
         <div class="field field-is-honorary">
-          <input type="checkbox" name="c_is_honorary" value="yes" tal:attributes="value python: view.request.form.get('c_is_honorary', None)" />
-          <label class="field-label">Yes, this is in honor or in memory of someone</label>
+          <input type="checkbox" name="c_is_honorary" />
+          <label>Yes, this gift is in Honor or in Memory of someone.</label>
+          <div class="field-help">If checked, you can specify Honorary/Memorial information on the next page</div>
         </div>
-
       </fieldset>
+
 
       <fieldset class="after-amount fieldset-billing-info">
         <legend>Billing Information</legend>
@@ -99,7 +102,7 @@
               <img src="++theme++ip.theme.fundraising/img/credit-cards.png" alt="Visa, Mastercard, American Express, and Discover" />
             </div>
             <div class="subfield subfield-card-number">
-              <input type="text" name="x_card_num" required="required" class="validate[required,creditCard]" placeholder="Credit Card Number" />
+              <input type="text" name="x_card_num" required="required" placeholder="Credit Card Number" />
             </div>
             <div class="subfield subfield-card-cvv">
               <input type="text" name="x_card_ccv" required="required" class="validate[required]" placeholder="CVV" />
@@ -110,6 +113,7 @@
               <label class="expiration-date">Expiration Date</label>
               <div class="subfield subfield-expiration-month">
                 <select class="card-expiration-month validate[required]" required="true">
+                  <option value="">---</option>
                   <option value="01">01: January</option>
                   <option value="02">02: February</option>
                   <option value="03">03: March</option>
@@ -126,6 +130,8 @@
               </div>
               <div class="subfield subfield-expiration-year">
                 <select class="card-expiration-year validate[required]" required="required">
+                  <option value="">---</option>
+                  <option value="12">2012</option>
                   <option value="13">2013</option>
                   <option value="14">2014</option>
                   <option value="15">2015</option>
@@ -172,8 +178,8 @@
         
       </fieldset>
 
-      <div class="form-buttons">
-        <input type="submit" />
+      <div class="form-buttons after-amount">
+        <input class="allowMultiSubmit" type="submit" />
       </div>
 
     </form>

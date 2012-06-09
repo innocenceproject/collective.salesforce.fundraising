@@ -1,4 +1,5 @@
 import locale
+import random
 
 from zope.interface import Interface
 from zope.interface import implements
@@ -72,9 +73,26 @@ class Renderer(base.Renderer):
 
     render = ViewPageTemplateFile('campaign_quotes.pt')
 
-    def addcommas(self, num):
-        locale.setlocale(locale.LC_ALL, '')
-        return locale.format('%d', num, 1)
+    def get_quote(self):
+        # Get a random quote from the current campaign or its parent
+        quote = None
+
+        res = self.context.listFolderContents(contentFilter = {
+            'portal_type': 'collective.salesforce.fundraising.donorquote'
+        })
+
+        # If there are less than 3 messages found, check if this is a child campaign
+        if len(res) == 0:
+            if hasattr(self.context, 'parent_sf_id'):
+                # Add parent messages until a total of 3 messages are selected
+                res = self.context.__parent__.listFolderContents(contentFilter = {
+                    'portal_type': 'collective.salesforce.fundraising.sharemessage'
+                })
+
+        if len(res):
+            quote = random.choice(res)
+            
+        return quote
 
 
 # NOTE: If this portlet does not have any configurable parameters, you can

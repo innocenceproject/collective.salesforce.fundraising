@@ -24,8 +24,11 @@
       </ul>
     
       <div class="panels"> 
-        <div class="panel" tal:repeat="tab view/donation_form_tabs" tal:content="structure tab/html">
-          FORM PANEL GOES HERE
+        <div class="panel" tal:repeat="tab view/donation_form_tabs" tal:attributes="class string:panel panel-${tab/id}">
+          <div tal:replace="structure tab/html">
+            FORM PANEL GOES HERE
+          </div> 
+          <div class="after-amount ssl-cert-seal" tal:content="structure view/ssl_seal" tal:condition="view/ssl_seal" />
         </div> 
       </div>
     </div>

@@ -1,0 +1,30 @@
+<div class="donation-receipt">
+
+  <table width="500px" style="background-color: #eee; border: 1px solid #ddd">
+    <tbody>
+      <tr>
+        <td colspan="2" style="padding: 10px 20px 0 20px"><h2 style="font-size: 16px; padding: 0; margin: 0">Transaction Summary: <span tal:replace="view/organization_name" /></h2></td>
+      </tr>
+      <tr>
+        <td width="250px" valign="top">
+          <div class="donor-details" style="padding: 0 20px">
+            <h3 class="donor-name" tal:content="string:${view/contact/FirstName} ${view/contact/LastName}" />
+            <div class="donor-street-address" tal:content="view/contact/MailingStreet" />
+            <div class="donor-city-state-zip" tal:content="string:${view/contact/MailingCity}, ${view/contact/MailingState}  ${view/contact/MailingPostalCode}" />
+            <div class="donor-country" tal:content="view/contact/MailingCountry" />
+          </div>
+        </td>
+        <td width="250px" valign="top">
+          <div class="donation-details" style="padding: 0 20px">
+            <h3>Donation Amount: $<span tal:replace="python: int(view.donation.Amount)" /></h3>
+            <div class="donation-date" tal:content="string:Date: ${view/donation/CloseDate}" />
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" style="background-color: white; padding: 20px"><div class="donation-receipt-legal" tal:content="structure view/donation_receipt_legal" tal:condition="view/donation_receipt_legal" />
+      </tr>
+    </tbody>
+  </table>
+
+</div>

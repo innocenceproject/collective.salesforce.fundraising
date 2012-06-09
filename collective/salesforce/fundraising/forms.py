@@ -11,6 +11,7 @@ from collective.salesforce.fundraising.personal_campaign_page import IPersonalCa
 from collective.salesforce.fundraising.donor_quote import IDonorQuote
 
 from collective.salesforce.fundraising import MessageFactory as _
+from collective.salesforce.fundraising.utils import get_settings
 
 
 class CreatePersonalCampaignPageForm(form.Form):
@@ -46,9 +47,11 @@ class CreatePersonalCampaignPageForm(form.Form):
         member = mtool.getAuthenticatedMember()
         contact_id = member.getProperty('sf_object_id')
 
+        settings = get_settings()
+
         # Add the campaign in Salesforce
         sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-        res = sfbc.create({
+        data = {
             'type': 'Campaign',
             'Type': 'Personal Fundraising',
             'ParentId': parent_campaign.sf_object_id,
@@ -59,9 +62,14 @@ class CreatePersonalCampaignPageForm(form.Form):
             'Personal_Campaign_Contact__c': contact_id,
             'IsActive': True,
             'Status': 'In Progress',
-            })
+            }
+        if settings.sf_opportunity_record_type_personal:
+            data['RecordTypeID'] = settings.sf_opportunity_record_type_personal
+
+        res = sfbc.create(data)
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
+
 
         # Save the Id of the new campaign so it can be updated later.
         campaign.parent_sf_id = parent_campaign.sf_object_id
@@ -88,8 +96,8 @@ class CreateDonorQuote(form.Form):
 
     ignoreContext = True
 
-    label = _(u"Tell Your Story")
-    description = _(u"Tell other potential donors what moved you to donate and why they should too.")
+    label = _(u"Provide a Quote")
+    description = _(u"Help encourage other donors by providing a quote about why you were moved to donate.")
 
     @button.buttonAndHandler(_(u'Submit'))
     def handleOk(self, action):

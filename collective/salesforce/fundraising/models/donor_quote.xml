@@ -5,7 +5,7 @@
     
     <schema sf:object="Constituent_Quote__c" sf:criteria="" sf:container="get_container">
         <field name="quote" type="zope.schema.Text" sf:field="Quote__c">
-            <title>Your Quote</title>
+            <title>Message</title>
             <description>Tell us and other potential donors why you were moved to donate.</description>
         </field>
         <field name="name" type="zope.schema.TextLine" sf:field="Name__c">

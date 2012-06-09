@@ -14,6 +14,12 @@ class IFundraisingSettings(Interface):
     configuration registry and obtainable via plone.registry.
     """
 
+    organization_name = schema.TextLine(
+        title=_(u"Organization Name"),
+        description=_(u"Enter your organization's official name.  This is used mostly on donation receipts."),
+        required=True,
+    )
+
     default_thank_you_message = schema.Text(
         title=_(u"Default Thank You Message"),
         description=_(u"The default Thank You Message for Fundraising Campaigns"),
@@ -35,6 +41,37 @@ class IFundraisingSettings(Interface):
         required=True,
     )
 
+    donation_receipt_legal = schema.Text(
+        title=_(u"Donation Receipt Legal Text"),
+        description=_(u"Enter any legal text you want displayed at the bottom of html receipt.  For example, you might want to state that all donations are tax deductable and include the organization's Tax ID"),
+        required=False,
+    )
+
+    ssl_seal = schema.Text(
+        title=_(u"SSL Seal HTML Snippet"),
+        description=_(u"If provided, this snippet of HTML will be inserted into the donation forms"),
+        required=False,
+    )
+
+    thank_you_email_subject = schema.Text(
+        title=_(u"Thank You Email Subject"),
+        description=_(u"Enter the email subject for Thank You email messages with donation receipt"),
+        required=False,
+        default=_(u"Thank you for your donation")
+    )
+
+    email_header = schema.Text(
+        title=_(u"Email Header HTML"),
+        description=_(u"Enter any html you want to always render in the header of outbound emails."),
+        required=False,
+    )
+
+    email_footer = schema.Text(
+        title=_(u"Email Footer HTML"),
+        description=_(u"Enter any html you want to always render in the footer of outbound emails."),
+        required=False,
+    )
+
     available_form_views = schema.List(
         title=_(u"Available form views"),
         description=_(u"This is a list of views available on fundraising campaigns which will render the donation form for the campaign.  This list is used as the vocabulary when building new forms"),
@@ -43,12 +80,37 @@ class IFundraisingSettings(Interface):
         default=[u'donation_form_authnet_dpm',u'donation_form_recurly'],
     )
     
-    default_donation_form_tabs = schema.List(
+    default_donation_form_tabs = schema.TextLine(
         title=_(u"Default form view"),
         description=_(u"The name of the form view to be used by default on a fundraising campaign to render the donation form.  This name must match an option in the Available form views field"),
         required=True,
+        default=u'donation_form_authnet_dpm',
+    )
+
+    # FIXME: Add validation for the structure here
+    donation_ask_levels = schema.List(
+        title=_(u"Donation Ask Levels"),
+        description=_(u"Enter sets of donation ask amounts one per line in the format ID|1,2,3,4,5,6 and use the value for ID in the url when calling the donation form"),
+        default=[
+            u"5|5,10,25,50,100,250",
+            u"10|10,25,50,100,250,500",
+            u"25|25,50,100,250,500,1000",
+            u"50|50,100,250,500,1000,2500",
+            u"100|100,500,1000,2500,5000,7500",
+        ],
         value_type=schema.TextLine(),
-        default=[u'donation_form_authnet_dpm|A one-time donation',u'donation_form_recurly|Monthly donation'],
+    )
+
+    default_donation_ask_one_time = schema.TextLine(
+        title=_(u"Default One Time Donation Ask"),
+        description=_(u"Enter the ID of the default Donation Ask Level set to use for one time donations if no set is specified in the url"),
+        default=u"25",
+    )
+
+    default_donation_ask_recurring = schema.TextLine(
+        title=_(u"Default Recurring Donation Ask"),
+        description=_(u"Enter the ID of the default Donation Ask Level set to use for recurring donations if no set is specified in the url"),
+        default=u"10",
     )
 
     sf_individual_account_id = schema.TextLine(
@@ -56,6 +118,47 @@ class IFundraisingSettings(Interface):
         description=_(u"The ID of the Account in Salesforce that represents Individuals in the \"bucket account\" model.  This is typically an account named Individual. This account will be used as the default account when creating the Opportuntity object in Salesforce for a donation"),
         required=True,
         default=u'',
+    )
+
+    sf_opportunity_record_type_one_time = schema.TextLine(
+        title=_(u"Salesforce Opportunity Record Type ID - One Time Donations"),
+        description=_(u"If provided, any Opportunities created from a one time donation will be created as the specified record type"),
+        required=False,
+        default=u'',
+    )
+
+    sf_opportunity_record_type_recurring = schema.TextLine(
+        title=_(u"Salesforce Opportunity Record Type ID - Recurring Donations"),
+        description=_(u"If provided, any Opportunities created from a recurring donation will be created as the specified record type"),
+        required=False,
+        default=u'',
+    )
+
+    sf_campaign_record_type = schema.TextLine(
+        title=_(u"Salesforce Campaign Record Type ID - Fundraising Campaign"),
+        description=_(u"If provided, any Campaigns in Salesforce created by creating a Fundraising Campaign in this site will be created as the specified record type"),
+        required=False,
+        default=u'',
+    )
+
+    sf_campaign_record_type_personal = schema.TextLine(
+        title=_(u"Salesforce Campaign Record Type ID - Personal Campaign Page"),
+        description=_(u"If provided, any Campaigns in Salesforce created by creating a Personal Campaign Page in this site will be created as the specified record type"),
+        required=False,
+        default=u'',
+    )
+
+    sf_campaign_record_type_share = schema.TextLine(
+        title=_(u"Salesforce Campaign Record Type ID - Share Message"),
+        description=_(u"If provided, any Campaigns in Salesforce created by creating a Share Message in this site will be created as the specified record type"),
+        required=False,
+        default=u'',
+    )
+
+    sf_create_campaign_member = schema.Bool(
+        title=_(u"Create Salesforce Campaign Member on Donation?"),
+        description=_(u"If checked, a Campaign Member will be created for the Contact after a donation.  If you're concerned about API usage limits, unchecking this will reduce the number of API calls to process a donation by 1.  This is useful if you either don't care about campaign members on your fundraising campaign (donations are already linked) or if you are using a trigger on Opportunity creation to create the Campaign Member in Salesforce."),
+        default=True,
     )
 
     janrain_api_key = schema.TextLine(
@@ -117,4 +220,3 @@ class IFundraisingSettings(Interface):
         description=_(u"If you want to use Recurly for recurring donation management, enter the code for the plan here."),
         required=False,
     )
-

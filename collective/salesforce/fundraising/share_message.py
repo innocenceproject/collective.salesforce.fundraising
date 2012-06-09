@@ -12,6 +12,7 @@ from collective.salesforce.fundraising import MessageFactory as _
 from Products.statusmessages.interfaces import IStatusMessage
 from plone.namedfile.interfaces import IImageScaleTraversable
 from Products.validation.validators.BaseValidators import EMAIL_RE
+from collective.salesforce.fundraising.utils import get_settings
 
 
 # Interface class; used to define content-type schema.
@@ -46,14 +47,18 @@ def createSalesforceCampaign(message, event):
     # create Share Message campaign in Salesforce
     site = getSite()
     sfbc = getToolByName(site, 'portal_salesforcebaseconnector')
-    res = sfbc.create({
+    data = {
         'type': 'Campaign',
         'Type': 'Share Message',
         'Name': message.title,
         'Public_Name__c': message.title,
         'Status': message.status,
         'ParentId': message.parent_sf_id,
-    })
+    }
+    if settings.sf_campaign_record_type_share:
+        data['RecordTypeId'] = settings.sf_campaign_record_type_share
+
+    res = sfbc.create(data)
     if not res[0]['success']:
         raise Exception(res[0]['errors'][0]['message'])
 

@@ -1,11 +1,16 @@
 import locale
 import random
+import smtplib
 from datetime import date
+
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from five import grok
 from plone.directives import dexterity, form
 
 from zope.component import getUtility
+from zope.component import getMultiAdapter
 
 from zope.interface import Interface
 from zope.interface import alsoProvides
@@ -18,11 +23,13 @@ from plone.z3cform.interfaces import IWrappedForm
 from plone.app.textfield import RichText
 from plone.namedfile import NamedBlobImage
 from plone.namedfile.interfaces import IImageScaleTraversable
+from plone.memoize import view as cache_view
 
 from Products.CMFCore.utils import getToolByName
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
+from collective.salesforce.fundraising.utils import sanitize_soql
 
 from collective.oembed.interfaces import IConsumer
 
@@ -101,6 +108,8 @@ def handleFundraisingCampaignCreated(campaign, event):
     if getattr(campaign, 'sf_object_id', None) is None:
         sfbc = getToolByName(campaign, 'portal_salesforcebaseconnector')
 
+        settings = get_settings()
+
         # Only parse the dates if they have a value
         start_date = campaign.date_start
         if start_date:
@@ -109,7 +118,7 @@ def handleFundraisingCampaignCreated(campaign, event):
         if end_date:
             end_date = end_date.isoformat()
 
-        res = sfbc.create({
+        data = {
             'type': 'Campaign',
             'Type': 'Fundraising',
             'Name': campaign.title,
@@ -120,7 +129,11 @@ def handleFundraisingCampaignCreated(campaign, event):
             'Allow_Personal__c': campaign.allow_personal,
             'StartDate': start_date,
             'EndDate': end_date,
-            })
+        }
+        if settings.sf_campaign_record_type:
+            data['RecordTypeId'] = settings.sf_campaign_record_type
+
+        res = sfbc.create(data)
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
         campaign.sf_object_id = res[0]['id']
@@ -192,7 +205,7 @@ class FundraisingCampaignPage(object):
         return True
 
     def show_employer_matching(self):
-        return True
+        return False
 
     def add_donation(self, amount):
         """ Accepts an amount and adds the amount to the donations_total for this
@@ -204,8 +217,25 @@ class FundraisingCampaignPage(object):
         """
         if amount:
             amount = int(amount)
-            self.donations_total = self.donations_total + amount
-            self.donations_count = self.donations_count + 1
+            if self.donations_total:
+                self.donations_total = self.donations_total + amount
+            else:
+                self.donations_total = amount
+
+            if self.direct_donations_total:
+                self.direct_donations_total = self.direct_donations_total + amount
+            else:
+                self.direct_donations_total = amount
+
+            if self.donations_count:
+                self.donations_count = self.donations_count + 1
+            else:
+                self.donations_count = 1
+
+            if self.direct_donations_count:
+                self.direct_donations_count = self.direct_donations_count + 1
+            else:
+                self.direct_donations_count = 1
 
             # If this is a child campaign and its parent campaign is the parent
             # in Plone, add the value to the parent's donations_total
@@ -297,25 +327,86 @@ class CampaignView(grok.View):
            
                 html = self.context.unrestrictedTraverse([view_name,])
                 tabs.append({
+                    'id': view_name,
                     'label': label,
                     'html': html,
                 })
         self.donation_form_tabs = tabs
 
+        # Handle form validation errors from 3rd party (right now only Authorize.net)
+        # by receiving the error codes and looking up their text
+        self.error = self.request.form.get('error', None)
+        self.response_code = self.request.form.get('response_code',None)
+        self.reason_code = self.request.form.get('reason_code', None)
+
+        self.ssl_seal = get_settings().ssl_seal
+
 class ThankYouView(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
-    grok.implements(IHideDonationForm)
 
     grok.name('thank-you')
     grok.template('thank-you')
 
     def update(self):
         # Fetch some values that should have been passed from the redirector
-        self.email = self.request.form.get('email', None)
-        self.first_name = self.request.form.get('first_name', None)
-        self.last_name = self.request.form.get('last_name', None)
+        self.donation_id = self.request.form.get('donation_id', None)
         self.amount = self.request.form.get('amount', None)
+
+        self.receipt_view = None
+        self.receipt = None
+        if self.donation_id and self.amount:
+            self.amount = int(self.amount)
+            self.receipt_view
+            self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
+            self.receipt = self.receipt_view()
+
+            # Check if the email receipt has been sent.  If not, render and send it then mark it as sent in Salesforce (1 API Call)
+            if not self.receipt_view.donation.Email_Receipt_Sent__c:
+                settings = get_settings() 
+
+                # Construct the email bodies
+                pt = getToolByName(self.context, 'portal_transforms')
+                email_body = getMultiAdapter((self.context, self.request), name='thank-you-email')()
+                txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
+
+                # Construct the email message                
+                portal_url = getToolByName(self.context, 'portal_url')
+                portal = portal_url.getPortalObject()
+
+                mail_from = portal.getProperty('email_from_address')
+                mail_to = self.receipt_view.contact.Email
+
+                msg = MIMEMultipart('alternative')
+                msg['Subject'] = settings.thank_you_email_subject
+                msg['From'] = mail_from
+                msg['To'] = mail_to
+        
+                part1 = MIMEText(txt_body, 'plain')
+                part2 = MIMEText(email_body, 'html')
+    
+                msg.attach(part1)
+                msg.attach(part2)
+
+                # Attempt to send it
+                try:
+                    host = getToolByName(self, 'MailHost')
+                    # The `immediate` parameter causes an email to be sent immediately
+                    # (if any error is raised) rather than sent at the transaction
+                    # boundary or queued for later delivery.
+                    host.send(msg, immediate=True)
+
+                    # Mark the receipt as sent in Salesforce
+                    sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+                    sfbc.update({
+                        'type': 'Opportunity',
+                        'Id': self.donation_id,
+                        'Email_Receipt_Sent__c': True,
+                    })
+
+                except smtplib.SMTPRecipientsRefused:
+                    # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
+                    pass
 
         # Create a wrapped form for inline rendering
         from collective.salesforce.fundraising.forms import CreateDonorQuote
@@ -411,3 +502,72 @@ class PersonalCampaignPagesList(grok.View):
         query['sort_on'] = self.request.get('sort_on', 'donations_total')
         query['sort_order'] = 'descending'
         self.campaigns = pc.searchResults(**query) 
+
+RECEIPT_SOQL = """select 
+
+    Opportunity.Name, 
+    Opportunity.Amount, 
+    Opportunity.CloseDate, 
+    Opportunity.StageName, 
+    Opportunity.Email_Receipt_Sent__c, 
+    Contact.FirstName, 
+    Contact.LastName, 
+    Contact.Email, 
+    Contact.Phone,
+    Contact.MailingStreet, 
+    Contact.MailingCity,
+    Contact.MailingState, 
+    Contact.MailingPostalCode, 
+    Contact.MailingCountry 
+
+    from OpportunityContactRole
+
+    where
+        IsPrimary = true
+        and OpportunityId = '%s'
+        and Opportunity.Amount = %d
+        and Opportunity.CampaignId = '%s'
+"""
+
+class DonationReceipt(grok.View):
+    """ Looks up an opportunity in Salesforce and prepares a donation receipt.  Uses amount and id as keys """
+    grok.context(IFundraisingCampaignPage)
+    grok.require('zope2.View')
+
+    grok.name('donation-receipt')
+    grok.template('donation-receipt')
+
+    def update(self):
+        donation_id = sanitize_soql(self.request.form.get('donation_id'))
+        amount = int(self.request.form.get('amount'))
+        campaign_id = self.context.sf_object_id
+        res = self.lookupDonation(donation_id, amount, campaign_id)
+        
+        if not len(res['records']):
+            raise ValueError('Donation with id %s and amount %s was not found.' % (donation_id, amount))
+
+        settings = get_settings()
+        self.organization_name = settings.organization_name
+        self.donation_receipt_legal = settings.donation_receipt_legal
+
+        self.donation = res['records'][0].Opportunity
+        self.contact = res['records'][0].Contact
+
+    @cache_view.memoize_contextless
+    def lookupDonation(self, donation_id, amount, campaign_id):
+        sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+        return sfbc.query(RECEIPT_SOQL % (donation_id, amount, campaign_id))
+
+class ThankYouEmail(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.require('zope2.View')
+    
+    grok.name('thank-you-email')
+    grok.template('thank-you-email')
+    
+    def update(self):
+        self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
+        self.receipt = self.receipt_view()
+        settings = get_settings()
+        self.email_header = settings.email_header
+        self.email_footer = settings.email_footer

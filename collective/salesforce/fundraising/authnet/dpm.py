@@ -3,6 +3,9 @@ import time
 import json
 import hmac
 import uuid
+import urllib
+
+from datetime import datetime
 
 from five import grok
 
@@ -24,6 +27,8 @@ from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
+from collective.salesforce.fundraising.authnet.codes import response_codes
+from collective.salesforce.fundraising.authnet.codes import reason_codes
             
 
 class DonationFormAuthnetDPM(grok.View):
@@ -35,7 +40,16 @@ class DonationFormAuthnetDPM(grok.View):
     grok.template('donation_form_authnet_dpm')
 
     def update(self):
-        self.levels = [25,50,100,250,500,1000]
+        settings = get_settings()
+        level_id = self.request.form.get('levels', settings.default_donation_ask_one_time)
+        self.levels = None
+        for row in settings.donation_ask_levels:
+            row_id, amounts = row.split('|')
+            if row_id == level_id:
+                self.levels = amounts.split(',')
+        if not self.levels:
+            self.levels = settings.donation_ask_levels[0].split('|')[1].split(',')
+        
         self.timestamp = ''
         self.sequence = str(uuid.uuid4())
         self.fingerprint_url = self.context.absolute_url() + '/authnet_fingerprint'
@@ -43,9 +57,37 @@ class DonationFormAuthnetDPM(grok.View):
         self.relay_url = getSite().absolute_url() + '/post_authnet_dpm_donation'
         self.login_key = get_settings().authnet_login_key
 
+
+        self.error = self.request.form.get('error', None)
+        response_code = self.request.form.get('response_code',None)
+        reason_code = self.request.form.get('reason_code', None)
+
+        self.response_text = None
+        self.reason_text = None
+
+        if response_code and reason_code:
+            response_code = int(response_code)
+            reason_code = int(reason_code)
+            self.response_text = response_codes[response_code]
+            self.reason_text = reason_codes[reason_code]
+
         self.countries = CountryAvailability().getCountryListing()
         self.countries.sort()
 
+
+REDIRECT_HTML = """
+    <html>
+      <head>
+        <script type='text/javascript' charset='utf-8'>
+          window.location='%(redirect_url)s';
+        </script>
+        <noscript>
+          <meta http-equiv='refresh' content='1;url=%(redirect_url)s'>
+        </noscript>
+      </head>
+      <body></body>
+    </html>
+"""
     
 class AuthnetFingerprint(grok.View):
     grok.context(IFundraisingCampaignPage)
@@ -87,8 +129,9 @@ class AuthnetCallbackDPM(grok.View):
     grok.require('zope2.View')
 
     def render(self):
-        response_code = self.request.form.get('x_response_code', None)
-        campaign_id = self.request.form.get('c_campaign_id', None)
+        response_code = int(self.request.form.get('x_response_code'))
+        reason_code = int(self.request.form.get('x_response_reason_code'))
+        campaign_id = self.request.form.get('c_campaign_id')
        
         pc = getToolByName(self.context, 'portal_catalog') 
         res = pc.searchResults(sf_object_id = campaign_id)
@@ -98,11 +141,32 @@ class AuthnetCallbackDPM(grok.View):
 
         # If the response was a failure of some kind or another, re-render the form with the error message
         # The response goes back to Authorize.net who then renders it through their servers to the user
-        if response_code != '1':
+        if response_code != 1:
             IStatusMessage(self.request).add(u'There was an error processing your donation.  The error message was (%s).  Please try again or contact us if you continue to have issues' % self.request.get('x_response_reason_text'))
-            campaign = aq_inner(campaign)
-            view = getMultiAdapter((campaign, self.request), name='view')
-            return view()
+
+            redirect_data = {
+                'error': 'donation_form_authnet_dpm',
+                'response_code': response_code,
+                'reason_code': reason_code,
+            }
+            first_name = self.request.form.get('x_first_name', None)
+            last_name = self.request.form.get('x_last_name', None)
+            email = self.request.form.get('x_email', None)
+            phone = self.request.form.get('x_phone', None)
+            amount = self.request.form.get('x_amount', None)
+            if first_name:
+                redirect_data['x_first_name'] = first_name
+            if last_name:
+                redirect_data['x_last_name'] = last_name
+            if email:
+                redirect_data['x_email'] = email
+            if phone:
+                redirect_data['x_phone'] = phone
+            if amount:
+                redirect_data['x_amount'] = int(float(amount))
+            redirect_data = urllib.urlencode(redirect_data)
+            redirect_url = campaign.absolute_url() + '?' + redirect_data
+            return REDIRECT_HTML % {'redirect_url': redirect_url}
 
         # Record the successful transaction
         else:
@@ -162,7 +226,7 @@ class AuthnetCallbackDPM(grok.View):
             # FIXME - Set the transaction id from the recurly callback data (invoice -> transaction -> reference)
     
             # FIXME - the name hard codes a monthly billing cycle
-            res = sfbc.create({
+            data = {
                 'type': 'Opportunity',
                 'AccountId': settings.sf_individual_account_id,
                 'Success_Transaction_Id__c': trans_id,
@@ -173,7 +237,11 @@ class AuthnetCallbackDPM(grok.View):
                 'CampaignId': campaign.sf_object_id,
                 'Source_Campaign__c': campaign.get_source_campaign(),
                 'Source_Url__c': campaign.get_source_url(),
-            })
+            }
+            if settings.sf_opportunity_record_type_one_time:
+                data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
+
+            res = sfbc.create(data)
     
             if not res[0]['success']:
                 raise Exception(res[0]['errors'][0]['message'])
@@ -198,17 +266,17 @@ class AuthnetCallbackDPM(grok.View):
             # trying to add someone to a campaign that they're already a member of throws
             # an error.  We want to let people donate more than once.
             # Ignoring the error saves an API call to first check if the member exists
-            role_res = sfbc.create({
-                'type': 'CampaignMember',
-                'CampaignId': campaign.sf_object_id,
-                'ContactId': person.sf_object_id,
-                'Status': 'Responded',
-            })
+            if settings.sf_create_campaign_member:
+                role_res = sfbc.create({
+                    'type': 'CampaignMember',
+                    'CampaignId': campaign.sf_object_id,
+                    'ContactId': person.sf_object_id,
+                    'Status': 'Responded',
+                })
         
             # Record the transaction and its amount in the campaign
-            self.context.add_donation(amount)
+            campaign.add_donation(amount)
+
+            redirect_url = '%s/thank-you?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
     
-            return self.request.response.redirect('%s/thank-you?email=%s' % (campaign.absolute_url(), email)) 
-
-        return 'Your transaction failed: %s' % self.request.form
-
+            return REDIRECT_HTML % {'redirect_url': redirect_url}

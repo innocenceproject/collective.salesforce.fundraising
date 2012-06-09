@@ -71,6 +71,17 @@
    </assignment> 
 
    <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignQuotes"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.fundraisingcampaign"
+     name="campaign.quotes.portlet"
+     insert-after="campaign.fundraisers.portlet"
+     >
+     <property name="title">Quotes</property>
+   </assignment> 
+
+   <assignment
      type="collective.salesforce.fundraising.portlets.CampaignStatus"
      manager="plone.rightcolumn"
      category="content_type"
@@ -101,6 +112,17 @@
      insert-after="campaign.status.portlet"
      >
      <property name="title">Fundraisers</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignQuotes"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.personalcampaignpage"
+     name="campaign.quotes.portlet"
+     insert-after="campaign.fundraisers.portlet"
+     >
+     <property name="title">Quotes</property>
    </assignment> 
 
 </portlets>

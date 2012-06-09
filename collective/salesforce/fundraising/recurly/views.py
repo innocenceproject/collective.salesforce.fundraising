@@ -45,9 +45,19 @@ class DonationFormRecurly(grok.View):
     grok.template('donation_form_recurly')
 
     def update(self):
-        self.levels = [10,25,50,100,250,500]
-
         settings = get_settings()
+
+        level_id = self.request.form.get('levels_monthly', None)
+        if not level_id:
+            level_id = self.request.form.get('levels', settings.default_donation_ask_recurring)
+        self.levels = None
+        for row in settings.donation_ask_levels:
+            row_id, amounts = row.split('|')
+            if row_id == level_id:
+                self.levels = amounts.split(',')
+        if not self.levels:
+            self.levels = settings.donation_ask_levels[0].split('|')[1].split(',')
+
         recurly_subdomain = settings.recurly_subdomain
         self.recurly_js = RECURLY_JS % {
             'subdomain': recurly_subdomain,   
@@ -147,7 +157,7 @@ class PostRecurlySubscription(grok.View):
         # FIXME - Set the transaction id from the recurly callback data (invoice -> transaction -> reference)
 
         # FIXME - the name hard codes a monthly billing cycle
-        res = sfbc.create({
+        data = {
             'type': 'Opportunity',
             'AccountId': settings.sf_individual_account_id,
             'Success_Transaction_Id__c': transaction_id,
@@ -158,7 +168,10 @@ class PostRecurlySubscription(grok.View):
             'CampaignId': self.context.sf_object_id,
             'Source_Campaign__c': self.context.get_source_campaign(),
             'Source_Url__c': self.context.get_source_url(),
-        })
+        }
+        if settings.sf_opportunity_record_type_recurring:
+            data['RecordTypeId'] = settings.sf_opportunity_record_type_recurring
+        res = sfbc.create(data)
 
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
@@ -183,15 +196,16 @@ class PostRecurlySubscription(grok.View):
         # trying to add someone to a campaign that they're already a member of throws
         # an error.  We want to let people donate more than once.
         # Ignoring the error saves an API call to first check if the member exists
-        role_res = sfbc.create({
-            'type': 'CampaignMember',
-            'CampaignId': self.context.sf_object_id,
-            'ContactId': person.sf_object_id,
-            'Status': 'Responded',
-        })
+        if settings.sf_create_campaign_member:
+            member_res = sfbc.create({
+                'type': 'CampaignMember',
+                'CampaignId': self.context.sf_object_id,
+                'ContactId': person.sf_object_id,
+                'Status': 'Responded',
+            })
        
         # Record the transaction and its amount in the campaign
         self.context.add_donation(sub.quantity)
  
-        return self.request.response.redirect('%s/thank-you?email=%s' % (self.context.absolute_url(), email))
+        return self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%s' % (self.context.absolute_url(), opportunity['id'], sub.quantity))
 
