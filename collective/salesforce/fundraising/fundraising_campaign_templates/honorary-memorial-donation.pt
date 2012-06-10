@@ -1,0 +1,106 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.salesforce.fundraising">
+<body>
+
+<metal:main fill-slot="content-title">
+  <metal:content-description define-macro="content-title">
+    <h1 class="documentFirstHeading">Honorary or Memorial Gift</h1>
+  </metal:content-description>
+</metal:main>
+
+<metal:main fill-slot="content-description">
+  <metal:content-description define-macro="content-description">
+    <p class="documentDescription">Use the form below to enter the details about your gift</p>
+  </metal:content-description>
+</metal:main>
+
+<metal:main fill-slot="content-core">
+  <metal:content-core define-macro="content-core">
+    <form method="post" action="" id="donation-form-honorary" class="donation-form donation-form-honorary" tal:attributes="action string:${view/context/absolute_url}/honorary-memorial-donation">
+      <input type="hidden" name="send_email" value="true" />
+      <input type="hidden" name="donation_id" value="" tal:attributes="value view/donation_id" />
+      <input type="hidden" name="amount" value="" tal:attributes="value view/amount" />
+    
+      <fieldset class="fieldset-contact-info after-amount">
+        <legend>Dedication</legend>
+    
+        <div class="field field-honorary-type">
+          <label>Is your gift in honor of or in memory of someone?</label>
+          <div class="options">
+            <div class="option">
+              <input id="honorary-type-honorary" type="radio" name="honorary_type" value="Honorary" />
+              <label for="honorary-type-honorary">in honor of</label>
+            </div>
+            <div class="option">
+              <input id="honorary-type-memorial" type="radio" name="honorary_type" value="Memorial" />
+              <label for="honorary-type-memorial">in memory of</label>
+            </div>
+          </div>
+          <div class="clear"></div>
+        </div>
+    
+        <div class="field field-honorary-name">
+          <label>Who is this gift in honor of?</label>
+          <input type="text" name="honorary_name" required="required" maxlength="128" />
+        </div>
+    
+      </fieldset>
+    
+      <fieldset>
+        <legend>Email Notification</legend>
+    
+        <div class="field field-honorary-send">
+          <label>Would you like to send a notification by email?</label>
+          <div class="options">
+            <div class="option">
+              <input id="honorary-send-yes" type="radio" name="honorary_send" value="Yes" />
+              <label for="honorary-send-yes">Yes</label>
+            </div>
+            <div class="option">
+              <input id="honorary-send-no" type="radio" name="honorary_send" value="No" />
+              <label for="honorary-send-no">No</label>
+            </div>
+          </div>
+        </div>
+    
+        <div class="field field-honorary-recipient">
+          <div class="field-inputs">
+            <div class="subfield subfield-recipient-name">
+              <input type="text" name="honorary_recipient" placeholder="Recipient's Name" maxlength="128" />
+            </div>
+            <div class="subfield subfield-email">
+              <input type="email" name="honorary_email" placeholder="Recipient's Email" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field field-honorary-recipient">
+          <textarea name="honorary_message" placeholder="Message (optional)"></textarea>
+        </div>
+    
+        <div class="field field-honorary-send">
+          <label>Would you like to send a notification by email?</label>
+          <div class="options">
+            <div class="option">
+              <input id="honorary-send-yes" type="radio" name="honorary_send" value="Yes" />
+              <label for="honorary-send-yes">Yes</label>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="form-buttons">
+        <input type="submit" />
+      </div>
+    </form>
+    
+    <div id="honorary-email-preview"></div>
+  </metal:content-core>
+</metal:main>
+</body>
+</html>

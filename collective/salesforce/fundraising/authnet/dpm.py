@@ -277,6 +277,11 @@ class AuthnetCallbackDPM(grok.View):
             # Record the transaction and its amount in the campaign
             campaign.add_donation(amount)
 
-            redirect_url = '%s/thank-you?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
+            # If this is an honorary or memorial donation, redirect to the form to provide details
+            is_honorary = self.request.form.get('c_is_honorary', None)
+            if is_honorary == 'true': 
+                redirect_url = '%s/honorary-memorial-donation?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
+            else:
+                redirect_url = '%s/thank-you?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
     
             return REDIRECT_HTML % {'redirect_url': redirect_url}

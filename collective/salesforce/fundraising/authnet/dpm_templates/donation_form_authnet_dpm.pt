@@ -12,6 +12,7 @@
       <input type="hidden" name="c_campaign_id" value="" tal:attributes="value view/context/sf_object_id" />
       <input type="hidden" name="c_source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
       <input type="hidden" name="c_source_url" value="" tal:attributes="value view/context/get_source_url" />
+      <input type="hidden" name="send_email" value="true" />
 
       <fieldset class="fieldset-donation-amount">
         <legend>Select an Amount</legend>
@@ -86,12 +87,11 @@
       <fieldset class="after-amount fieldset-honorary collapsed">
         <legend>Honorary / Memorial</legend>
         <div class="field field-is-honorary">
-          <input type="checkbox" name="c_is_honorary" />
-          <label>Yes, this gift is in Honor or in Memory of someone.</label>
+          <input id="authnet-dpm-is-honorary" type="checkbox" name="c_is_honorary" value="true" />
+          <label for="authnet-dpm-is-honorary">Yes, this gift is in Honor or in Memory of someone.</label>
           <div class="field-help">If checked, you can specify Honorary/Memorial information on the next page</div>
         </div>
       </fieldset>
-
 
       <fieldset class="after-amount fieldset-billing-info">
         <legend>Billing Information</legend>

@@ -51,6 +51,7 @@
         <field name="direct_donations_count" title="Total Direct Donations" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
             <title>Number of Direct Donations</title>
             <description>Total count of donations made directly to this campaign</description>
+            <default>0</default>
             <required>False</required>
         </field>
         <field name="allow_personal" title="Allow Personal Fundraising?" type="zope.schema.Bool" sf:field="Allow_Personal__c">

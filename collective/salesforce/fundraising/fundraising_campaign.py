@@ -26,6 +26,8 @@ from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import view as cache_view
 
 from Products.CMFCore.utils import getToolByName
+from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
+from Products.statusmessages.interfaces import IStatusMessage
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
@@ -361,8 +363,8 @@ class ThankYouView(grok.View):
             self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
             self.receipt = self.receipt_view()
 
-            # Check if the email receipt has been sent.  If not, render and send it then mark it as sent in Salesforce (1 API Call)
-            if not self.receipt_view.donation.Email_Receipt_Sent__c:
+            # Check if send_mail=true was passed and if so, send the receipt email
+            if self.request.form.get('send_mail', None) == 'true':
                 settings = get_settings() 
 
                 # Construct the email bodies
@@ -370,18 +372,17 @@ class ThankYouView(grok.View):
                 email_body = getMultiAdapter((self.context, self.request), name='thank-you-email')()
                 txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
 
-                # Construct the email message                
+                # Determine to and from addresses
                 portal_url = getToolByName(self.context, 'portal_url')
                 portal = portal_url.getPortalObject()
-
                 mail_from = portal.getProperty('email_from_address')
                 mail_to = self.receipt_view.contact.Email
 
+                # Construct the email message                
                 msg = MIMEMultipart('alternative')
                 msg['Subject'] = settings.thank_you_email_subject
                 msg['From'] = mail_from
                 msg['To'] = mail_to
-        
                 part1 = MIMEText(txt_body, 'plain')
                 part2 = MIMEText(email_body, 'html')
     
@@ -432,6 +433,115 @@ class ThankYouView(grok.View):
             comment,
             self.context.absolute_url() + '/@@images/image',
         )
+
+class HonoraryMemorialView(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.require('zope2.View')
+
+    grok.name('honorary-memorial-donation')
+
+    form_template = ViewPageTemplateFile('fundraising_campaign_templates/honorary-memorial-donation.pt')
+
+    def render(self):
+        # Fetch some values that should have been passed from the redirector
+        self.donation_id = self.request.form['donation_id']
+        self.amount = int(self.request.form['amount'])
+
+        self.receipt_view = None
+        self.receipt = None
+        if self.donation_id and self.amount:
+            self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
+            self.receipt = self.receipt_view()
+
+            # Handle POST
+            if self.request['REQUEST_METHOD'] == 'POST':
+                # Fetch values from the request
+                honorary_name = self.request.form.get('honorary_name', None)
+                honorary_email = self.request.form.get('honorary_email', None)
+                honorary_recipient = self.request.form.get('honorary_recipient', None)
+                honorary_message = self.request.form.get('honorary_message', None)
+                honorary_type = self.request.form.get('honorary_type', None)
+
+                # Dump the data into Salesforce
+                sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+                sfbc.update({
+                    'type': 'Opportunity',
+                    'Id': self.donation_id,
+                    'Honorary_Name__c': honorary_name,
+                    'Honorary_Email__c': honorary_email,
+                    'Honorary_Recipient__c': honorary_recipient,
+                    'Honorary_Message__c': honorary_message,
+                    'Honorary_Type__c': honorary_type,
+                })
+
+                # If there was an email passed and we're supposed to send an email, send the email
+                if honorary_email and self.request.form.get('send_email', None) == 'true':
+
+                    settings = get_settings() 
+
+                    # Construct the email bodies
+                    pt = getToolByName(self.context, 'portal_transforms')
+                    if honorary_type == u'Honorary':
+                        email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
+                        email_view.set_honorary_info(
+                            donor = self.receipt_view.contact,
+                            honorary_name = honorary_name,
+                            honorary_recipient = honorary_recipient,
+                            honorary_email = honorary_email,
+                            honorary_message = honorary_message,
+                        )
+                        email_body = email_view()
+
+                    else:
+                        email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
+                        email_view.set_honorary_info(
+                            donor = self.receipt_view.contact,
+                            honorary_name = honorary_name,
+                            honorary_recipient = honorary_recipient,
+                            honorary_email = honorary_email,
+                            honorary_message = honorary_message,
+                        )
+                        email_body = email_view()
+        
+                    txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
+
+                    # Construct the email message                
+                    portal_url = getToolByName(self.context, 'portal_url')
+                    portal = portal_url.getPortalObject()
+
+                    mail_from = portal.getProperty('email_from_address')
+                    mail_cc = self.receipt_view.contact.Email
+
+                    msg = MIMEMultipart('alternative')
+                    if honorary_type == 'Memorial': 
+                        msg['Subject'] = 'Gift received in memory of %s' % honorary_name
+                    else:
+                        msg['Subject'] = 'Gift received in honor of %s' % honorary_name
+                    msg['From'] = mail_from
+                    msg['To'] = honorary_email
+                    msg['Cc'] = mail_cc
+        
+                    part1 = MIMEText(txt_body, 'plain')
+                    part2 = MIMEText(email_body, 'html')
+    
+                    msg.attach(part1)
+                    msg.attach(part2)
+
+                    # Attempt to send it
+                    try:
+
+                        # Send the notification email
+                        host = getToolByName(self, 'MailHost')
+                        host.send(msg, immediate=True)
+
+                        # Redirect on to the thank you page
+                        self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%i&send_email=true' % (self.context.absolute_url(), self.donation_id, self.amount))
+
+                    except smtplib.SMTPRecipientsRefused:
+                        # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
+                        pass
+
+        return self.form_template()
 
 class ShareView(grok.View):
     grok.context(IFundraisingCampaignPage)
@@ -571,3 +681,56 @@ class ThankYouEmail(grok.View):
         settings = get_settings()
         self.email_header = settings.email_header
         self.email_footer = settings.email_footer
+
+class HonoraryEmail(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.require('zope2.View')
+    
+    grok.name('honorary-email')
+    grok.template('honorary-email')
+    
+    def update(self):
+        settings = get_settings()
+        self.email_header = settings.email_header
+        self.email_footer = settings.email_footer
+        self.organization_name = settings.organization_name
+        self.amount = self.request['amount']
+        if self.request.form.get('show-amount', None) == 'Yes':
+            self.amount = None
+        
+    def set_honorary_info(self, donor, honorary_name, honorary_recipient, honorary_email, honorary_message):
+        self.donor = '%s %s' % (donor.FirstName, donor.LastName)
+        self.honorary_name = honorary_name
+        self.honorary_recipient = honorary_recipient
+        self.honorary_email = honorary_email
+
+        # Attempt to perform a basic text to html conversion on the message text provided
+        pt = getToolByName(self.context, 'portal_transforms')
+        self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
+
+class MemorialEmail(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.require('zope2.View')
+    
+    grok.name('memorial-email')
+    grok.template('memorial-email')
+
+    def update(self):
+        settings = get_settings()
+        self.email_header = settings.email_header
+        self.email_footer = settings.email_footer
+        self.organization_name = settings.organization_name
+        self.amount = self.request['amount']
+        if self.request.form.get('show-amount', None) == 'Yes':
+            self.amount = None
+        
+    def set_honorary_info(self, donor, honorary_name, honorary_recipient, honorary_email, honorary_message):
+        self.donor = '%s %s' % (donor.FirstName, donor.LastName)
+        self.honorary_name = honorary_name
+        self.honorary_recipient = honorary_recipient
+        self.honorary_email = honorary_email
+
+        # Attempt to perform a basic text to html conversion on the message text provided
+        pt = getToolByName(self.context, 'portal_transforms')
+        self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
+
