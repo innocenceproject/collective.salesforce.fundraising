@@ -22,11 +22,10 @@
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">
     <form method="post" action="" id="donation-form-honorary" class="donation-form donation-form-honorary" tal:attributes="action string:${view/context/absolute_url}/honorary-memorial-donation">
-      <input type="hidden" name="send_email" value="true" />
       <input type="hidden" name="donation_id" value="" tal:attributes="value view/donation_id" />
       <input type="hidden" name="amount" value="" tal:attributes="value view/amount" />
     
-      <fieldset class="fieldset-contact-info after-amount">
+      <fieldset class="fieldset-dedication">
         <legend>Dedication</legend>
     
         <div class="field field-honorary-type">
@@ -51,7 +50,7 @@
     
       </fieldset>
     
-      <fieldset>
+      <fieldset class="fieldset-email-notification">
         <legend>Email Notification</legend>
     
         <div class="field field-honorary-send">
@@ -79,27 +78,49 @@
           </div>
         </div>
 
-        <div class="field field-honorary-recipient">
-          <textarea name="honorary_message" placeholder="Message (optional)"></textarea>
-        </div>
-    
-        <div class="field field-honorary-send">
-          <label>Would you like to send a notification by email?</label>
-          <div class="options">
-            <div class="option">
-              <input id="honorary-send-yes" type="radio" name="honorary_send" value="Yes" />
-              <label for="honorary-send-yes">Yes</label>
+        <div class="field field-honorary-message">
+          <div class="field-inputs">
+            <div class="subfield subfield-show-amount">
+              <div class="options">
+                <div class="option">
+                  <input id="honorary-show-amount" type="checkbox" name="show_amount" value="Yes" checked="checked"  />
+                  <label for="honorary-show-amount">Include gift amount in email</label>
+                </div>
+              </div>
             </div>
           </div>
+          <div class="subfield subfield-honorary-message">
+            <textarea name="honorary_message" placeholder="Message (optional)"></textarea>
+          </div>
         </div>
+    
       </fieldset>
 
       <div class="form-buttons">
         <input type="submit" />
       </div>
+
+      <fieldset class="fieldset-email-preview">
+        <legend>Email Preview</legend>
+        <ul class="preview-links">
+          <li><a class="honorary-preview-with-amount" href="" 
+                 tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true&amount=${view/receipt_view/donation/Amount}&show_amount=Yes">Honorary Email Preview</a>
+          </li>
+          <li><a class="honorary-preview-without-amount" href="" 
+                 tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true">Honorary Email Preview without Amount</a>
+          </li>
+          <li><a class="memorial-preview-with-amount" href="" 
+                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true&amount=${view/receipt_view/donation/Amount}&show_amount=Yes">Memorial Email Preview</a>
+          </li>
+          <li><a class="memorial-preview-without-amount" href="" 
+                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true">Memorial Email Preview without Amount</a>
+          </li>
+        </ul>
+        <div class="field field-email-preview"></div>
+      </fieldset>
+
     </form>
     
-    <div id="honorary-email-preview"></div>
   </metal:content-core>
 </metal:main>
 </body>

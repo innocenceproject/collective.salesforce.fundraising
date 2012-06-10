@@ -7,15 +7,17 @@
       </tr>
       <tr>
         <td width="250px" valign="top">
-          <div class="donor-details" style="padding: 0 20px">
+          <div class="donor-details" style="padding: 0 20px 20px 20px">
             <h3 class="donor-name" tal:content="string:${view/contact/FirstName} ${view/contact/LastName}" />
             <div class="donor-street-address" tal:content="view/contact/MailingStreet" />
             <div class="donor-city-state-zip" tal:content="string:${view/contact/MailingCity}, ${view/contact/MailingState}  ${view/contact/MailingPostalCode}" />
             <div class="donor-country" tal:content="view/contact/MailingCountry" />
+            <div class="donor-email" tal:content="view/contact/Email" />
+            <div class="donor-phone" tal:content="view/contact/Phone" />
           </div>
         </td>
         <td width="250px" valign="top">
-          <div class="donation-details" style="padding: 0 20px">
+          <div class="donation-details" style="padding: 0 20px 20px 20px">
             <h3>Donation Amount: $<span tal:replace="python: int(view.donation.Amount)" /></h3>
             <div class="donation-date" tal:content="string:Date: ${view/donation/CloseDate}" />
           </div>
@@ -23,6 +25,18 @@
       </tr>
       <tr>
         <td colspan="2" style="background-color: white; padding: 20px"><div class="donation-receipt-legal" tal:content="structure view/donation_receipt_legal" tal:condition="view/donation_receipt_legal" />
+      </tr>
+      <tr tal:condition="python: view.donation['Honorary_Type__c'] and view.donation['Honorary_Name__c']">
+        <td colspan="2" style="background-color: white; padding: 20px">
+          <h5 tal:condition="python: view.donation['Honorary_Type__c'] == 'Honorary'">Honorary Gift Information</h5>
+          <h5 tal:condition="python: view.donation['Honorary_Type__c'] == 'Memorial'">Memorial Gift Information</h5>
+
+          <p>Dedicated to <strong tal:content="view/donation/Honorary_Name__c">NAME</strong></p>
+
+          <div tal:condition="view/donation/Honorary_Email__c">
+            <p>Notification of your gift was sent to <span tal:replace="view/donation/Honorary_Recipient__c">RECIPIENT</span> at <span tal:replace="view/donation/Honorary_Email__c">EMAIL</span>.  You were also copied on the email and should receive a copy.<span tal:condition="view/donation/Honorary_Message__c">  Your gift notification email included the custom message you provided.</span></p>
+          </div>
+        </td>
       </tr>
     </tbody>
   </table>

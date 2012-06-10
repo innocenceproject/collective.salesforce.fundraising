@@ -1,6 +1,7 @@
 import locale
 import random
 import smtplib
+import uuid
 from datetime import date
 
 from email.mime.multipart import MIMEMultipart
@@ -23,7 +24,7 @@ from plone.z3cform.interfaces import IWrappedForm
 from plone.app.textfield import RichText
 from plone.namedfile import NamedBlobImage
 from plone.namedfile.interfaces import IImageScaleTraversable
-from plone.memoize import view as cache_view
+from plone.memoize import instance
 
 from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
@@ -253,7 +254,18 @@ class FundraisingCampaignPage(object):
             consumer = getUtility(IConsumer)
             # FIXME - don't hard code maxwidth
             return consumer.get_data(self.external_media_url, maxwidth=270).get('html')
-            
+           
+    def clear_donation_from_cache(self, donation_id, amount):
+        """ Clears a donation from the cache.  This is useful if its value needs to be refreshed
+            on the next time it's called but you don't want to call it now. """
+        key = ('lookup_donation', (self, donation_id, amount), frozenset([]))
+        if self._memojito_.has_key(key):
+            del self._memojito_[key]
+ 
+    @instance.memoize
+    def lookup_donation(self, donation_id, amount):
+        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
+        return sfbc.query(RECEIPT_SOQL % (donation_id, amount, self.sf_object_id))
 
 
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
@@ -364,7 +376,7 @@ class ThankYouView(grok.View):
             self.receipt = self.receipt_view()
 
             # Check if send_mail=true was passed and if so, send the receipt email
-            if self.request.form.get('send_mail', None) == 'true':
+            if self.request.form.get('send_receipt_email', None) == 'true':
                 settings = get_settings() 
 
                 # Construct the email bodies
@@ -397,13 +409,14 @@ class ThankYouView(grok.View):
                     # boundary or queued for later delivery.
                     host.send(msg, immediate=True)
 
+                    # Commented out in favor of passing send_receipt_email=true to the thank you view to avoid a Salesforce API call
                     # Mark the receipt as sent in Salesforce
-                    sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-                    sfbc.update({
-                        'type': 'Opportunity',
-                        'Id': self.donation_id,
-                        'Email_Receipt_Sent__c': True,
-                    })
+                    #sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+                    #sfbc.update({
+                        #'type': 'Opportunity',
+                        #'Id': self.donation_id,
+                        #'Email_Receipt_Sent__c': True,
+                    #})
 
                 except smtplib.SMTPRecipientsRefused:
                     # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
@@ -460,6 +473,7 @@ class HonoraryMemorialView(grok.View):
                 honorary_email = self.request.form.get('honorary_email', None)
                 honorary_recipient = self.request.form.get('honorary_recipient', None)
                 honorary_message = self.request.form.get('honorary_message', None)
+                honorary_send = self.request.form.get('honorary_send', None) == 'Yes'
                 honorary_type = self.request.form.get('honorary_type', None)
 
                 # Dump the data into Salesforce
@@ -474,8 +488,11 @@ class HonoraryMemorialView(grok.View):
                     'Honorary_Type__c': honorary_type,
                 })
 
+                # Expire the donation in the cache so the new Honorary values are looked up next time
+                self.context.clear_donation_from_cache(self.donation_id, self.amount)
+
                 # If there was an email passed and we're supposed to send an email, send the email
-                if honorary_email and self.request.form.get('send_email', None) == 'true':
+                if honorary_send and honorary_email:
 
                     settings = get_settings() 
 
@@ -484,7 +501,7 @@ class HonoraryMemorialView(grok.View):
                     if honorary_type == u'Honorary':
                         email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
                         email_view.set_honorary_info(
-                            donor = self.receipt_view.contact,
+                            donor = '%(FirstName)s %(LastName)s' % self.receipt_view.contact,
                             honorary_name = honorary_name,
                             honorary_recipient = honorary_recipient,
                             honorary_email = honorary_email,
@@ -495,7 +512,7 @@ class HonoraryMemorialView(grok.View):
                     else:
                         email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
                         email_view.set_honorary_info(
-                            donor = self.receipt_view.contact,
+                            donor = '%(FirstName)s %(LastName)s' % self.receipt_view.contact,
                             honorary_name = honorary_name,
                             honorary_recipient = honorary_recipient,
                             honorary_email = honorary_email,
@@ -534,12 +551,13 @@ class HonoraryMemorialView(grok.View):
                         host = getToolByName(self, 'MailHost')
                         host.send(msg, immediate=True)
 
-                        # Redirect on to the thank you page
-                        self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%i&send_email=true' % (self.context.absolute_url(), self.donation_id, self.amount))
-
                     except smtplib.SMTPRecipientsRefused:
                         # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
                         pass
+
+                # Redirect on to the thank you page
+                self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%i&send_receipt_email=true' % (self.context.absolute_url(), self.donation_id, self.amount))
+
 
         return self.form_template()
 
@@ -619,7 +637,11 @@ RECEIPT_SOQL = """select
     Opportunity.Amount, 
     Opportunity.CloseDate, 
     Opportunity.StageName, 
-    Opportunity.Email_Receipt_Sent__c, 
+    Opportunity.Honorary_Type__c, 
+    Opportunity.Honorary_Name__c, 
+    Opportunity.Honorary_Recipient__c, 
+    Opportunity.Honorary_Email__c, 
+    Opportunity.Honorary_Message__c, 
     Contact.FirstName, 
     Contact.LastName, 
     Contact.Email, 
@@ -650,8 +672,8 @@ class DonationReceipt(grok.View):
     def update(self):
         donation_id = sanitize_soql(self.request.form.get('donation_id'))
         amount = int(self.request.form.get('amount'))
-        campaign_id = self.context.sf_object_id
-        res = self.lookupDonation(donation_id, amount, campaign_id)
+        refresh = self.request.form.get('refresh') == 'true'
+        res = self.context.lookup_donation(donation_id, amount)
         
         if not len(res['records']):
             raise ValueError('Donation with id %s and amount %s was not found.' % (donation_id, amount))
@@ -663,11 +685,10 @@ class DonationReceipt(grok.View):
         self.donation = res['records'][0].Opportunity
         self.contact = res['records'][0].Contact
 
-    @cache_view.memoize_contextless
-    def lookupDonation(self, donation_id, amount, campaign_id):
-        sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-        return sfbc.query(RECEIPT_SOQL % (donation_id, amount, campaign_id))
 
+        
+        
+    
 class ThankYouEmail(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
@@ -690,24 +711,42 @@ class HonoraryEmail(grok.View):
     grok.template('honorary-email')
     
     def update(self):
+        if self.request.get('show_template', None) == 'true':
+            # Enable rendering of the template without honorary info
+            self.set_honorary_info(
+                donor = '<YOUR NAME>',
+                honorary_name = '<NAME IN HONOR OF>',
+                honorary_recipient = '<RECIPIENT NAME>',
+                honorary_email = None,
+                honorary_message = '<YOUR MESSAGE HERE (optional)>'
+            )
+            
         settings = get_settings()
         self.email_header = settings.email_header
         self.email_footer = settings.email_footer
         self.organization_name = settings.organization_name
-        self.amount = self.request['amount']
-        if self.request.form.get('show-amount', None) == 'Yes':
-            self.amount = None
+        self.amount = None
+        if self.request.form.get('show_amount', None) == 'Yes':
+            self.amount = self.request['amount']
         
     def set_honorary_info(self, donor, honorary_name, honorary_recipient, honorary_email, honorary_message):
-        self.donor = '%s %s' % (donor.FirstName, donor.LastName)
+        self.donor = donor
         self.honorary_name = honorary_name
         self.honorary_recipient = honorary_recipient
         self.honorary_email = honorary_email
 
         # Attempt to perform a basic text to html conversion on the message text provided
         pt = getToolByName(self.context, 'portal_transforms')
-        self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
+        try:
+            self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
+        except:
+            self.honorary_message = honorary_message
 
+
+#FIXME: I tried to use subclasses to build these 2 views but grok seemed to be getting in the way.
+# I tried making a base mixin class then 2 different views base of it and grok.View as well as 
+# making MemorialEmail subclass Honorary with a new name and template.  Neither worked so I'm 
+# left duplicating logic for now.
 class MemorialEmail(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
@@ -716,16 +755,26 @@ class MemorialEmail(grok.View):
     grok.template('memorial-email')
 
     def update(self):
+        if self.request.get('show_template', None) == 'true':
+            # Enable rendering of the template without honorary info
+            self.set_honorary_info(
+                donor = '<YOUR NAME>',
+                honorary_name = '<NAME IN MEMORY OF>',
+                honorary_recipient = '<RECIPIENT NAME>',
+                honorary_email = None,
+                honorary_message = '<YOUR MESSAGE HERE (optional)>'
+            )
+            
         settings = get_settings()
         self.email_header = settings.email_header
         self.email_footer = settings.email_footer
         self.organization_name = settings.organization_name
-        self.amount = self.request['amount']
-        if self.request.form.get('show-amount', None) == 'Yes':
-            self.amount = None
+        self.amount = None
+        if self.request.form.get('show_amount', None) == 'Yes':
+            self.amount = self.request.form['amount']
         
     def set_honorary_info(self, donor, honorary_name, honorary_recipient, honorary_email, honorary_message):
-        self.donor = '%s %s' % (donor.FirstName, donor.LastName)
+        self.donor = donor
         self.honorary_name = honorary_name
         self.honorary_recipient = honorary_recipient
         self.honorary_email = honorary_email
@@ -734,3 +783,7 @@ class MemorialEmail(grok.View):
         pt = getToolByName(self.context, 'portal_transforms')
         self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
 
+        try:
+            self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
+        except:
+            self.honorary_message = honorary_message
