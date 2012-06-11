@@ -259,6 +259,7 @@ class FundraisingCampaignPage(object):
         """ Clears a donation from the cache.  This is useful if its value needs to be refreshed
             on the next time it's called but you don't want to call it now. """
         key = ('lookup_donation', (self, donation_id, amount), frozenset([]))
+        self._memojito_.clear()
         if self._memojito_.has_key(key):
             del self._memojito_[key]
  
@@ -637,6 +638,7 @@ RECEIPT_SOQL = """select
     Opportunity.Amount, 
     Opportunity.CloseDate, 
     Opportunity.StageName, 
+    Opportunity.npe03__Recurring_Donation__c, 
     Opportunity.Honorary_Type__c, 
     Opportunity.Honorary_Name__c, 
     Opportunity.Honorary_Recipient__c, 
@@ -685,9 +687,6 @@ class DonationReceipt(grok.View):
         self.donation = res['records'][0].Opportunity
         self.contact = res['records'][0].Contact
 
-
-        
-        
     
 class ThankYouEmail(grok.View):
     grok.context(IFundraisingCampaignPage)

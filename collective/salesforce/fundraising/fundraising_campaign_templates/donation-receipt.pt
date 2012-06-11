@@ -18,8 +18,14 @@
         </td>
         <td width="250px" valign="top">
           <div class="donation-details" style="padding: 0 20px 20px 20px">
-            <h3>Donation Amount: $<span tal:replace="python: int(view.donation.Amount)" /></h3>
+            <h3>Gift Amount: $<span tal:replace="python: int(view.donation.Amount)" /></h3>
             <div class="donation-date" tal:content="string:Date: ${view/donation/CloseDate}" />
+
+            <br /><br />
+            <tal:if_recurring condition="view/donation/npe03__Recurring_Donation__c">
+            <h3>Repeats Monthly</h3>
+            <div>We will deduct $<span tal:replace="python: int(view.donation.Amount)" /> from your account each month going forward</div>
+            </tal:if_recurring>
           </div>
         </td>
       </tr>
