@@ -89,7 +89,7 @@ class PostRecurlySubscription(grok.View):
         """ Fetch the subscription details from Recurly and create Salesforce objects.
             Then, redirec the user to the thank you page """
 
-        # SFAPI: Uses 4 calls to register donation in Salesforce, ~2,500 recurring 
+        # SFAPI: Uses 5 calls to register donation in Salesforce, ~2,000 recurring 
         # subscription creations per day with the standard nonprofit 10k calls per day
 
         token = self.request.form.get('recurly_token')
@@ -150,8 +150,39 @@ class PostRecurlySubscription(grok.View):
             person.country = billing_info.country
             person.reindexObject()
 
-        # Create the Opportunity object and Opportunity Contact Role (2 API calls)
         sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+
+        # Fetch the Person object or the donor
+        mbtool = getToolByName(self.context, 'membrane_tool')
+        person = mbtool.getUserObject(email)
+
+        donation_name = '%s %s - $%i Monthly Donation' % (account.first_name, account.last_name, sub.quantity)
+        # Create the Recurring Donation profile (1 API call)
+        data = {
+            'type': 'npe03__Recurring_Donation__c',
+            'Name': donation_name,
+            'npe03__Amount__c': sub.quantity,
+            'npe03__Recurring_Donation_Campaign__c': self.context.sf_object_id,
+            'npe03__Contact__c': person.sf_object_id,
+            'npe03__Installment_Period__c': 'Monthly',
+            'npe03__Last_Payment_Date__c': sub.current_period_started_at,
+            'npe03__Next_Payment_Date__c': sub.current_period_ends_at,
+            'npe03__Open_Ended_Status__c': 'Open',
+            'npe03__Paid_Amount__c': sub.quantity,
+            'Recurly_ID__c': sub.uuid,
+            'npe03__Total_Paid_Installments__c': 1,
+        }
+        if settings.sf_recurring_donation_record_type:
+            data['RecordTypeId'] = settings.sf_recurring_donation_record_type
+        recurring_res = sfbc.create(data)
+
+        if not recurring_res[0]['success']:
+            raise Exception(recurring_res[0]['errors'][0]['message'])
+
+        recurring_donation = recurring_res[0]
+        
+
+        # Create the Opportunity object and Opportunity Contact Role (2 API calls)
 
         transaction_id = None
         # FIXME - Set the transaction id from the recurly callback data (invoice -> transaction -> reference)
@@ -161,8 +192,9 @@ class PostRecurlySubscription(grok.View):
             'type': 'Opportunity',
             'AccountId': settings.sf_individual_account_id,
             'Success_Transaction_Id__c': transaction_id,
+            'npe03__Recurring_Donation__c': recurring_donation['id'],
             'Amount': sub.quantity,
-            'Name': '%s %s - $%i Monthly Donation' % (account.first_name, account.last_name, sub.quantity),
+            'Name': donation_name,
             'StageName': 'Posted',
             'CloseDate': datetime.now(),
             'CampaignId': self.context.sf_object_id,
@@ -178,9 +210,6 @@ class PostRecurlySubscription(grok.View):
 
         opportunity = res[0]
        
-        mbtool = getToolByName(self.context, 'membrane_tool')
-        person = mbtool.getUserObject(email)
-
         role_res = sfbc.create({
             'type': 'OpportunityContactRole',
             'OpportunityId': opportunity['id'],

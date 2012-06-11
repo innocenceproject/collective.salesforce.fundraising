@@ -134,6 +134,13 @@ class IFundraisingSettings(Interface):
         default=u'',
     )
 
+    sf_recurring_donation_record_type = schema.TextLine(
+        title=_(u"Salesforce Recurring Donation Record Type ID"),
+        description=_(u"If provided, any Recurring Donation profiles created from a recurring donation will be created as the specified record type"),
+        required=False,
+        default=u'',
+    )
+
     sf_campaign_record_type = schema.TextLine(
         title=_(u"Salesforce Campaign Record Type ID - Fundraising Campaign"),
         description=_(u"If provided, any Campaigns in Salesforce created by creating a Fundraising Campaign in this site will be created as the specified record type"),
