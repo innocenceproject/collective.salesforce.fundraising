@@ -113,6 +113,12 @@ class IFundraisingSettings(Interface):
         default=u"10",
     )
 
+    default_fundraising_seals = schema.List(
+        title=_(u"Default Fundraising Seals"),
+        description=_(u"Enter the full physical path (from Zope root) to the default seals to display on Fundraising Campaigns"),
+        value_type=schema.TextLine(),
+    )
+
     sf_individual_account_id = schema.TextLine(
         title=_(u"Salesforce Individual AccountId"),
         description=_(u"The ID of the Account in Salesforce that represents Individuals in the \"bucket account\" model.  This is typically an account named Individual. This account will be used as the default account when creating the Opportuntity object in Salesforce for a donation"),

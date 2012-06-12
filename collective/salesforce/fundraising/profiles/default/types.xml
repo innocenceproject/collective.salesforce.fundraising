@@ -13,4 +13,5 @@
   <object name="collective.salesforce.fundraising.personalcampaignpage" meta_type="Dexterity FTI" />
   <object name="collective.salesforce.fundraising.donorquote" meta_type="Dexterity FTI" />
   <object name="collective.salesforce.fundraising.sharemessage" meta_type="Dexterity FTI" />
+  <object name="collective.salesforce.fundraising.fundraisingseal" meta_type="Dexterity FTI" />
 </object>

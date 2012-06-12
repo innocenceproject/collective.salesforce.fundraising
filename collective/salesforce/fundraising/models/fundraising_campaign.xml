@@ -21,6 +21,12 @@
             <description>A link to externally hosted media promoting the campaign.  For example, a Youtube video, a Flickr photo gallery, etc.</description>
             <required>False</required>
         </field>
+        <field name="show_media_portlet" type="zope.schema.Bool">
+            <title>Show Media Portlet?</title>
+            <description>Uncheck if you don't want to render the Campaign Media portlet showing the image/external media in the right column</description>
+            <required>False</required>
+            <default>True</default>
+        </field>
         <field name="status" title="Status" type="zope.schema.TextLine" sf:field="Status">
             <title>Status</title>
             <description>The current status of the campaign (From Status field on Campaign in Salesforce)</description>

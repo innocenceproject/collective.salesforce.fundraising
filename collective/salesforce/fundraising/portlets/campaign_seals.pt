@@ -1,0 +1,32 @@
+<dl class="portlet portletCampaignSeals"
+    i18n:domain="collective.salesforce.fundraising"
+    tal:define="seals view/get_seals"
+    tal:condition="seals">
+
+    <dt class="portletHeader">
+      <span class="portletTopLeft"></span>
+      <span>
+          Your Donation at Work
+      </span>
+      <span class="portletTopRight"></span>
+    </dt>
+
+    <dd class="portletItem" tal:repeat="seal seals">
+      <div class="fundraising-seal">
+        <img src="" tal:attributes="src string:${seal/absolute_url}/@@images/image/seal" />
+        <div class="seal-blurb">
+          <span tal:content="seal/blurb" />
+          <a href="#" tal:condition="seal/more_info_content" tal:attributes="href seal/absolute_url">More Info</a>
+        </div>
+      </div>
+      <div class="visualClear"></div>
+    </dd>
+
+    <dd class="portletFooter">
+        <span class="portletBottomLeft"></span>
+        <span>
+        </span>
+        <span class="portletBottomRight"></span>
+    </dd>
+
+</dl>

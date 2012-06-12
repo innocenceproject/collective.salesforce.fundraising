@@ -43,6 +43,17 @@
       />
 
   <plone:portlet
+      name="collective.salesforce.fundraising.portlets.CampaignSeals"
+      interface=".campaign_seals.ICampaignSealsPortlet"
+      assignment=".campaign_seals.Assignment"
+      view_permission="zope2.View"
+      edit_permission="cmf.ManagePortal"
+      renderer=".campaign_seals.Renderer"
+      addview=".campaign_seals.AddForm"
+      editview=".campaign_seals.EditForm"
+      />
+
+  <plone:portlet
       name="collective.salesforce.fundraising.portlets.CampaignFundraisers"
       interface=".campaign_fundraisers.ICampaignFundraisersPortlet"
       assignment=".campaign_fundraisers.Assignment"

@@ -49,12 +49,23 @@
    </assignment> 
 
    <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignSeals"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.fundraisingcampaign"
+     name="campaign.seals.portlet"
+     insert-after="campaign.media.portlet"
+     >
+     <property name="title">Your Donation at Work</property>
+   </assignment> 
+
+   <assignment
      type="collective.salesforce.fundraising.portlets.CampaignStatus"
      manager="plone.rightcolumn"
      category="content_type"
      key="collective.salesforce.fundraising.fundraisingcampaign"
      name="campaign.status.portlet"
-     insert-after="campaign.media.portlet"
+     insert-after="campaign.seals.portlet"
      >
      <property name="title">Our Progress</property>
    </assignment> 
@@ -79,6 +90,17 @@
      insert-after="campaign.fundraisers.portlet"
      >
      <property name="title">Quotes</property>
+   </assignment> 
+
+   <assignment
+     type="collective.salesforce.fundraising.portlets.CampaignSeals"
+     manager="plone.rightcolumn"
+     category="content_type"
+     key="collective.salesforce.fundraising.personalcampaignpage"
+     name="campaign.seals.portlet"
+     insert-after="campaign.media.portlet"
+     >
+     <property name="title">Your Donation at Work</property>
    </assignment> 
 
    <assignment
