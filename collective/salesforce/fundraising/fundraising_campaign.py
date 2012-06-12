@@ -68,6 +68,13 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         value_type=schema.TextLine(),
     )
 
+    fundraising_seals = schema.List(
+        title=u"Fundraising Seals Override",
+        description=u"Normally, the site default seals are shown on a campaign.  If you want to override the seals displayed only on this campaign, enter the full physical path to the seals here",
+        value_type=schema.TextLine(),
+        required=False,
+    )
+
     form.model("models/fundraising_campaign.xml")
 
 alsoProvides(IFundraisingCampaign, IContentType)

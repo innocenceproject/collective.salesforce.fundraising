@@ -31,7 +31,7 @@ js_template = """<script type="text/javascript">
         janrain.ready = true;
         
         janrain.events.onAuthWidgetLoad.addHandler(function () {
-            janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
+            //janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
         });
     };
     if (document.addEventListener) {
@@ -173,7 +173,7 @@ class RpxPostLogin(grok.View):
         resp = urllib2.urlopen(auth_info_url)
         auth_info = simplejson.loads(resp.read())
 
-    
+        # This is for Plone's built in member management instead of membrane 
         # See if a user already exists for the profile's email
         #email = auth_info['profile']['email']
         #member = None
@@ -220,16 +220,22 @@ class RpxPostLogin(grok.View):
                 **data
             )
 
+            # Authenticate the user
+            mtool = getToolByName(self.context, 'portal_membership')
+            acl = getToolByName(self.context, 'acl_users')
+            newSecurityManager(None, acl.getUser(email))
+            mtool.loginUser()
+
         # or use the existing Person if found
         else:
+            # Authenticate the user
+            mtool = getToolByName(self.context, 'portal_membership')
+            acl = getToolByName(self.context, 'acl_users')
+            newSecurityManager(None, acl.getUser(email))
+            mtool.loginUser()
+
             person = res[0].getObject()
             
-        # Authenticate the user
-        mtool = getToolByName(self.context, 'portal_membership')
-        acl = getToolByName(self.context, 'acl_users')
-        newSecurityManager(None, acl.getUser(email))
-        mtool.loginUser()
-
         # Set the photo
         photo = profile.get('photo', None)
         if not photo:

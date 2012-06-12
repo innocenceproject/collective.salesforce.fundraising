@@ -18,6 +18,8 @@ from Products.statusmessages.interfaces import IStatusMessage
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from plone.dexterity.utils import createContentInContainer
 
+from AccessControl.SecurityManagement import newSecurityManager
+
 from Acquisition import aq_inner
 from zope.component import getMultiAdapter
 
@@ -192,7 +194,7 @@ class AuthnetCallbackDPM(grok.View):
                     'first_name': first_name,
                     'last_name': last_name,
                     'email': email,
-                    'street_address': address,
+                    'address': address,
                     'city': city,
                     'state': state,
                     'zip': zipcode,
@@ -210,14 +212,29 @@ class AuthnetCallbackDPM(grok.View):
     
             # If existing user, fill with updated data from subscription profile (1 API call, Person update handler)
             else:
+                # Authenticate the user temporarily to fetch their person object with some level of permissions applied
+                mtool = getToolByName(self.context, 'portal_membership')
+                acl = getToolByName(self.context, 'acl_users')
+                newSecurityManager(None, acl.getUser(email))
+                mtool.loginUser()
+
+                # See if any values are modified and if so, update the Person and upsert the changes to SF
                 person = res[0].getObject()
+                old_data = [person.address, person.city, person.state, person.zip, person.country, person.phone]
+                new_data = [address, city, state, zipcode, country, phone]
+
+                if new_data != old_data:
+                    person.address = address
+                    person.city = city
+                    person.state = state
+                    person.zip = zipcode
+                    person.country = country
+                    person.phone = phone
+                    person.reindexObject()
     
-                person.street_address = address
-                person.city = city
-                person.state = state
-                person.zip = zipcode
-                person.country = country
-                person.reindexObject()
+                    person.upsertToSalesforce()
+    
+                mtool.logoutUser()
     
             # Create the Opportunity object and Opportunity Contact Role (2 API calls)
             sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
@@ -248,9 +265,6 @@ class AuthnetCallbackDPM(grok.View):
     
             opportunity = res[0]
         
-            mbtool = getToolByName(self.context, 'membrane_tool')
-            person = mbtool.getUserObject(email)
-    
             role_res = sfbc.create({
             'type': 'OpportunityContactRole',
                 'OpportunityId': opportunity['id'],
