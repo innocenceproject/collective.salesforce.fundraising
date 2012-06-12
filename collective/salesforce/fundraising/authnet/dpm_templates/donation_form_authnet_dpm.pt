@@ -22,7 +22,7 @@
           <div class="field-amount">
             <label for="amount">or Enter an Amount</label>
             <label for="amount" class="currency">$</label>
-            <input name="x_amount" type="number" required="required" min="5" class="validate[required,min[5]]" tal:attributes="value python: view.request.form.get('x_amount', None)" />
+            <input name="x_amount" type="number" required="required" min="5" pattern="[0-9][0-9]*" tal:attributes="value python: view.request.form.get('x_amount', None)" />
             <label for="amount">($5 minimum)</label>
           </div>
   
@@ -66,7 +66,7 @@
               <input type="email" name="x_email" required="required" class="validate[required,custom[email]]" placeholder="Email" tal:attributes="value python: view.request.form.get('x_email', None)" />
             </div>
             <div class="subfield subfield-phone">
-              <input type="tel" name="x_phone" placeholder="Phone" tal:attributes="value python: view.request.form.get('x_phone', None)" />
+              <input type="text" name="x_phone" placeholder="Phone" tal:attributes="value python: view.request.form.get('x_phone', None)" />
             </div>
             <div class="subfield subfield-email-signup">
               <div class="option">

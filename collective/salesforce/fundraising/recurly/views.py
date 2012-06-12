@@ -7,6 +7,8 @@ from Products.CMFCore.utils import getToolByName
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 
+from AccessControl.SecurityManagement import newSecurityManager
+
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from plone.dexterity.utils import createContentInContainer
 from zope.app.component.hooks import getSite
@@ -27,6 +29,7 @@ RECURLY_JS = """  Recurly.config({
     successURL: '%(success_url)s',
     afterInject: setupRecurlyForm,
     planCode: '%(plan_code)s',
+    collectPhone: true,
     distinguishContactFromBillingInfo: true,
     enableAddOns: false,
     enableCoupons: false,
@@ -123,7 +126,7 @@ class PostRecurlySubscription(grok.View):
                 'first_name': account.first_name,
                 'last_name': account.last_name,
                 'email': email,
-                'street_address': street_address,
+                'address': street_address,
                 'city': billing_info.city,
                 'state': billing_info.state,
                 'zip': billing_info.zip,
@@ -141,14 +144,32 @@ class PostRecurlySubscription(grok.View):
 
         # If existing user, fill with updated data from subscription profile (1 API call, Person update handler)
         else:
+            # Authenticate the user temporarily to fetch their person object with some level of permissions applied
+            mtool = getToolByName(self.context, 'portal_membership')
+            acl = getToolByName(self.context, 'acl_users')
+            newSecurityManager(None, acl.getUser(email))
+            mtool.loginUser()
+
             person = res[0].getObject()
 
-            person.street_address = street_address
-            person.city = billing_info.city
-            person.state = billing_info.state
-            person.zip = billing_info.zip
-            person.country = billing_info.country
-            person.reindexObject()
+            # See if any values are modified and if so, update the Person and upsert the changes to SF
+            person = res[0].getObject()
+            old_data = [person.address, person.city, person.state, person.zip, person.country, person.phone]
+            new_data = [street_address, billing_info.city, billing_info.state, billing_info.zip, billing_info.country, billing_info.phone]
+
+            if new_data != old_data:
+                
+                person.address = street_address
+                person.city = billing_info.city
+                person.state = billing_info.state
+                person.zip = billing_info.zip
+                person.country = billing_info.country
+                person.phone = billing_info.phone
+
+                person.reindexObject()
+                person.upsertToSalesforce()
+
+            mtool.logoutUser()
 
         sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
 
