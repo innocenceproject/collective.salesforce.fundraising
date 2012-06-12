@@ -1,4 +1,4 @@
-<dl class="portlet portletCampaignFundraisers"
+<dl class="portlet portletCampaignQuotes"
     i18n:domain="collective.salesforce.fundraising"
     tal:define="quote view/get_quote"
     tal:condition="quote">

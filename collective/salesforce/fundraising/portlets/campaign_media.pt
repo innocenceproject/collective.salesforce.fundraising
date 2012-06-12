@@ -1,8 +1,9 @@
 <dl class="portlet portletCampaignMedia"
     i18n:domain="collective.salesforce.fundraising"
     tal:define="image view/context/image;
+                show_media_portlet view/context/show_media_portlet;
                 external_media view/context/get_external_media_oembed"
-    tal:condition="python: image or external_media_url">
+    tal:condition="python: (image or external_media_url) and show_media_portlet">
 
     <dt class="portletHeader">
         <span class="portletTopLeft"></span>
