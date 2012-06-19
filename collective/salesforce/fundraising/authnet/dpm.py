@@ -53,13 +53,15 @@ class DonationFormAuthnetDPM(grok.View):
         if not self.levels:
             self.levels = settings.donation_ask_levels[0].split('|')[1].split(',')
         
-        self.timestamp = ''
         self.sequence = str(uuid.uuid4())
         self.fingerprint_url = self.context.absolute_url() + '/authnet_fingerprint'
 
         self.relay_url = getSite().absolute_url() + '/post_authnet_dpm_donation'
         self.login_key = get_settings().authnet_login_key
 
+        # Handle prefill values passed to form.  This should only happen from authnet errors
+        self.amount = self.request.get('x_amount', None)
+        self.fingerprint = build_authnet_fingerprint(self.amount, self.sequence)
 
         self.error = self.request.form.get('error', None)
         response_code = self.request.form.get('response_code',None)
@@ -98,6 +100,34 @@ REDIRECT_HTML = """
       <body></body>
     </html>
 """
+
+def build_authnet_fingerprint(amount, sequence=None):
+    fp_timestamp = str(int(time.time()))
+
+    data = {
+            'x_fp_hash': None,
+            'x_fp_timestamp': fp_timestamp,
+        }
+
+    if not amount:
+        return data
+
+    # Generate a sequence if none passed
+    if not sequence:
+        sequence = str(uuid.uuid4())
+
+    # hmac breaks if passed unicode which is ok since Authorize.net keys are ascii
+    settings = get_settings()
+    login_key = str(settings.authnet_login_key)
+    transaction_key = str(settings.authnet_transaction_key)
+    if not login_key or not transaction_key:
+        return data
+
+    msg = '%s^%s^%s^%s^' % (login_key, sequence, fp_timestamp, amount)
+    data['x_fp_hash'] = hmac.new(transaction_key, msg).hexdigest()
+
+    return data
+    
     
 class AuthnetFingerprint(grok.View):
     grok.context(IFundraisingCampaignPage)
@@ -105,31 +135,13 @@ class AuthnetFingerprint(grok.View):
     grok.require('zope2.View')
 
     def render(self):
-        settings = get_settings()
-        # hmac breaks if passed unicode which is ok since Authorize.net keys are ascii
-        login_key = str(settings.authnet_login_key)
-        transaction_key = str(settings.authnet_transaction_key)
-        if not login_key or not transaction_key:
-            # FIXME - just raise a 404 instead
-            return 'ERROR: Not configured'
+        sequence = self.request.get('sequence', None)
+        amount = self.request.get('amount', None)
 
-        # Sequence # identifying the order. This should be generated on the form's initial load
-        # so if the user clicks the button twice Authorize.net can detect the duplicate.
-        # Or it can be generated here randomly as long as the AJAX call updates its value in
-        # the form.
-        fp_sequence = self.request.get('sequence')
-        fp_timestamp = str(int(time.time()))
-        amount = self.request.get('amount')
-
-        msg = '%s^%s^%s^%s^' % (login_key, fp_sequence, fp_timestamp, amount)
-        fp_hash = hmac.new(transaction_key, msg).hexdigest()
+        data = build_authnet_fingerprint(amount, sequence)
 
         self.request.response.setHeader('Content-Type', 'application/json')
-        data = {
-            'x_fp_hash': fp_hash,
-            #'x_fp_sequence': fp_sequence,
-            'x_fp_timestamp': fp_timestamp,
-        }
+
         return json.dumps(data)
 
 
