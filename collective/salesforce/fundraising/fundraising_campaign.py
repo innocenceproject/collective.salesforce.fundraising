@@ -278,6 +278,47 @@ class FundraisingCampaignPage(object):
         sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
         return sfbc.query(RECEIPT_SOQL % (donation_id, amount, self.sf_object_id))
 
+    def send_donation_receipt(self, request, donation_id, amount):
+        donation = self.lookup_donation(donation_id, amount)
+        settings = get_settings() 
+
+        # Construct the email bodies
+        pt = getToolByName(self, 'portal_transforms')
+        email_view = getMultiAdapter((self, request), name='thank-you-email')
+        email_view.set_donation_keys(donation_id, amount)
+        email_body = email_view()
+        txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
+
+        # Determine to and from addresses
+        portal_url = getToolByName(self, 'portal_url')
+        portal = portal_url.getPortalObject()
+        mail_from = portal.getProperty('email_from_address')
+        mail_to = email_view.receipt_view.contact.Email
+
+        # Construct the email message                
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = settings.thank_you_email_subject
+        msg['From'] = mail_from
+        msg['To'] = mail_to
+        part1 = MIMEText(txt_body, 'plain')
+        part2 = MIMEText(email_body, 'html')
+
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Attempt to send it
+        try:
+            host = getToolByName(self, 'MailHost')
+            # The `immediate` parameter causes an email to be sent immediately
+            # (if any error is raised) rather than sent at the transaction
+            # boundary or queued for later delivery.
+            host.send(msg, immediate=True)
+
+        except smtplib.SMTPRecipientsRefused:
+            # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
+            pass
+
+
 
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
@@ -385,53 +426,6 @@ class ThankYouView(grok.View):
             self.receipt_view
             self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
             self.receipt = self.receipt_view()
-
-            # Check if send_mail=true was passed and if so, send the receipt email
-            if self.request.form.get('send_receipt_email', None) == 'true':
-                settings = get_settings() 
-
-                # Construct the email bodies
-                pt = getToolByName(self.context, 'portal_transforms')
-                email_body = getMultiAdapter((self.context, self.request), name='thank-you-email')()
-                txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
-
-                # Determine to and from addresses
-                portal_url = getToolByName(self.context, 'portal_url')
-                portal = portal_url.getPortalObject()
-                mail_from = portal.getProperty('email_from_address')
-                mail_to = self.receipt_view.contact.Email
-
-                # Construct the email message                
-                msg = MIMEMultipart('alternative')
-                msg['Subject'] = settings.thank_you_email_subject
-                msg['From'] = mail_from
-                msg['To'] = mail_to
-                part1 = MIMEText(txt_body, 'plain')
-                part2 = MIMEText(email_body, 'html')
-    
-                msg.attach(part1)
-                msg.attach(part2)
-
-                # Attempt to send it
-                try:
-                    host = getToolByName(self, 'MailHost')
-                    # The `immediate` parameter causes an email to be sent immediately
-                    # (if any error is raised) rather than sent at the transaction
-                    # boundary or queued for later delivery.
-                    host.send(msg, immediate=True)
-
-                    # Commented out in favor of passing send_receipt_email=true to the thank you view to avoid a Salesforce API call
-                    # Mark the receipt as sent in Salesforce
-                    #sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-                    #sfbc.update({
-                        #'type': 'Opportunity',
-                        #'Id': self.donation_id,
-                        #'Email_Receipt_Sent__c': True,
-                    #})
-
-                except smtplib.SMTPRecipientsRefused:
-                    # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
-                    pass
 
         # Create a wrapped form for inline rendering
         from collective.salesforce.fundraising.forms import CreateDonorQuote
@@ -703,10 +697,14 @@ class DonationReceipt(grok.View):
     grok.template('donation-receipt')
 
     def update(self):
-        donation_id = sanitize_soql(self.request.form.get('donation_id'))
-        amount = int(self.request.form.get('amount'))
+        if not getattr(self, 'donation_id', None):
+            self.donation_id = sanitize_soql(self.request.form.get('donation_id'))
+
+        if not getattr(self, 'amount', None):
+            self.amount = int(self.request.form.get('amount'))
+        
         refresh = self.request.form.get('refresh') == 'true'
-        res = self.context.lookup_donation(donation_id, amount)
+        res = self.context.lookup_donation(self.donation_id, self.amount)
         
         if not len(res['records']):
             raise ValueError('Donation with id %s and amount %s was not found.' % (donation_id, amount))
@@ -718,6 +716,9 @@ class DonationReceipt(grok.View):
         self.donation = res['records'][0].Opportunity
         self.contact = res['records'][0].Contact
 
+    def set_donation_keys(self, donation_id, amount):
+        self.donation_id = donation_id
+        self.amount = int(amount)
     
 class ThankYouEmail(grok.View):
     grok.context(IFundraisingCampaignPage)
@@ -727,12 +728,24 @@ class ThankYouEmail(grok.View):
     grok.template('thank-you-email')
     
     def update(self):
+        if not getattr(self, 'donation_id', None):
+            self.donation_id = sanitize_soql(self.request.form.get('donation_id'))
+
+        if not getattr(self, 'amount', None):
+            self.amount = int(self.request.form.get('amount'))
+        
         self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
+        self.receipt_view.set_donation_keys(self.donation_id, self.amount)
         self.receipt = self.receipt_view()
+
         settings = get_settings()
         self.email_header = settings.email_header
         self.email_footer = settings.email_footer
 
+    def set_donation_keys(self, donation_id, amount):
+        self.donation_id = donation_id
+        self.amount = int(amount)
+    
 class HonoraryEmail(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')

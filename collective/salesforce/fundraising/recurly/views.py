@@ -110,7 +110,7 @@ class PostRecurlySubscription(grok.View):
         sub = recurly.js.fetch(token)
         account = sub.account()
         billing_info = account.billing_info
-        email = account.email
+        email = account.email.lower()
 
         street_address = billing_info.address1
         if billing_info.address2:

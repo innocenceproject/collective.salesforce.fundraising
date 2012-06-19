@@ -198,7 +198,11 @@ class AuthnetCallbackDPM(grok.View):
             mt = getToolByName(self.context, 'portal_membership')
             first_name = self.request.form.get('x_first_name', None)
             last_name = self.request.form.get('x_last_name', None)
+
             email = self.request.form.get('x_email', None)
+            if email:
+                email = email.lower()
+
             phone = self.request.form.get('x_phone', None)
             address = self.request.form.get('x_address', None)
             city = self.request.form.get('x_city', None)
@@ -261,9 +265,6 @@ class AuthnetCallbackDPM(grok.View):
             sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
     
             transaction_id = None
-            # FIXME - Set the transaction id from the recurly callback data (invoice -> transaction -> reference)
-    
-            # FIXME - the name hard codes a monthly billing cycle
             data = {
                 'type': 'Opportunity',
                 'AccountId': settings.sf_individual_account_id,
@@ -311,6 +312,9 @@ class AuthnetCallbackDPM(grok.View):
         
             # Record the transaction and its amount in the campaign
             campaign.add_donation(amount)
+
+            # Send the email receipt
+            campaign.send_donation_receipt(self.request, opportunity['id'], amount)
 
             # If this is an honorary or memorial donation, redirect to the form to provide details
             is_honorary = self.request.form.get('c_is_honorary', None)
