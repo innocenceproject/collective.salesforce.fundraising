@@ -37,8 +37,9 @@ class DonorQuote(dexterity.Item):
             return None
         return res[0].getObject()
 
-#class SampleView(grok.View):
-#    grok.context(IDonorQuote)
-#    grok.require('zope2.View')
-
-    # grok.name('view')
+class DonorQuoteView(grok.View):
+    grok.context(IDonorQuote)
+    grok.require('zope2.View')
+    grok.name('view')
+    grok.template('view')
+    

@@ -6,6 +6,12 @@
       metal:use-macro="context/main_template/macros/master"
       i18n:domain="collective.salesforce.fundraising">
 <body>
+<metal:main fill-slot="content-title">
+  <metal:content-title define-macro="content-title">
+    <h1 class="documentFirstHeading" tal:content="view/context/title"></h1>
+  </metal:content-title>
+</metal:main>
+
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">
 

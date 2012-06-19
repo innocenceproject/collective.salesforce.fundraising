@@ -18,7 +18,7 @@ from collective.salesforce.fundraising.fundraising_campaign import IFundraisingC
 import recurly
 
 
-RECURLY_JS = """  Recurly.config({
+RECURLY_SUBSCRIBE_JS = """  Recurly.config({
     subdomain: '%(subdomain)s',
     currency: 'USD'
   });
@@ -62,7 +62,7 @@ class DonationFormRecurly(grok.View):
             self.levels = settings.donation_ask_levels[0].split('|')[1].split(',')
 
         recurly_subdomain = settings.recurly_subdomain
-        self.recurly_js = RECURLY_JS % {
+        self.recurly_js = RECURLY_SUBSCRIBE_JS % {
             'subdomain': recurly_subdomain,   
             'signature': self.generate_signature(),
             'success_url': self.context.absolute_url() + '/post_recurly_subscription',

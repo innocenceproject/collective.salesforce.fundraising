@@ -1,14 +1,24 @@
 <div class="donation-receipt">
-
-  <table width="500px" style="background-color: #eee; border: 1px solid #ddd">
+  <table width="100%" style="background-color: #fff; border: 1px solid #ddd">
     <tbody>
       <tr>
-        <td colspan="2" style="padding: 10px 20px 0 20px"><h2 style="font-size: 16px; padding: 0; margin: 0">Transaction Summary: <span tal:replace="view/organization_name" /></h2></td>
+        <td style="padding: 10px 20px 20px 20px"><b style="font-size: 16px; padding: 0; margin: 0">Transaction Summary: <span tal:replace="view/organization_name" /></b></td>
       </tr>
       <tr>
-        <td width="250px" valign="top">
+        <td width="100%" valign="top">
+
+          <div class="donation-details" style="padding: 0 20px">
+            <div class="donation-amount"><b>Gift Amount: $<span tal:replace="python: int(view.donation.Amount)" /></b></div>
+            <div class="donation-date" tal:content="string:Date: ${view/donation/CloseDate}" />
+            <tal:if_recurring condition="view/donation/npe03__Recurring_Donation__c">
+            <br />
+            <div class="donation-recurring"><b>Repeats Monthly</b></div>
+            <div>We will deduct $<span tal:replace="python: int(view.donation.Amount)" /> from your account each month going forward</div>
+            </tal:if_recurring>
+          </div>
+          <br />
           <div class="donor-details" style="padding: 0 20px 20px 20px">
-            <h3 class="donor-name" tal:content="string:${view/contact/FirstName} ${view/contact/LastName}" />
+            <div><b class="donor-name" tal:content="string:${view/contact/FirstName} ${view/contact/LastName}" /></div>
             <div class="donor-street-address" tal:content="view/contact/MailingStreet" />
             <div class="donor-city-state-zip" tal:content="string:${view/contact/MailingCity}, ${view/contact/MailingState}  ${view/contact/MailingPostalCode}" />
             <div class="donor-country" tal:content="view/contact/MailingCountry" />
@@ -16,33 +26,44 @@
             <div class="donor-phone" tal:content="view/contact/Phone" />
           </div>
         </td>
-        <td width="250px" valign="top">
-          <div class="donation-details" style="padding: 0 20px 20px 20px">
-            <h3>Gift Amount: $<span tal:replace="python: int(view.donation.Amount)" /></h3>
-            <div class="donation-date" tal:content="string:Date: ${view/donation/CloseDate}" />
+      </tr>
+      <tr style="background-color: #eee" tal:condition="python: view.donation['Honorary_Type__c'] and view.donation['Honorary_First_Name__c']">
+        <td style="background-color: white; padding: 20px">
+          <div><b>
+            <span tal:condition="python: view.donation['Honorary_Type__c'] == 'Honorary'">In honor of</span>
+            <span tal:condition="python: view.donation['Honorary_Type__c'] == 'Memorial'">In memory of</span>
+            <strong tal:content="string:${view/donation/Honorary_First_Name__c} ${view/donation/Honorary_Last_Name__c}">NAME</strong>
+          </b></div>
 
-            <br /><br />
-            <tal:if_recurring condition="view/donation/npe03__Recurring_Donation__c">
-            <h3>Repeats Monthly</h3>
-            <div>We will deduct $<span tal:replace="python: int(view.donation.Amount)" /> from your account each month going forward</div>
-            </tal:if_recurring>
+          <div tal:condition="python: view.donation.Honorary_Notification_Type__c in ['Email','Mail']">
+            Notification of your gift was sent to 
+            <span tal:replace="view/donation/Honorary_Recipient_First_Name__c">RECIPIENT</span> at 
+
+            <tal:if_email condition="python: view.donation.Honorary_Notification_Type__c == 'Email'">
+              <span tal:replace="view/donation/Honorary_Email__c">EMAIL</span>
+              <span tal:condition="view/donation/Honorary_Message__c"> with the custom message you provided.</span>.  
+              You will receive a copy via email.
+            </tal:if_email>
+
+            <tal:if_mail condition="python: view.donation.Honorary_Notification_Type__c == 'Mail'">
+              the address shown below
+              <span tal:condition="view/donation/Honorary_Message__c"> with the custom message you provided.</span>.  
+            
+              <div class="address">
+                <br />
+                <div tal:content="view/donation/Honorary_Street_Address__c" />
+                <span tal:content="view/donation/Honorary_City__c" />
+                <span tal:content="view/donation/Honorary_State__c" />,
+                <span tal:content="view/donation/Honorary_Zip__c" />
+                <div tal:content="view/donation/Honorary_Country__c" />
+              </div>
+            </tal:if_mail>
           </div>
+
         </td>
       </tr>
-      <tr>
-        <td colspan="2" style="background-color: white; padding: 20px"><div class="donation-receipt-legal" tal:content="structure view/donation_receipt_legal" tal:condition="view/donation_receipt_legal" />
-      </tr>
-      <tr tal:condition="python: view.donation['Honorary_Type__c'] and view.donation['Honorary_Name__c']">
-        <td colspan="2" style="background-color: white; padding: 20px">
-          <h5 tal:condition="python: view.donation['Honorary_Type__c'] == 'Honorary'">Honorary Gift Information</h5>
-          <h5 tal:condition="python: view.donation['Honorary_Type__c'] == 'Memorial'">Memorial Gift Information</h5>
-
-          <p>Dedicated to <strong tal:content="view/donation/Honorary_Name__c">NAME</strong></p>
-
-          <div tal:condition="view/donation/Honorary_Email__c">
-            <p>Notification of your gift was sent to <span tal:replace="view/donation/Honorary_Recipient__c">RECIPIENT</span> at <span tal:replace="view/donation/Honorary_Email__c">EMAIL</span>.  You were also copied on the email and should receive a copy.<span tal:condition="view/donation/Honorary_Message__c">  Your gift notification email included the custom message you provided.</span></p>
-          </div>
-        </td>
+      <tr style="background-color: #eee">
+        <td style="background-color: white; padding: 20px"><div class="donation-receipt-legal" tal:content="structure view/donation_receipt_legal" tal:condition="view/donation_receipt_legal" />
       </tr>
     </tbody>
   </table>

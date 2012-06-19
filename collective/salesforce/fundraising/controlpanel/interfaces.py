@@ -60,6 +60,13 @@ class IFundraisingSettings(Interface):
         default=_(u"Thank you for your donation")
     )
 
+    thank_you_share_message = schema.Text(
+        title=_(u"Thank You Share Message"),
+        description=_(u"Enter the Share Message you want to present in the Share widget on the Thank You page after a donation.  {{ amount }} will be replaced with the amount"),
+        required=False,
+        default=_(u"I just donated ${{ amount }} to a great cause.  You should join me."),
+    )
+
     email_header = schema.Text(
         title=_(u"Email Header HTML"),
         description=_(u"Enter any html you want to always render in the header of outbound emails."),

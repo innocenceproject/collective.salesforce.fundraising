@@ -12,7 +12,6 @@
       <input type="hidden" name="c_campaign_id" value="" tal:attributes="value view/context/sf_object_id" />
       <input type="hidden" name="c_source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
       <input type="hidden" name="c_source_url" value="" tal:attributes="value view/context/get_source_url" />
-      <input type="hidden" name="send_email" value="true" />
 
       <fieldset class="fieldset-donation-amount">
         <legend>Select an Amount</legend>
@@ -44,7 +43,7 @@
       <div class="donation-form-error" tal:condition="view/reason_text">
         <h5>Processing Error</h5>
         <p>There was an issue processing your gift.  The error message from the payment processor was:</p>
-        <em><span tal:replace="view/response_text" />: <span tal:replace="view/reason_text/text" /></em>
+        <em><span tal:replace="view/response_text" />: (<span tal:replace="view/reason_code" />) <span tal:replace="view/reason_text/text" /></em>
       </div>   
  
       <fieldset class="fieldset-contact-info after-amount">
@@ -52,10 +51,10 @@
         <div class="field field-name">
           <div class="field-inputs">
             <div class="subfield subfield-first-name">
-              <input type="text" name="x_first_name" required="required" class="validate[required]" placeholder="First Name" tal:attributes="value python: view.request.form.get('x_first_name', None)" />
+              <input type="text" name="x_first_name" required="required" placeholder="First Name" tal:attributes="value python: view.request.form.get('x_first_name', None)" />
             </div>
             <div class="subfield subfield-last-name">
-              <input type="text" name="x_last_name" required="required" class="validate[required]" placeholder="Last Name" tal:attributes="value python: view.request.form.get('x_last_name', None)" />
+              <input type="text" name="x_last_name" required="required" placeholder="Last Name" tal:attributes="value python: view.request.form.get('x_last_name', None)" />
             </div>
           </div>
         </div>
@@ -63,7 +62,7 @@
         <div class="field field-contact">
           <div class="field-inputs">
             <div class="subfield subfield-email">
-              <input type="email" name="x_email" required="required" class="validate[required,custom[email]]" placeholder="Email" tal:attributes="value python: view.request.form.get('x_email', None)" />
+              <input type="email" name="x_email" required="required" placeholder="Email" tal:attributes="value python: view.request.form.get('x_email', None)" />
             </div>
             <div class="subfield subfield-phone">
               <input type="text" name="x_phone" placeholder="Phone" tal:attributes="value python: view.request.form.get('x_phone', None)" />
@@ -105,14 +104,14 @@
               <input type="text" name="x_card_num" required="required" placeholder="Credit Card Number" />
             </div>
             <div class="subfield subfield-card-cvv">
-              <input type="text" name="x_card_ccv" required="required" class="validate[required]" placeholder="CVV" />
+              <input type="text" name="x_card_ccv" required="required" placeholder="CVV" />
               <div class="field-help">The 3 or 4 digit verification number for your credit card</div>
             </div>
 
             <div class="subfield subfield-expiration-date">
               <label class="expiration-date">Expiration Date</label>
               <div class="subfield subfield-expiration-month">
-                <select class="card-expiration-month validate[required]" required="true">
+                <select class="card-expiration-month" required="true">
                   <option value="">---</option>
                   <option value="01">01: January</option>
                   <option value="02">02: February</option>
@@ -129,7 +128,7 @@
                 </select>
               </div>
               <div class="subfield subfield-expiration-year">
-                <select class="card-expiration-year validate[required]" required="required">
+                <select class="card-expiration-year" required="required">
                   <option value="">---</option>
                   <option value="12">2012</option>
                   <option value="13">2013</option>
@@ -151,19 +150,22 @@
         <div class="field field-address">
           <div class="field-inputs">
             <div class="subfield subfield-address">
-              <input type="text" name="x_address" required="required" class="validate[required]" placeholder="Street Address" tal:attributes="value python: view.request.form.get('x_address', None)" />
+              <input type="text" name="x_address" required="required" placeholder="Street Address" tal:attributes="value python: view.request.form.get('x_address', None)" />
             </div>
             <div class="subfield subfield-city">
-              <input type="text" name="x_city" class="validate[required]" required="required" placeholder="City" tal:attributes="value python: view.request.form.get('x_city', None)" />
+              <input type="text" name="x_city" required="required" placeholder="City" tal:attributes="value python: view.request.form.get('x_city', None)" />
             </div>
             <div class="subfield subfield-state">
-              <select name="x_state" class="validate[required]" required="required" placeholder="State" tal:attributes="value python: view.request.form.get('x_state', None)" >
-                <option value="NY">New York</option>
+              <input type="text" placeholder="State" />
+              <select name="honorary_state">
+                <option value="">---</option>
+                <option tal:repeat="state view/states" 
+                   tal:attributes="value python: state[0]; selected python: view.request.form.get('x_state', None) == state[0]" 
+                   tal:content="python: state[1]">New York</option>
               </select>
-              <input type="text" />
             </div>
             <div class="subfield subfield-zip">
-              <input type="text" name="x_zip" required="required" class="validate[required]" placeholder="Zip" tal:attributes="value python: view.request.form.get('x_zip', None)" />
+              <input type="text" name="x_zip" required="required" placeholder="Zip" tal:attributes="value python: view.request.form.get('x_zip', None)" />
             </div>
             <div class="subfield subfield-country">
               <select name="x_country" required="required">
@@ -179,7 +181,8 @@
       </fieldset>
 
       <div class="form-buttons after-amount">
-        <input class="allowMultiSubmit" type="submit" />
+        <input type="submit" />
+        <span class="button-loading-indicator" />
       </div>
 
     </form>

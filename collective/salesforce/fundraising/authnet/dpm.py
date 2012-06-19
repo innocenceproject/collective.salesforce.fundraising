@@ -29,6 +29,7 @@ from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
+from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.authnet.codes import response_codes
 from collective.salesforce.fundraising.authnet.codes import reason_codes
             
@@ -68,13 +69,20 @@ class DonationFormAuthnetDPM(grok.View):
         self.reason_text = None
 
         if response_code and reason_code:
-            response_code = int(response_code)
-            reason_code = int(reason_code)
-            self.response_text = response_codes[response_code]
-            self.reason_text = reason_codes[reason_code]
+            self.response_code = int(response_code)
+            self.reason_code = int(reason_code)
+            self.response_text = response_codes[self.response_code]
+            self.reason_text = reason_codes[self.reason_code]
 
         self.countries = CountryAvailability().getCountryListing()
         self.countries.sort()
+
+        self.states = states_list
+
+    def xss_clean(self, value):
+        # FIXME: This needs to be implemented
+        return value
+    
 
 
 REDIRECT_HTML = """
@@ -166,6 +174,7 @@ class AuthnetCallbackDPM(grok.View):
                 redirect_data['x_phone'] = phone
             if amount:
                 redirect_data['x_amount'] = int(float(amount))
+            redirect_data['send_receipt_email'] = 'true'
             redirect_data = urllib.urlencode(redirect_data)
             redirect_url = campaign.absolute_url() + '?' + redirect_data
             return REDIRECT_HTML % {'redirect_url': redirect_url}

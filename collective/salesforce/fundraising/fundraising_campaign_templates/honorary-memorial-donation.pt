@@ -43,48 +43,97 @@
           <div class="clear"></div>
         </div>
     
-        <div class="field field-honorary-name">
+        <div class="field field-name field-honorary-name">
           <label>Who is this gift in honor of?</label>
-          <input type="text" name="honorary_name" required="required" maxlength="128" />
+          <div class="field-inputs">
+            <div class="subfield subfield-first-name">
+              <input type="text" name="honorary_first_name" required="required" maxlength="128" placeholder="First Name" />
+            </div>
+            <div class="subfield subfield-last-name">
+              <input type="text" name="honorary_last_name" required="required" maxlength="128" placeholder="Last Name" />
+            </div>
+          </div>
         </div>
     
       </fieldset>
     
-      <fieldset class="fieldset-email-notification">
-        <legend>Email Notification</legend>
+      <fieldset class="fieldset-notification">
+        <legend>Notification</legend>
     
         <div class="field field-honorary-send">
-          <label>Would you like to send a notification by email?</label>
+          <label>Would you like to send a notification of your gift?</label>
           <div class="options">
             <div class="option">
-              <input id="honorary-send-yes" type="radio" name="honorary_send" value="Yes" />
-              <label for="honorary-send-yes">Yes</label>
+              <input id="honorary-send-no" type="radio" name="honorary_notification_type" value="None" />
+              <label for="honorary-send-yes">No, I wish to donate anonymously</label>
             </div>
             <div class="option">
-              <input id="honorary-send-no" type="radio" name="honorary_send" value="No" />
-              <label for="honorary-send-no">No</label>
+              <input id="honorary-send-email" type="radio" name="honorary_notification_type" value="Email" />
+              <label for="honorary-send-email">Yes, send notification by Email</label>
+            </div>
+            <div class="option">
+              <input id="honorary-send-mail" type="radio" name="honorary_notification_type" value="Mail" />
+              <label for="honorary-send-mail">Yes, mail a printed notification</label>
             </div>
           </div>
         </div>
     
-        <div class="field field-honorary-recipient">
+        <div class="field field-name field-recipient">
           <div class="field-inputs">
-            <div class="subfield subfield-recipient-name">
-              <input type="text" name="honorary_recipient" placeholder="Recipient's Name" maxlength="128" />
+            <label>Who would you like to notify?</label>
+            <div class="subfield subfield-first-name">
+              <input type="text" name="honorary_recipient_first_name" placeholder="First Name" maxlength="128" />
             </div>
-            <div class="subfield subfield-email">
-              <input type="email" name="honorary_email" placeholder="Recipient's Email" />
+            <div class="subfield subfield-last-name">
+              <input type="text" name="honorary_recipient_last_name" placeholder="Last Name" maxlength="128" />
             </div>
           </div>
         </div>
+        
+        <div class="field field-email">
+           <input type="email" name="honorary_email" placeholder="Recipient's Email" />
+        </div>
 
+        <div class="field field-address">
+           <label>Recipient's Address</label>
+           <div class="field-inputs">
+             <div class="subfield subfield-address">
+               <input type="text" name="honorary_address" placeholder="Street Address" />
+             </div>
+             <div class="subfield subfield-city">
+               <input type="text" name="honorary_city" placeholder="City" />
+             </div>
+             <div class="subfield subfield-state">
+               <input type="text" placeholder="State" />
+               <select name="honorary_state" required="required">
+                 <option value="">---</option>
+                 <option tal:repeat="state view/states" tal:attributes="value python: state[0]" tal:content="python: state[1]">New York</option>
+               </select>
+             </div>
+             <div class="subfield subfield-zip">
+               <input type="text" name="honorary_zip" placeholder="Zip" />
+             </div>
+             <div class="subfield subfield-country">
+               <select name="x_country" required="required">
+                 <option tal:repeat="country view/countries" 
+                         tal:content="python: '%s: %s' % (country[0].upper(), country[1])" 
+                         tal:attributes="value python: country[0].upper(); selected python: 'selected' if country[0].upper() == 'US' or country[0].upper() == view.request.get('country', 'No country') else None">United States</option>
+               </select>
+             </div>
+           </div>
+        </div>
+
+      </fieldset>
+
+      <fieldset class="fieldset-message">
+        <legend>Message</legend>
         <div class="field field-honorary-message">
           <div class="field-inputs">
             <div class="subfield subfield-show-amount">
               <div class="options">
                 <div class="option">
                   <input id="honorary-show-amount" type="checkbox" name="show_amount" value="Yes" checked="checked"  />
-                  <label for="honorary-show-amount">Include gift amount in email</label>
+                  <label for="honorary-show-amount">Include gift amount in message</label>
                 </div>
               </div>
             </div>
@@ -98,25 +147,26 @@
 
       <div class="form-buttons">
         <input type="submit" />
+        <span class="button-loading-indicator" />
       </div>
 
-      <fieldset class="fieldset-email-preview">
-        <legend>Email Preview</legend>
+      <fieldset class="fieldset-preview">
+        <legend>Message Preview</legend>
         <ul class="preview-links">
           <li><a class="honorary-preview-with-amount" href="" 
-                 tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true&amount=${view/receipt_view/donation/Amount}&show_amount=Yes">Honorary Email Preview</a>
+                 tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true&amount=${view/receipt_view/donation/Amount}&show_amount=Yes">Honorary Message Preview</a>
           </li>
           <li><a class="honorary-preview-without-amount" href="" 
-                 tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true">Honorary Email Preview without Amount</a>
+                 tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true">Honorary Message Preview without Amount</a>
           </li>
           <li><a class="memorial-preview-with-amount" href="" 
-                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true&amount=${view/receipt_view/donation/Amount}&show_amount=Yes">Memorial Email Preview</a>
+                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true&amount=${view/receipt_view/donation/Amount}&show_amount=Yes">Memorial Message Preview</a>
           </li>
           <li><a class="memorial-preview-without-amount" href="" 
-                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true">Memorial Email Preview without Amount</a>
+                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true">Memorial Message Preview without Amount</a>
           </li>
         </ul>
-        <div class="field field-email-preview"></div>
+        <div class="field field-preview"></div>
       </fieldset>
 
     </form>

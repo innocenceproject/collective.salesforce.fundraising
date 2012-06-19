@@ -47,7 +47,7 @@ class Person(dexterity.Item):
             raise Exception(res[0]['errors'][0]['message'])
 
         # store the contact's Salesforce Id if it doesn't already have one
-        if not self.sf_object_id:
+        if not getattr(self, 'sf_object_id', None):
             self.sf_object_id = res[0]['id']
     
         self.reindexObject()

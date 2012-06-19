@@ -13,6 +13,8 @@ from plone.directives import dexterity, form
 from zope.component import getUtility
 from zope.component import getMultiAdapter
 
+from plone.i18n.locales.countries import CountryAvailability
+
 from zope.interface import Interface
 from zope.interface import alsoProvides
 from zope import schema
@@ -33,6 +35,7 @@ from Products.statusmessages.interfaces import IStatusMessage
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import sanitize_soql
+from collective.salesforce.fundraising.us_states import states_list
 
 from collective.oembed.interfaces import IConsumer
 
@@ -445,7 +448,10 @@ class ThankYouView(grok.View):
         amount_str = ''
         if self.amount:
             amount_str = _(u' $%s' % self.amount)
-        comment = _(u'I just donated%s to a great cause.  You should join me.') % amount_str
+        settings = get_settings()
+        comment = settings.thank_you_share_message
+        if comment and self.amount:
+            comment = comment.replace('{{ amount }}', str(self.amount))
 
         return "rpxShareButton(jQuery('#share-message-thank-you'), 'Tell your friends you donated', '%s', '%s', '%s', '%s', '%s')" % (
             self.context.description,
@@ -477,56 +483,62 @@ class HonoraryMemorialView(grok.View):
             # Handle POST
             if self.request['REQUEST_METHOD'] == 'POST':
                 # Fetch values from the request
-                honorary_name = self.request.form.get('honorary_name', None)
-                honorary_email = self.request.form.get('honorary_email', None)
-                honorary_recipient = self.request.form.get('honorary_recipient', None)
-                honorary_message = self.request.form.get('honorary_message', None)
-                honorary_send = self.request.form.get('honorary_send', None) == 'Yes'
-                honorary_type = self.request.form.get('honorary_type', None)
+                honorary = {
+                    'type': self.request.form.get('honorary_type', None),
+                    'notification_type': self.request.form.get('honorary_notification_type', None),
+                    'first_name': self.request.form.get('honorary_first_name', None),
+                    'last_name': self.request.form.get('honorary_last_name', None),
+                    'recipient_first_name': self.request.form.get('honorary_recipient_first_name', None),
+                    'recipient_last_name': self.request.form.get('honorary_recipient_last_name', None),
+                    'email': self.request.form.get('honorary_email', None),
+                    'address': self.request.form.get('honorary_address', None),
+                    'city': self.request.form.get('honorary_city', None),
+                    'state': self.request.form.get('honorary_state', None),
+                    'zip': self.request.form.get('honorary_zip', None),
+                    'country': self.request.form.get('honorary_country', None),
+                    'message': self.request.form.get('honorary_message', None),
+                }
 
                 # Dump the data into Salesforce
                 sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
                 sfbc.update({
                     'type': 'Opportunity',
                     'Id': self.donation_id,
-                    'Honorary_Name__c': honorary_name,
-                    'Honorary_Email__c': honorary_email,
-                    'Honorary_Recipient__c': honorary_recipient,
-                    'Honorary_Message__c': honorary_message,
-                    'Honorary_Type__c': honorary_type,
+                    'Honorary_Type__c': honorary['type'],
+                    'Honorary_Notification_Type__c': honorary['notification_type'],
+                    'Honorary_First_Name__c': honorary['first_name'],
+                    'Honorary_Last_Name__c': honorary['last_name'],
+                    'Honorary_Recipient_First_Name__c': honorary['recipient_first_name'],
+                    'Honorary_Recipient_Last_Name__c': honorary['recipient_last_name'],
+                    'Honorary_Email__c': honorary['email'],
+                    'Honorary_Street_Address__c': honorary['address'],
+                    'Honorary_City__c': honorary['city'],
+                    'Honorary_State__c': honorary['state'],
+                    'Honorary_Zip__c': honorary['zip'],
+                    'Honorary_Country__c': honorary['country'],
+                    'Honorary_Message__c': honorary['message'],
                 })
 
                 # Expire the donation in the cache so the new Honorary values are looked up next time
                 self.context.clear_donation_from_cache(self.donation_id, self.amount)
 
                 # If there was an email passed and we're supposed to send an email, send the email
-                if honorary_send and honorary_email:
+                if honorary['notification_type'] == 'Email' and honorary['email']:
 
                     settings = get_settings() 
 
                     # Construct the email bodies
                     pt = getToolByName(self.context, 'portal_transforms')
-                    if honorary_type == u'Honorary':
+                    if honorary['type'] == u'Honorary':
                         email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
-                        email_view.set_honorary_info(
-                            donor = '%(FirstName)s %(LastName)s' % self.receipt_view.contact,
-                            honorary_name = honorary_name,
-                            honorary_recipient = honorary_recipient,
-                            honorary_email = honorary_email,
-                            honorary_message = honorary_message,
-                        )
-                        email_body = email_view()
-
                     else:
                         email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
-                        email_view.set_honorary_info(
-                            donor = '%(FirstName)s %(LastName)s' % self.receipt_view.contact,
-                            honorary_name = honorary_name,
-                            honorary_recipient = honorary_recipient,
-                            honorary_email = honorary_email,
-                            honorary_message = honorary_message,
-                        )
-                        email_body = email_view()
+
+                    email_view.set_honorary_info(
+                        donor = '%(FirstName)s %(LastName)s' % self.receipt_view.contact,
+                        honorary = honorary,
+                    )
+                    email_body = email_view()
         
                     txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
 
@@ -538,12 +550,12 @@ class HonoraryMemorialView(grok.View):
                     mail_cc = self.receipt_view.contact.Email
 
                     msg = MIMEMultipart('alternative')
-                    if honorary_type == 'Memorial': 
-                        msg['Subject'] = 'Gift received in memory of %s' % honorary_name
+                    if honorary['type'] == 'Memorial': 
+                        msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % honorary
                     else:
-                        msg['Subject'] = 'Gift received in honor of %s' % honorary_name
+                        msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % honorary
                     msg['From'] = mail_from
-                    msg['To'] = honorary_email
+                    msg['To'] = honorary['email']
                     msg['Cc'] = mail_cc
         
                     part1 = MIMEText(txt_body, 'plain')
@@ -566,6 +578,10 @@ class HonoraryMemorialView(grok.View):
                 # Redirect on to the thank you page
                 self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%i&send_receipt_email=true' % (self.context.absolute_url(), self.donation_id, self.amount))
 
+        self.countries = CountryAvailability().getCountryListing()
+        self.countries.sort()
+
+        self.states = states_list
 
         return self.form_template()
 
@@ -647,9 +663,17 @@ RECEIPT_SOQL = """select
     Opportunity.StageName, 
     Opportunity.npe03__Recurring_Donation__c, 
     Opportunity.Honorary_Type__c, 
-    Opportunity.Honorary_Name__c, 
-    Opportunity.Honorary_Recipient__c, 
+    Opportunity.Honorary_First_Name__c, 
+    Opportunity.Honorary_Last_Name__c, 
+    Opportunity.Honorary_Recipient_First_Name__c, 
+    Opportunity.Honorary_Recipient_Last_Name__c, 
+    Opportunity.Honorary_Notification_Type__c, 
     Opportunity.Honorary_Email__c, 
+    Opportunity.Honorary_Street_Address__c, 
+    Opportunity.Honorary_City__c, 
+    Opportunity.Honorary_State__c, 
+    Opportunity.Honorary_Zip__c, 
+    Opportunity.Honorary_Country__c, 
     Opportunity.Honorary_Message__c, 
     Contact.FirstName, 
     Contact.LastName, 
@@ -720,11 +744,13 @@ class HonoraryEmail(grok.View):
         if self.request.get('show_template', None) == 'true':
             # Enable rendering of the template without honorary info
             self.set_honorary_info(
-                donor = '<YOUR NAME>',
-                honorary_name = '<NAME IN HONOR OF>',
-                honorary_recipient = '<RECIPIENT NAME>',
-                honorary_email = None,
-                honorary_message = '<YOUR MESSAGE HERE (optional)>'
+                donor = '[Your Name]',
+                honorary = {
+                    'last_name': '[Memory Name]',
+                    'recipient_first_name': '[Recipient First Name]',
+                    'recipient_last_name': '[Recipient Last Name]',
+                    'message': '[Message]',
+                }
             )
             
         settings = get_settings()
@@ -735,18 +761,18 @@ class HonoraryEmail(grok.View):
         if self.request.form.get('show_amount', None) == 'Yes':
             self.amount = self.request['amount']
         
-    def set_honorary_info(self, donor, honorary_name, honorary_recipient, honorary_email, honorary_message):
+    def set_honorary_info(self, donor, honorary):
         self.donor = donor
-        self.honorary_name = honorary_name
-        self.honorary_recipient = honorary_recipient
-        self.honorary_email = honorary_email
+        self.honorary = honorary
 
         # Attempt to perform a basic text to html conversion on the message text provided
         pt = getToolByName(self.context, 'portal_transforms')
+        self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
+
         try:
-            self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
+            self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
         except:
-            self.honorary_message = honorary_message
+            self.honorary['message'] = honorary['message']
 
 
 #FIXME: I tried to use subclasses to build these 2 views but grok seemed to be getting in the way.
@@ -764,11 +790,14 @@ class MemorialEmail(grok.View):
         if self.request.get('show_template', None) == 'true':
             # Enable rendering of the template without honorary info
             self.set_honorary_info(
-                donor = '<YOUR NAME>',
-                honorary_name = '<NAME IN MEMORY OF>',
-                honorary_recipient = '<RECIPIENT NAME>',
-                honorary_email = None,
-                honorary_message = '<YOUR MESSAGE HERE (optional)>'
+                donor = '[Your Name]',
+                honorary = {
+                    'first_name': '',
+                    'last_name': '[Memory Name]',
+                    'recipient_first_name': '[Recipient First Name]',
+                    'recipient_last_name': '[Recipient Last Name]',
+                    'message': '[Message]',
+                }
             )
             
         settings = get_settings()
@@ -779,17 +808,15 @@ class MemorialEmail(grok.View):
         if self.request.form.get('show_amount', None) == 'Yes':
             self.amount = self.request.form['amount']
         
-    def set_honorary_info(self, donor, honorary_name, honorary_recipient, honorary_email, honorary_message):
+    def set_honorary_info(self, donor, honorary):
         self.donor = donor
-        self.honorary_name = honorary_name
-        self.honorary_recipient = honorary_recipient
-        self.honorary_email = honorary_email
+        self.honorary = honorary
 
         # Attempt to perform a basic text to html conversion on the message text provided
         pt = getToolByName(self.context, 'portal_transforms')
-        self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
+        self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
 
         try:
-            self.honorary_message = pt.convertTo('text/html', honorary_message, mimetype='text/-x-web-intelligent')
+            self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
         except:
-            self.honorary_message = honorary_message
+            self.honorary['message'] = honorary['message']

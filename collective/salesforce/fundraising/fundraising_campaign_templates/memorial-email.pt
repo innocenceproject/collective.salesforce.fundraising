@@ -6,16 +6,16 @@
         <td>
           <span tal:replace="structure view/email_header" />
        
-          <div>Dear <span tal:replace="view/honorary_recipient" />,</div>
+          <div>Dear <span tal:replace="view/honorary/recipient_first_name|nothing" />,</div>
           <br />
   
-          <div><span tal:replace="view/organization_name" /> has received a generous gift<tal:if_amount condition="view/amount"> of $<span tal:replace="python: int(float(view.amount))" /></tal:if_amount><tal:if_donor condition="view/donor"> from <span tal:replace="view/donor" /></tal:if_donor> in memory of <span tal:replace="view/honorary_name" />.</div>
+          <div><span tal:replace="view/organization_name" /> has received a generous gift<tal:if_amount condition="view/amount"> of $<span tal:replace="python: int(float(view.amount))" /></tal:if_amount><tal:if_donor condition="view/donor"> from <span tal:replace="view/donor" /></tal:if_donor> in memory of <span tal:replace="string:${view/honorary/first_name|nothing} ${view/honorary/last_name|nothing}" />.</div>
           <br />
 
           <div><strong tal:replace="view/donor"></strong> added the following message with the gift:<br /></div>
           <br />
 
-          <div style="padding: 20px; background-color: #eeeeee; background: #eeeeee; border: 1px solid #e4e4e4" tal:condition="view/honorary_message" tal:content="structure view/honorary_message"></div>
+          <div style="padding: 20px; background-color: #eeeeee; background: #eeeeee; border: 1px solid #e4e4e4" tal:condition="view/honorary/message|nothing" tal:content="structure view/honorary/message|nothing"></div>
           <br />
   
           <div><strong>Sincerely,</strong></div>

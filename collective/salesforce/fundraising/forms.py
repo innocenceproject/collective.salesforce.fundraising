@@ -96,8 +96,8 @@ class CreateDonorQuote(form.Form):
 
     ignoreContext = True
 
-    label = _(u"Provide a Quote")
-    description = _(u"Help encourage other donors by providing a quote about why you were moved to donate.")
+    label = _(u"Testimonial")
+    description = _(u"Provide a quote to inspire others to give.")
 
     @button.buttonAndHandler(_(u'Submit'))
     def handleOk(self, action):
