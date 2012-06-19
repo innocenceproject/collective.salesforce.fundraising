@@ -189,6 +189,8 @@ class RpxPostLogin(grok.View):
         if not email:
             raise AttributeError('No email provided from social profile, unable to create account')
 
+        email = email.lower()
+
         res = get_brains_for_email(self.context, email, self.request)
         if not res:
             # create new Person if no existing Person was found with the same email
