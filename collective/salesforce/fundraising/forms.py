@@ -92,7 +92,7 @@ class CreateDonorQuote(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IDonorQuote).select('quote','name','image','email')
+        return field.Fields(IDonorQuote).select('quote','name','image','contact_sf_id', 'donation_id', 'amount')
 
     ignoreContext = True
 
@@ -126,7 +126,9 @@ class CreateDonorQuote(form.Form):
             'Quote__c': data['quote'],
             'Name__c': data['name'],
             'Campaign__c': parent_campaign.sf_object_id,
-            'Contact__c': contact_id,
+            'Contact__c': data['contact_sf_id'],
+            'Opportunity__c': data['donation_id'],
+            'Amount__c': data['amount'],
         })
 
         if not res[0]['success']:
@@ -140,4 +142,7 @@ class CreateDonorQuote(form.Form):
         # Send the user back to the thank you page with a note about their quote
         # Hide the donor quote section of the thank you page
         IStatusMessage(self.request).add(u'Your story has been successfully submitted.')
-        self.request.response.redirect(parent_campaign.absolute_url() + '/thank-you?hide=donorquote')
+        if data['donation_id'] and data['amount']:
+            self.request.response.redirect(parent_campaign.absolute_url() + '/thank-you?hide=donorquote&donation_id=%s&amount=%s' % (data['donation_id'], data['amount']))
+        else:
+            self.request.response.redirect(parent_campaign.absolute_url() + '/thank-you?hide=donorquote')

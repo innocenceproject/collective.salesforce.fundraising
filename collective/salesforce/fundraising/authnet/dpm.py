@@ -154,7 +154,7 @@ class AuthnetCallbackDPM(grok.View):
         response_code = int(self.request.form.get('x_response_code'))
         reason_code = int(self.request.form.get('x_response_reason_code'))
         campaign_id = self.request.form.get('c_campaign_id')
-       
+
         pc = getToolByName(self.context, 'portal_catalog') 
         res = pc.searchResults(sf_object_id = campaign_id)
         if not res:
@@ -199,10 +199,12 @@ class AuthnetCallbackDPM(grok.View):
             first_name = self.request.form.get('x_first_name', None)
             last_name = self.request.form.get('x_last_name', None)
 
+            # lowercase all email addresses to avoid lookup errors if typed with different caps
             email = self.request.form.get('x_email', None)
             if email:
                 email = email.lower()
 
+            email_opt_in = self.request.form.get('c_email_signup', None) == 'YES'
             phone = self.request.form.get('x_phone', None)
             address = self.request.form.get('x_address', None)
             city = self.request.form.get('x_city', None)
@@ -225,6 +227,11 @@ class AuthnetCallbackDPM(grok.View):
                     'zip': zipcode,
                     'country': country, 
                 }
+   
+                # Treat the email_opt_in field as a ratchet.  Once toggled on, it stays on even if unchecked 
+                # on a subsequent donation.  Unsubscribing is the way to prevent emails. 
+                if email_opt_in:
+                    data['email_opt_in'] = email_opt_in
     
                 # Create the user
                 people_container = getattr(getSite(), 'people')

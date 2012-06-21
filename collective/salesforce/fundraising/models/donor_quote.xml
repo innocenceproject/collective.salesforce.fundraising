@@ -5,7 +5,7 @@
     
     <schema sf:object="Constituent_Quote__c" sf:criteria="" sf:container="get_container">
         <field name="quote" type="zope.schema.Text" sf:field="Quote__c">
-            <title>Message</title>
+            <title>Your Quote</title>
             <description>Tell us and other potential donors why you were moved to donate.</description>
         </field>
         <field name="name" type="zope.schema.TextLine" sf:field="Name__c">
@@ -24,6 +24,14 @@
         <field name="contact_sf_id" type="zope.schema.TextLine" sf:field="Contact__c">
             <title>Contact Salesforce ID</title>
             <description>The ID of the Salesforce Contact the quote relates to</description>
+        </field>
+        <field name="donation_id" type="zope.schema.TextLine" sf:field="Opportunity__c">
+            <title>Donation ID</title>
+            <description>The ID of the Salesforce Opportunity (Donation) the quote relates to</description>
+        </field>
+        <field name="amount" type="zope.schema.TextLine" sf:field="Amount__c">
+            <title>Donation Amount</title>
+            <description>The amount of the Salesforce Opportunity (Donation) the quote relates to</description>
         </field>
     </schema>
 </model>

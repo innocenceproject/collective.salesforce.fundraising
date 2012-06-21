@@ -40,10 +40,10 @@
         <dd class="portletFooter" />
       </dl>
 
-      <dl class="portlet portletDonorQuote">
+      <dl class="portlet portletDonorQuote" tal:condition="python: getattr(view, 'donor_quote_form_html', None)">
         <dt class="portletHeader">Testimonial</dt>
         <dd class="portletItem">
-          <div tal:replace="structure view/donor_quote_form" />
+          <div tal:replace="view/donor_quote_form_html" />
         </dd>
         <dd class="portletFooter" />
       </dl>

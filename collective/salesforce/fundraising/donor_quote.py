@@ -19,8 +19,7 @@ class IDonorQuote(form.Schema, IImageScaleTraversable):
 
     form.model("models/donor_quote.xml")
 
-    form.mode(email = 'hidden')
-    email = schema.TextLine(title=u"Email")
+    #form.mode(contact_sf_id = 'hidden')
 alsoProvides(IDonorQuote, IContentType)
 
 

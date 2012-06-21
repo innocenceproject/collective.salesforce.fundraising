@@ -16,6 +16,10 @@
             <title>Email Address</title>
             <required>True</required>
         </field>
+        <field name="email_opt_in" title="" type="zope.schema.TextLine" sf:field="Email_Opt_In__c">
+            <title>Email Opt In</title>
+            <required>False</required>
+        </field>
         <field name="address" title="" type="zope.schema.TextLine" sf:field="MailingStreet">
             <title>Street Address</title>
             <required>False</required>

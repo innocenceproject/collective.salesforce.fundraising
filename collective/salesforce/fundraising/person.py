@@ -28,21 +28,34 @@ class Person(dexterity.Item):
 
     def upsertToSalesforce(self):
         sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
-        
-        res = sfbc.upsert('Email', {
+       
+        # only upsert values that are non-empty to Salesforce to avoid overwritting existing values with null 
+        data = {
             'type': 'Contact',
             'FirstName': self.first_name,
             'LastName': self.last_name,
             'Email': self.email,
-            'HomePhone': self.phone,
-            'MailingStreet': self.address,
-            'MailingCity': self.city,
-            'MailingState': self.state,
-            'MailingPostalCode': self.zip,
-            'MailingCountry': self.country,
-            'Gender__c': self.gender,
             'Online_Fundraising_User__c' : True,
-        })
+        }
+        if self.email_opt_in:
+            data['Email_Opt_In__c'] = self.email_opt_in
+        if self.phone:
+            data['HomePhone'] = self.phone
+        if self.address:
+            data['MailingStreet'] = self.address
+        if self.city:
+            data['MailingCity'] = self.city
+        if self.state:
+            data['MailingState'] = self.state
+        if self.zip:
+            data['MailingPostalCode'] = self.zip
+        if self.country:
+            data['MailingCountry'] = self.country
+        if self.gender:
+            data['Gender__c'] = self.gender
+
+        res = sfbc.upsert('Email', data)
+
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
 

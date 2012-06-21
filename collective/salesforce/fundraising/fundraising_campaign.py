@@ -418,20 +418,32 @@ class ThankYouView(grok.View):
         # Fetch some values that should have been passed from the redirector
         self.donation_id = self.request.form.get('donation_id', None)
         self.amount = self.request.form.get('amount', None)
+        if not self.donation_id:
+            self.donation_id = self.request.form.get('form.widgets.donation_id', None)
+        if not self.amount:
+            self.amount = self.request.form.get('form.widgets.amount', None)
+            
 
         self.receipt_view = None
         self.receipt = None
         if self.donation_id and self.amount:
             self.amount = int(self.amount)
-            self.receipt_view
             self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
+            self.receipt_view.set_donation_keys(self.donation_id, self.amount)
             self.receipt = self.receipt_view()
 
         # Create a wrapped form for inline rendering
         from collective.salesforce.fundraising.forms import CreateDonorQuote
-        if self.context.can_create_donor_quote():
+        # Only show the form if a valid receipt is being displayed
+        if self.context.can_create_donor_quote() and self.receipt_view:
             self.donor_quote_form = CreateDonorQuote(self.context, self.request)
             alsoProvides(self.donor_quote_form, IWrappedForm)
+            self.donor_quote_form.update()
+            self.donor_quote_form.widgets.get('name').value = u'%s %s' % (self.receipt_view.contact.FirstName, self.receipt_view.contact.LastName)
+            self.donor_quote_form.widgets.get('contact_sf_id').value = unicode(self.receipt_view.contact.Id)
+            self.donor_quote_form.widgets.get('donation_id').value = unicode(self.donation_id)
+            self.donor_quote_form.widgets.get('amount').value = unicode(self.amount)
+            self.donor_quote_form_html = self.donor_quote_form.render()
 
         # Determine any sections that should be collapsed
         self.hide = self.request.form.get('hide', [])
@@ -669,6 +681,7 @@ RECEIPT_SOQL = """select
     Opportunity.Honorary_Zip__c, 
     Opportunity.Honorary_Country__c, 
     Opportunity.Honorary_Message__c, 
+    Contact.Id, 
     Contact.FirstName, 
     Contact.LastName, 
     Contact.Email, 
@@ -780,12 +793,11 @@ class HonoraryEmail(grok.View):
 
         # Attempt to perform a basic text to html conversion on the message text provided
         pt = getToolByName(self.context, 'portal_transforms')
-        self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
-
-        try:
-            self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
-        except:
-            self.honorary['message'] = honorary['message']
+        if self.honorary['message']:
+            try:
+                self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
+            except:
+                self.honorary['message'] = honorary['message']
 
 
 #FIXME: I tried to use subclasses to build these 2 views but grok seemed to be getting in the way.
@@ -827,9 +839,9 @@ class MemorialEmail(grok.View):
 
         # Attempt to perform a basic text to html conversion on the message text provided
         pt = getToolByName(self.context, 'portal_transforms')
-        self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
 
-        try:
-            self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
-        except:
-            self.honorary['message'] = honorary['message']
+        if self.honorary['message']:
+            try:
+                self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
+            except:
+                self.honorary['message'] = honorary['message']
