@@ -292,7 +292,7 @@ class FundraisingCampaignPage(object):
         # Determine to and from addresses
         portal_url = getToolByName(self, 'portal_url')
         portal = portal_url.getPortalObject()
-        mail_from = portal.getProperty('email_from_address')
+        mail_from = '%s <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
         mail_to = email_view.receipt_view.contact.Email
 
         # Construct the email message                
@@ -540,7 +540,7 @@ class HonoraryMemorialView(grok.View):
                     portal_url = getToolByName(self.context, 'portal_url')
                     portal = portal_url.getPortalObject()
 
-                    mail_from = portal.getProperty('email_from_address')
+                    mail_from = '%s <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
                     mail_cc = self.receipt_view.contact.Email
 
                     msg = MIMEMultipart('alternative')

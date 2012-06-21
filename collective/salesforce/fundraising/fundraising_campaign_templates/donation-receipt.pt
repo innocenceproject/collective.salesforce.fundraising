@@ -47,7 +47,7 @@
 
             <tal:if_mail condition="python: view.donation.Honorary_Notification_Type__c == 'Mail'">
               the address shown below
-              <span tal:condition="view/donation/Honorary_Message__c"> with the custom message you provided.</span>.  
+              <span tal:condition="view/donation/Honorary_Message__c"> with the custom message you provided</span>.  
             
               <div class="address">
                 <br />

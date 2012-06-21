@@ -16,8 +16,9 @@
         <img src="" tal:attributes="src string:${seal/absolute_url}/@@images/image/seal" />
         <div class="seal-blurb">
           <span tal:content="seal/blurb" />
-          <a href="#" tal:condition="seal/more_info_content" tal:attributes="href seal/absolute_url">More Info</a>
+          <a href="#" tal:condition="seal/more_info_content">More Info</a>
         </div>
+        <div class="more-info" tal:condition="seal/more_info_content" tal:content="structure seal/more_info_content/output"></div>
       </div>
       <div class="visualClear"></div>
     </dd>

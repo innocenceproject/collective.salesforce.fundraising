@@ -181,7 +181,7 @@
       </fieldset>
 
       <div class="form-buttons after-amount">
-        <input type="submit" />
+        <input type="submit" value="Submit" />
         <span class="button-loading-indicator" />
       </div>
 

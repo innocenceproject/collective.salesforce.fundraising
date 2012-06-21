@@ -65,7 +65,7 @@
           <div class="options">
             <div class="option">
               <input id="honorary-send-no" type="radio" name="honorary_notification_type" value="None" />
-              <label for="honorary-send-yes">No, I wish to donate anonymously</label>
+              <label for="honorary-send-yes">No</label>
             </div>
             <div class="option">
               <input id="honorary-send-email" type="radio" name="honorary_notification_type" value="Email" />
@@ -105,7 +105,7 @@
              </div>
              <div class="subfield subfield-state">
                <input type="text" placeholder="State" />
-               <select name="honorary_state" required="required">
+               <select name="honorary_state">
                  <option value="">---</option>
                  <option tal:repeat="state view/states" tal:attributes="value python: state[0]" tal:content="python: state[1]">New York</option>
                </select>
@@ -114,7 +114,7 @@
                <input type="text" name="honorary_zip" placeholder="Zip" />
              </div>
              <div class="subfield subfield-country">
-               <select name="x_country" required="required">
+               <select name="x_country">
                  <option tal:repeat="country view/countries" 
                          tal:content="python: '%s: %s' % (country[0].upper(), country[1])" 
                          tal:attributes="value python: country[0].upper(); selected python: 'selected' if country[0].upper() == 'US' or country[0].upper() == view.request.get('country', 'No country') else None">United States</option>
@@ -146,7 +146,7 @@
       </fieldset>
 
       <div class="form-buttons">
-        <input type="submit" />
+        <input type="submit" value="Submit" />
         <span class="button-loading-indicator" />
       </div>
 
