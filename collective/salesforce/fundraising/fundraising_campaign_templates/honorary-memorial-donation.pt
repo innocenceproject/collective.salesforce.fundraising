@@ -65,7 +65,7 @@
           <div class="options">
             <div class="option">
               <input id="honorary-send-no" type="radio" name="honorary_notification_type" value="None" />
-              <label for="honorary-send-yes">No</label>
+              <label for="honorary-send-no">No</label>
             </div>
             <div class="option">
               <input id="honorary-send-email" type="radio" name="honorary_notification_type" value="Email" />
@@ -91,7 +91,7 @@
         </div>
         
         <div class="field field-email">
-           <input type="email" name="honorary_email" placeholder="Recipient's Email" />
+           <input type="text" name="honorary_email" placeholder="Recipient's Email" />
         </div>
 
         <div class="field field-address">
