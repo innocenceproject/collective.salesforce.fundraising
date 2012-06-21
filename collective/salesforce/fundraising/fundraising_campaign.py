@@ -292,7 +292,7 @@ class FundraisingCampaignPage(object):
         # Determine to and from addresses
         portal_url = getToolByName(self, 'portal_url')
         portal = portal_url.getPortalObject()
-        mail_from = '%s <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
+        mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
         mail_to = email_view.receipt_view.contact.Email
 
         # Construct the email message                
@@ -540,7 +540,7 @@ class HonoraryMemorialView(grok.View):
                     portal_url = getToolByName(self.context, 'portal_url')
                     portal = portal_url.getPortalObject()
 
-                    mail_from = '%s <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
+                    mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
                     mail_cc = self.receipt_view.contact.Email
 
                     msg = MIMEMultipart('alternative')
@@ -570,7 +570,7 @@ class HonoraryMemorialView(grok.View):
                         pass
 
                 # Redirect on to the thank you page
-                self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%i&send_receipt_email=true' % (self.context.absolute_url(), self.donation_id, self.amount))
+                self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%i' % (self.context.absolute_url(), self.donation_id, self.amount))
 
         self.countries = CountryAvailability().getCountryListing()
         self.countries.sort()
