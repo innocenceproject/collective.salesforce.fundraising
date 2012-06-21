@@ -98,6 +98,7 @@
         <div class="field field-credit-card">
           <div class="field-inputs">
             <div class="accepted-cards">
+              <div class="discreet">Accepted Cards</div>
               <img src="++theme++ip.theme.fundraising/img/credit-cards.png" alt="Visa, Mastercard, American Express, and Discover" />
             </div>
             <div class="subfield subfield-card-number">
