@@ -13,7 +13,7 @@
 
     <dd class="portletItem">
       <div class="donor-quote">
-        <img src="" tal:attributes="src string:${quote/absolute_url}/@@images/image/icon" />
+        <img tal:condition="quote/image/filename | nothing" src="" tal:attributes="src string:${quote/absolute_url}/@@images/image/icon" />
         <p><span class="quote-start">"</span><span tal:replace="quote/quote" /><span class="quote-end">"</span></p>
         <div class="donor-name" tal:content="quote/name">John Doe</div>
       </div>

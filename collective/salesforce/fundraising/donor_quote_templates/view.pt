@@ -14,9 +14,8 @@
 
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">
-
       <div class="donor-quote">
-        <img src="" tal:attributes="src string:${view/context/absolute_url}/@@images/image/icon" />
+        <tal:if_image condition="view/context/image/filename | nothing"><img src="" tal:attributes="src string:${view/context/absolute_url}/@@images/image/icon" /></tal:if_image>
         <p><span class="quote-start">"</span><span tal:replace="view/context/quote" /><span class="quote-end">"</span></p>
         <div class="donor-name" tal:content="view/context/name">John Doe</div>
       </div>
