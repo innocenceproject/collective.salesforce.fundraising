@@ -45,6 +45,7 @@ class CreatePersonalCampaignPageForm(form.Form):
 
         mtool = getToolByName(self.context, 'portal_membership')
         member = mtool.getAuthenticatedMember()
+        import pdb; pdb.set_trace()
         contact_id = member.getProperty('sf_object_id')
 
         settings = get_settings()
@@ -63,8 +64,8 @@ class CreatePersonalCampaignPageForm(form.Form):
             'IsActive': True,
             'Status': 'In Progress',
             }
-        if settings.sf_opportunity_record_type_personal:
-            data['RecordTypeID'] = settings.sf_opportunity_record_type_personal
+        if settings.sf_campaign_record_type_personal:
+            data['RecordTypeID'] = settings.sf_campaign_record_type_personal
 
         res = sfbc.create(data)
         if not res[0]['success']:
