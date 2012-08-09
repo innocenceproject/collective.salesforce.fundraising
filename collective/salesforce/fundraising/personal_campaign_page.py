@@ -16,6 +16,7 @@ from plone.namedfile.interfaces import IImageScaleTraversable
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import FundraisingCampaignPage
+from collective.salesforce.fundraising.fundraising_campaign import CampaignView
 
 from collective.salesforce.fundraising import MessageFactory as _
 
@@ -63,7 +64,7 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
 
     @property
     def donation_form_tabs(self):
-        return self.__parent__.donation_form_tabs
+        return self.get_fundraising_campaign().donation_form_tabs
 
     def get_container(self):
         if not self.parent_sf_id:
@@ -90,6 +91,13 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         if self.goal and self.donations_total:
             return int((self.donations_total * 100) / self.goal)
         return 0
+
+class PersonalCampaignPageView(CampaignView):
+    grok.context(IPersonalCampaignPage)
+    grok.require('zope2.View')
+
+    grok.name('view')
+    grok.template('view')
 
 class PersonalCampaignPagesList(grok.View):
     grok.context(IFundraisingCampaignPage)
