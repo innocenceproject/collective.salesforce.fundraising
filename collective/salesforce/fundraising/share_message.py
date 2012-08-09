@@ -9,10 +9,12 @@ from zope.app.container.interfaces import IObjectAddedEvent
 from Products.CMFCore.utils import getToolByName
 from zope.site.hooks import getSite
 from collective.salesforce.fundraising import MessageFactory as _
+from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from Products.statusmessages.interfaces import IStatusMessage
 from plone.namedfile.interfaces import IImageScaleTraversable
 from Products.validation.validators.BaseValidators import EMAIL_RE
 from collective.salesforce.fundraising.utils import get_settings
+from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 
 
 # Interface class; used to define content-type schema.
@@ -41,6 +43,7 @@ class ShareMessage(dexterity.Item):
 # Add to Salesforce on creation
 @grok.subscribe(IShareMessage, IObjectAddedEvent)
 def createSalesforceCampaign(message, event):
+    # Set the parent_sf_id using the parent
     if not message.parent_sf_id:
         message.parent_sf_id = message.aq_parent.sf_object_id
 
@@ -55,6 +58,8 @@ def createSalesforceCampaign(message, event):
         'Status': message.status,
         'ParentId': message.parent_sf_id,
     }
+    settings = get_settings()
+
     if settings.sf_campaign_record_type_share:
         data['RecordTypeId'] = settings.sf_campaign_record_type_share
 
@@ -64,22 +69,23 @@ def createSalesforceCampaign(message, event):
 
     message.sf_object_id = res[0]['id']
 
-
 class JanrainView(grok.View):
     grok.context(IShareMessage)
     grok.require('zope2.View')
     grok.name('view')
 
     def update(self):
-        self.message_js = "rpxShareButton(jQuery('#message-%s'), '%s', '%s', '%s', '%s', '%s', '%s');" % (
-            self.context.id,
-            'Share this message',
-            self.context.description,
-            self.context.aq_parent.absolute_url() + '?source_campaign=' + self.context.sf_object_id,
-            self.context.title,
-            self.context.comment,
-            self.context.absolute_url() + '/@@images/image',
-        )
+        self.link_id = 'share-message-' + self.context.id
+        url = self.context.aq_parent.absolute_url() + '?source_campaign=' + self.context.sf_object_id
+        url = url.replace("'","\\'")
+        self.message_js = SHARE_JS_TEMPLATE % {
+            'link_id': self.link_id,
+            'url': url,
+            'title': self.context.title.replace("'","\\'"),
+            'description': self.context.description.replace("'","\\'"),
+            'image': self.context.absolute_url() + '/@@images/image',
+            'message': self.context.comment.replace("'","\\'"),
+        }
 
 
 class InvalidEmailError(schema.ValidationError):

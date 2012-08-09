@@ -36,6 +36,7 @@ from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import sanitize_soql
 from collective.salesforce.fundraising.us_states import states_list
+from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 
 from collective.oembed.interfaces import IConsumer
 
@@ -451,21 +452,26 @@ class ThankYouView(grok.View):
             self.hide = self.hide.split(',')
 
     def render_janrain_share(self):
+        settings = get_settings()
+        comment = settings.thank_you_share_message
+        if not comment:
+            comment = ''
+
         amount_str = ''
         if self.amount:
             amount_str = _(u' $%s' % self.amount)
-        settings = get_settings()
-        comment = settings.thank_you_share_message
-        if comment and self.amount:
             comment = comment.replace('{{ amount }}', str(self.amount))
-
-        return "rpxShareButton(jQuery('#share-message-thank-you'), 'Tell your friends you donated', '%s', '%s', '%s', '%s', '%s')" % (
-            self.context.description,
-            self.context.absolute_url(),
-            self.context.title,
-            comment,
-            self.context.absolute_url() + '/@@images/image',
-        )
+        else:
+            comment = comment.replace('{{ amount }}', '')
+        
+        return SHARE_JS_TEMPLATE % {
+            'link_id': 'share-message-thank-you',
+            'url': self.context.absolute_url() + '?SOURCE_CODE=thank_you_share',
+            'title': self.context.title.replace("'","\\'"),
+            'description': self.context.description.replace("'","\\'"),
+            'image': self.context.absolute_url() + '/@@images/image',
+            'message': comment,
+        }
 
 class HonoraryMemorialView(grok.View):
     grok.context(IFundraisingCampaignPage)
@@ -611,7 +617,7 @@ class ShareView(grok.View):
         if len(res) < 3:
             if hasattr(self.context, 'parent_sf_id'):
                 # Add parent messages until a total of 3 messages are selected
-                parent_res = self.context.__parent__.listFolderContents(contentFilter = {
+                parent_res = self.context.get_fundraising_campaign().listFolderContents(contentFilter = {
                     'portal_type': 'collective.salesforce.fundraising.sharemessage'
                 })
                 if len(parent_res) + len(res) > 3:

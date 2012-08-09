@@ -111,9 +111,11 @@
             </div>
         </form>
 
-        <a href="mail_password_form"
-           class="tile"
-           tal:attributes="href view/mail_password_form">
+        <a href="register" class="tile" tal:attributes="href view/register_link">
+           <tal:block replace="structure context/info_icon.gif"/>
+           <span tal:omit-tag="">Don't have an account? Click here to create one.</span>
+        </a>
+        <a href="mail_password_form" class="tile" tal:attributes="href view/mail_password_form">
            <tal:block replace="structure context/info_icon.gif"/>
            <span tal:omit-tag="" i18n:translate="box_forgot_password_option">Forgot your password?</span>
         </a>
@@ -121,35 +123,9 @@
     </div>
 
 
-
-
-
-
-
-
-
-
-
-
-<tal:comment condition="nothing">
-    <div id="form-register" tal:condition="view/registration_available">
-      <h2>Create a new account</h2>
-      <form tal:attributes="action string:${context/portal_url}/@@register"
-          method="post"
-          enctype="multipart/form-data"
-          tal:define="view nocall:view/registration_form">
-          <div metal:use-macro="context/base-subpageform.html/form" />
-          <input tal:define="came_from request/form/came_from|nothing"
-              tal:condition="came_from"
-              type="hidden"
-              name="came_from"
-              tal:attributes="value came_from" />
-          <input tal:replace="structure context/@@authenticator/authenticator" />
-      </form>
-    </div>
-    <div class="visualClear"></div> 
-</tal:comment>
+    <div class="visualClear"></div>
   </dd>
+  <div class="visualClear"></div>
 </dl>
 
 <script type="text/javascript">

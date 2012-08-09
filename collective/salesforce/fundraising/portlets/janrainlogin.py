@@ -1,7 +1,9 @@
+from urllib import quote
 from plone.portlets.interfaces import IPortletDataProvider
 from zope.interface import implements
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from Products.CMFCore.utils import getToolByName
+from zope.site.hooks import getSite
 
 from collective.pluggablelogin import _
 from plone.app.portlets.portlets import base
@@ -22,19 +24,13 @@ class Assignment(login.Assignment):
 class Renderer(login.Renderer):
 
     @property
-    def registration_available(self):
-        mtool = getToolByName(self.context, 'portal_membership')
-        if not mtool.isAnonymousUser():
-            return False
-        if getToolByName(self.context, 'portal_registration', None) is None:
-            return False
-        return mtool.checkPermission('Add portal member', self.context)
-
-    @property
-    def registration_form(self):
-        form = self.context.restrictedTraverse('@@register')
-        form.update()
-        return form
+    def register_link(self):
+        site = getSite()
+        url = site.absolute_url() + '/@@register'
+        came_from = self.request.form.get('came_from',None)
+        if came_from:
+            url = url + '?came_from=%s' % quote(came_from)
+        return url 
 
     render = ViewPageTemplateFile('janrainlogin.pt')
 

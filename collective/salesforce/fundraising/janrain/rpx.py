@@ -31,7 +31,7 @@ js_template = """<script type="text/javascript">
         janrain.ready = true;
         
         janrain.events.onAuthWidgetLoad.addHandler(function () {
-            //janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
+            janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
         });
     };
     if (document.addEventListener) {
@@ -58,50 +58,48 @@ js_template = """<script type="text/javascript">
 </script>
 
 <script type="text/javascript">
-    var rpxJsHost = (("https:" == document.location.protocol) ? "https://" : "http://static.");
-    document.write(unescape("%%3Cscript src='" + rpxJsHost + "rpxnow.com/js/lib/rpx.js' type='text/javascript'%%3E%%3C/script%%3E"));
-</script>
+(function() {
+    if (typeof window.janrain !== 'object') window.janrain = {};
+    if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
+    if (typeof window.janrain.settings.share !== 'object') window.janrain.settings.share = {};
+    if (typeof window.janrain.settings.packages !== 'object') janrain.settings.packages = [];
+    janrain.settings.packages.push('share');
 
-<script type="text/javascript"><!--
-    function rpxShareButton (rpxButtonTarget, rpxLabel, rpxSummary, rpxLink, rpxLinkText, rpxComment, rpxImageSrc){
-        RPXNOW.init({appId: '%(app_id)s', xdReceiver: '/rpx_xdcomm.html'});
-        rpxButtonTarget.click(function () {
-            RPXNOW.loadAndRun(['Social'], function () {
-                var activity = new RPXNOW.Social.Activity(
-                rpxLabel,
-                rpxLinkText,
-                rpxLink);
-                activity.setUserGeneratedContent(rpxComment);
-                activity.setDescription(rpxSummary);
-                activity.addActionLink('Donate', '%(came_from)s');
-                if (rpxImageSrc.length > 0) {
-                    if (document.getElementById('rpxshareimg') != undefined && (rpxImageSrc == '' || rpxImageSrc == null)) {
-                        rpxImageSrc = document.getElementById('rpxshareimg').src;
-                    }
-                    if (rpxImageSrc != '' && rpxImageSrc != null) {
-                        var shareImage = new RPXNOW.Social.ImageMediaCollection();
-                        shareImage.addImage(rpxImageSrc,rpxLink);
-                        activity.setMediaItem(shareImage);
-                    }
-                }
-                
-                RPXNOW.Social.publishActivity(activity,
-                    {finishCallback:function(data){
-                        for (i in data) {
-                            if (data[i].success == true) {
-                                //do something for each share success here
-                                //e.g. recordShare(data[i].provider_name, data[i].provider_activity_url);
-                            }
-                        }
-                    }
-                });
-            });
-            return false;
-        });
+    function isReady() { janrain.ready = true; };
+    if (document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", isReady, false);
+    } else {
+        window.attachEvent('onload', isReady);
     }
 
-    
---></script>
+    var e = document.createElement('script');
+    e.type = 'text/javascript';
+    e.id = 'janrainWidgets';
+
+    if (document.location.protocol === 'https:') {
+      e.src = 'https://rpxnow.com/js/lib/%(site_id)s/widget.js';
+    } else {
+      e.src = 'http://widget-cdn.rpxnow.com/js/lib/%(site_id)s/widget.js';
+    }
+
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(e, s);
+})();
+</script>
+"""
+
+SHARE_JS_TEMPLATE = """
+  $('#%(link_id)s').click(function () {
+    janrain.engage.share.reset();
+    janrain.engage.share.setUrl('%(url)s');
+    janrain.engage.share.setTitle('%(title)s');
+    janrain.engage.share.setDescription('%(description)s');
+    janrain.engage.share.setImage('%(image)s');
+    janrain.engage.share.setMessage('%(message)s');
+    janrain.engage.share.setActionLink({'name': 'Donate', 'link':'%(url)s'});
+    janrain.engage.share.show();
+    return false;
+  });
 """
 
 def GenPasswd():
@@ -261,10 +259,10 @@ class RpxPostLogin(grok.View):
         # Redirect
         return self.request.RESPONSE.redirect(self.context.absolute_url())
 
-class RpxXdCommView(grok.View):
-    """ Implement the rpx_xdcomm.html cross domain file """
- 
-    grok.name('rpx_xdcomm.html')
-    grok.context(IPloneSiteRoot)
-    grok.require('zope2.View')
+#class RpxXdCommView(grok.View):
+#    """ Implement the rpx_xdcomm.html cross domain file """
+# 
+#    grok.name('rpx_xdcomm.html')
+#    grok.context(IPloneSiteRoot)
+#    grok.require('zope2.View')
 

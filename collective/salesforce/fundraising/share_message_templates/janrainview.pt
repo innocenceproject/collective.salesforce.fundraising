@@ -3,7 +3,7 @@
         <div class="message-text">
             <h2 class="message-title" tal:content="view/context/title">Message Title</h2>
             <p class="message-description" tal:content="view/context/description"></p>
-            <a class="button button-share" id="message-" href="#" tal:attributes="id python:'message-' + view.context.id">Share this message</a>
+            <a class="button button-share" id="share-message-" href="#" tal:attributes="id view/link_id">Share this message</a>
             <script type="text/javascript" tal:content="view/message_js">
                 // share js goes here
             </script>
