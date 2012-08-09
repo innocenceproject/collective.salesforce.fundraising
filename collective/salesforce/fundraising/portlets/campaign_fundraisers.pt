@@ -30,9 +30,14 @@
       <div class="clear"></div>
 
       <a class="button button-create-personal-campaign" href="#"
-           tal:condition="python: view.context.allow_personal or existing_campaign"
+           tal:condition="python: view.context.allow_personal and not existing_campaign"
            tal:attributes="href create_link"
-           tal:content="create_text">Create My Campaign</a>
+           tal:content="create_text">Start a Fundraiser</a>
+
+      <a class="button button-view-personal-campaign" href="#"
+           tal:condition="python: view.context.allow_personal and existing_campaign"
+           tal:attributes="href create_link"
+           tal:content="create_text">View My Fundraiser</a>
 
       <div class="clear"></div>
     </dd>
