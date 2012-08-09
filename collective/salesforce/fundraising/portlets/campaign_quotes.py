@@ -85,8 +85,8 @@ class Renderer(base.Renderer):
         if len(res) == 0:
             if hasattr(self.context, 'parent_sf_id'):
                 # Add parent messages until a total of 3 messages are selected
-                res = self.context.__parent__.listFolderContents(contentFilter = {
-                    'portal_type': 'collective.salesforce.fundraising.sharemessage'
+                res = self.context.get_fundraising_campaign().listFolderContents(contentFilter = {
+                    'portal_type': 'collective.salesforce.fundraising.donorquote'
                 })
 
         if len(res):

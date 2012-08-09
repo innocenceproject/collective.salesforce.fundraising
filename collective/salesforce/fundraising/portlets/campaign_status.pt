@@ -9,23 +9,24 @@
                 show_goal python: goal_percent > 3;
                 show_timeline python: days_remaining >= 0 and days_remaining < 90;
                 show_portlet python: show_goal or show_timeline;
+                is_personal python: getattr(view.context, 'parent_sf_id', None);
                 addcommas nocall: view/addcommas;"
     tal:condition="show_portlet">
 
     <dt class="portletHeader">
         <span class="portletTopLeft"></span>
         <span>
-           Our Progress
+           <span tal:replace="python: 'Our' if not is_personal else 'My'">Our</span> Progress
         </span>
         <span class="portletTopRight"></span>
     </dt>
 
     <dd class="portletItem" tal:condition="show_goal">
-      <span class="campaign-goal-text">Help us reach our goal of <strong tal:content="python: '$%s' % addcommas(goal)">$10,000</strong></span>
+      <span class="campaign-goal-text">Help <span tal:replace="python: 'us' if not is_personal else 'me'" /> reach <span tal:replace="python: 'our' if not is_personal else 'my'" /> goal of <strong tal:content="python: '$%s' % addcommas(goal)">$10,000</strong></span>
       <div class="progress-bar">
         <span class="value" tal:content="goal_percent">56</span>
       </div>
-      <span class="campaign-raised-text">We've raised <strong tal:content="python: '$%s' % addcommas(raised)">$5,675</strong> so far!</span>
+      <span class="campaign-raised-text"><span tal:replace="python: 'We' if not is_personal else 'I'" />'ve raised <strong tal:content="python: '$%s' % addcommas(raised)">$5,675</strong> so far!</span>
     </dd>
 
     <dd class="portletItem" tal:condition="show_timeline">
