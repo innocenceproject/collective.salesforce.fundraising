@@ -17,12 +17,23 @@
             <description>Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks.</description>
             <required>False</required>
         </field>
+        <field name="external_media_url" type="zope.schema.TextLine">
+            <title>External Media URL</title>
+            <description>A link to externally hosted media promoting the campaign.  For example, a Youtube video, a Flickr photo gallery, etc.</description>
+            <required>False</required>
+        </field>
+        <field name="show_media_portlet" type="zope.schema.Bool">
+            <title>Show Media Portlet?</title>
+            <description>Uncheck if you don't want to render the Campaign Media portlet showing the image/external media in the right column</description>
+            <required>False</required>
+            <default>True</default>
+        </field>
         <field name="status" type="zope.schema.TextLine" sf:field="Status">
             <title>Status</title>
             <description>The current status of the campaign</description>
             <default>In Progress</default>
         </field>
-        <field name="goal" type="zope.schema.Float" sf:field="ExpectedRevenue">
+        <field name="goal" type="zope.schema.Int" sf:field="ExpectedRevenue">
             <title>Goal</title>
             <description>Set the dollar amount goal you aim to raise in your campaign</description>
             <default>0</default>
