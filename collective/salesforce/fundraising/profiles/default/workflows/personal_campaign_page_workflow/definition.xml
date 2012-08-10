@@ -1,0 +1,179 @@
+<?xml version="1.0"?>
+<dc-workflow workflow_id="personal_campaign_page_workflow"
+             title="Personal Campaign Page Workflow"
+             state_variable="review_state"
+             initial_state="published">
+
+  <permission>View</permission>
+  <permission>Access contents information</permission>
+  <permission>Modify portal content</permission>
+  <permission>collective.salesforce.fundraising: Manage Personal Campaign</permission>
+  
+
+  <state state_id="published" title="Published">
+   <exit-transition transition_id="disable" />
+   <exit-transition transition_id="archive" />
+   <permission-map name="View" acquired="False">
+    <permission-role>Anonymous</permission-role>
+    <permission-role>Owner</permission-role>
+    <permission-role>Editor</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="Access contents information" acquired="False">
+    <permission-role>Anonymous</permission-role>
+    <permission-role>Owner</permission-role>
+    <permission-role>Editor</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="Modify portal content" acquired="False">
+    <permission-role>Owner</permission-role>
+    <permission-role>Editor</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Manage Personal Campaign" acquired="False">
+    <permission-role>Owner</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+  </state>
+
+  <state state_id="disabled" title="Disabled">
+   <exit-transition transition_id="publish" />
+   <permission-map name="View" acquired="False">
+    <permission-role>Owner</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="Access contents information" acquired="False">
+    <permission-role>Reader</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="Modify portal content" acquired="False">
+    <permission-role>Editor</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Manage Personal Campaign" acquired="False">
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+  </state>
+  
+  <state state_id="archived" title="Archived">
+   <exit-transition transition_id="publish" />
+   <exit-transition transition_id="disable" />
+   <permission-map name="View" acquired="False">
+    <permission-role>Reader</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="Access contents information" acquired="False">
+    <permission-role>Reader</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="Modify portal content" acquired="False">
+    <permission-role>Editor</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Manage Personal Campaign" acquired="False">
+    <permission-role>Owner</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+  </state>
+  
+  <transition transition_id="disable" new_state="disabled"
+              title="Disable this campaign"
+              trigger="USER"
+              before_script="" after_script="">
+   <action url="%(content_url)s/content_status_modify?workflow_action=disable"
+           category="workflow">Disable This Campaign</action>
+   <guard>
+    <guard-permission>Review portal content</guard-permission>
+   </guard>
+  </transition>
+
+  <transition transition_id="publish" new_state="published"
+              title="Publish this Campaign"
+              trigger="USER"
+              before_script="" after_script="">
+   <action url="%(content_url)s/content_status_modify?workflow_action=publish"
+           category="workflow">Publish</action>
+   <guard>
+    <guard-permission>Review portal content</guard-permission>
+   </guard>
+  </transition>
+
+  <transition transition_id="archive" new_state="archived"
+              title="Archive this Campaign"
+              trigger="USER"
+              before_script="" after_script="">
+   <action url="%(content_url)s/content_status_modify?workflow_action=archive"
+           category="workflow">Archive</action>
+   <guard>
+    <guard-permission>Review portal content</guard-permission>
+   </guard>
+  </transition>
+
+
+  <variable variable_id="action" for_catalog="False"
+            for_status="True" update_always="True">
+   <default>
+    <expression>transition/getId|nothing</expression>
+   </default>
+   <guard>
+   </guard>
+  </variable>
+
+  <variable variable_id="actor" for_catalog="False"
+           for_status="True" update_always="True">
+   <default>
+    <expression>user/getId</expression>
+   </default>
+   <guard>
+   </guard>
+  </variable>
+
+  <variable variable_id="comments" for_catalog="False"
+            for_status="True" update_always="True">
+   <default>
+    <expression>python:state_change.kwargs.get('comment', '')</expression>
+   </default>
+   <guard>
+   </guard>
+  </variable>
+
+  <variable variable_id="review_history" for_catalog="False"
+            for_status="False" update_always="False">
+   <default>
+    <expression>state_change/getHistory</expression>
+   </default>
+   <guard>
+    <guard-permission>Request review</guard-permission>
+    <guard-permission>Review portal content</guard-permission>
+   </guard>
+  </variable>
+
+  <variable variable_id="time" for_catalog="False"
+            for_status="True" update_always="True">
+   <default>
+    <expression>state_change/getDateTime</expression>
+   </default>
+   <guard>
+   </guard>
+  </variable>
+
+</dc-workflow>

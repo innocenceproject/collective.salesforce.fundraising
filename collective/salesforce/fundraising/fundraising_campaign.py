@@ -251,10 +251,15 @@ class FundraisingCampaignPage(object):
             else:
                 self.direct_donations_count = 1
 
-            # If this is a child campaign and its parent campaign is the parent
-            # in Plone, add the value to the parent's donations_total
+            # Check if this is a personal campaign
             if hasattr(self, 'parent_sf_id'):
-                parent = self.aq_parent
+                # Clear the cached list of donations for the personal campaign so a fresh list is fetched next time
+                self.clear_donations_from_cache()
+
+                # If this is a child campaign and its parent campaign is the parent
+                # in Plone, add the value to the parent's donations_total
+                parent = self.get_fundraising_campaign()
+
                 if parent.sf_object_id == self.parent_sf_id:
                     parent.donations_total = parent.donations_total + amount
                     parent.donations_count = parent.donations_count + 1

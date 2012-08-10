@@ -1,3 +1,4 @@
+from sets import Set
 from datetime import date
 from five import grok
 from plone.directives import dexterity, form
@@ -12,11 +13,13 @@ from Products.CMFCore.utils import getToolByName
 from plone.z3cform.interfaces import IWrappedForm
 from plone.app.textfield import RichText
 from plone.namedfile.interfaces import IImageScaleTraversable
+from plone.memoize import instance
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import FundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import CampaignView
+from collective.salesforce.fundraising.fundraising_campaign import ShareView
 
 from collective.salesforce.fundraising import MessageFactory as _
 
@@ -59,6 +62,22 @@ def thankYouDefaultValue(data):
 # methods and properties. Put methods that are mainly useful for rendering
 # in separate view classes.
 
+DONATIONS_SOQL = """SELECT
+  OpportunityId,
+  Opportunity.Amount,
+  Opportunity.CloseDate,
+  Contact.FirstName,
+  Contact.LastName,
+  Contact.Email,
+  Contact.Phone
+from OpportunityContactRole
+where
+  IsPrimary = true
+  and Opportunity.CampaignId = '%s'
+  and Opportunity.IsWon = true
+"""
+
+
 class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IPersonalCampaignPage, IFundraisingCampaignPage)
 
@@ -92,6 +111,19 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
             return int((self.donations_total * 100) / self.goal)
         return 0
 
+    @instance.memoize
+    def get_donations(self):
+        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
+        return sfbc.query(DONATIONS_SOQL % (self.sf_object_id))
+
+    def clear_donations_from_cache(self):
+        """ Clears the donations cache.  This should be called anytime a new donation comes in 
+            for the campaign so a fresh list is pulled after any changes """
+        key = ('get_donations', (self), frozenset([]))
+        self._memojito_.clear()
+        if self._memojito_.has_key(key):
+            del self._memojito_[key]
+
 class PersonalCampaignPageView(CampaignView):
     grok.context(IPersonalCampaignPage)
     grok.require('zope2.View')
@@ -105,3 +137,70 @@ class PersonalCampaignPagesList(grok.View):
 
     grok.name('compact_view')
     grok.template('compact_view')
+
+class MyDonorsView(grok.View):
+    grok.context(IPersonalCampaignPage)
+    grok.require('collective.salesforce.fundraising.ManagePersonalCampaign')
+
+    grok.name('donors')
+    grok.template('donors')
+
+    def update(self):
+        self.donations = []
+        self.count_donations = 0
+        self.count_thanked = 0
+        self.count_not_thanked = 0
+        thanked_donations = getattr(self.context, 'thanked_donations', [])
+        if thanked_donations == None:
+            thanked_donations = []
+
+        for donation in self.context.get_donations():
+            is_thanked = donation['OpportunityId'] in thanked_donations
+            self.donations.append({
+                'name': '%s %s' % (donation['Contact']['FirstName'], donation['Contact']['LastName']),
+                'email': donation['Contact']['Email'],
+                'phone': donation['Contact']['Phone'],
+                'amount': donation['Opportunity']['Amount'],
+                'date': donation['Opportunity']['CloseDate'],
+                'id': donation['OpportunityId'],
+                'thanked': is_thanked,
+            })
+            self.count_donations += 1
+            if is_thanked:
+                self.count_thanked += 1
+            else:
+                self.count_not_thanked += 1
+            
+
+class SaveThankedStatusView(grok.View):
+    """ A simple view meant to be called via AJAX when a fundraiser has marked
+        a set of donations as either thanked or not thanked """
+    grok.context(IPersonalCampaignPage)
+    grok.require('collective.salesforce.fundraising.ManagePersonalCampaign')
+    grok.name('save_thanked_status')
+
+    def render(self):
+        thanked_ids = self.request.form.get('thanked', '')
+        not_thanked_ids = self.request.form.get('not_thanked', '')
+
+        thanked_ids = Set(thanked_ids.split(','))
+        not_thanked_ids = Set(not_thanked_ids.split(','))
+
+        thanked_donations = getattr(self.context, 'thanked_donations', [])
+        if thanked_donations == None:
+            thanked_donations = []
+        thanked_donations = Set(thanked_donations)
+
+        thanked_donations.update(thanked_ids)
+        thanked_donations.difference_update(not_thanked_ids)
+
+        self.context.thanked_donations = list(thanked_donations)
+        return 'OK'
+
+class PromoteCampaignView(ShareView):
+    grok.context(IPersonalCampaignPage)
+    grok.require('collective.salesforce.fundraising.ManagePersonalCampaign')
+
+    grok.name('promote')
+    grok.template('promote')
+

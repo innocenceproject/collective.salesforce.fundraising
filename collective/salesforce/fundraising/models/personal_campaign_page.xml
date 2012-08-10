@@ -64,6 +64,11 @@
             <title>Parent Salesforce ID</title>
             <description>The Salesforce ID of the parent Campaign</description>
         </field>
+        <field name="thanked_donations" type="zope.schema.List">
+            <title>Thanked Donations</title>
+            <description>A list of Salesforce Opportunity IDs who have already been thanked</description>
+            <value_type type="zope.schema.TextLine" />
+        </field>
     </schema>
     
 </model>

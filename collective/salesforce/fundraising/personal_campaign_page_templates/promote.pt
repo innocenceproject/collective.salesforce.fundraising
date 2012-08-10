@@ -1,0 +1,66 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.salesforce.fundraising">
+<body>
+
+<metal:js fill-slot="javascript_head_slot">
+<script type='text/javascript'>
+jQuery(function($) {
+  $('a.email-campaign').prepOverlay({
+    selector: '#content>*',
+    subtype: 'ajax',
+    formselector: '#form',
+    noform: 'reload'
+  });
+});
+</script>
+</metal:js>
+
+<metal:main fill-slot="content-title">
+  <metal:content-title define-macro="content-title">
+    <h1 class="documentFirstHeading">Promote My Fundraiser</h1>
+  </metal:content-title>
+</metal:main>
+
+<metal:main fill-slot="content-description">
+  <metal:content-description define-macro="content-description">
+  </metal:content-description>
+</metal:main>
+
+<metal:main fill-slot="content-core">
+  <metal:content_core define-macro="content-core">
+
+    <a id="link-personal-campaign-home" href="" tal:attributes="href view/context/absolute_url">Back to My Fundraiser</a>
+
+    <div id="content">
+
+      <div class="instructions">
+        <p>Setting up your fundraiser's page is an important first step to reaching 
+           your fundraising goal.  The next step is to let your friends and family know
+           about your fundraiser.  Below are some sample prewritten fundraising
+           appeals you can share on social networks to promote your campaign.  Click on
+           the message below that you think would be most persuasive to your friends
+           and family.
+        </p>
+      </div>
+
+      <form class="share-campaign-wrapper"
+            tal:attributes="action string:${context/absolute_url}/promote_campaign" method="POST">
+
+        <tal:message_loop repeat="message view/messages">
+          <tal:message content="structure message/@@view" />
+        </tal:message_loop>
+
+      </form>
+
+    </div>
+
+  </metal:content_core>
+</metal:main>
+
+</body>
+</html>
+
