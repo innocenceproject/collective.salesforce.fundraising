@@ -29,6 +29,13 @@
       <role name="Manager" />
   </permission>
 
+  <permission
+      id="collective.salesforce.fundraising.ManagePersonalCampaign"
+      title="collective.salesforce.fundraising: Manage Personal Campaign">
+      <role name="Site Administrator" />
+      <role name="Manager" />
+  </permission>
+
   <!-- Register an extension profile to make the product installable
        in Plone -->
   <genericsetup:registerProfile
