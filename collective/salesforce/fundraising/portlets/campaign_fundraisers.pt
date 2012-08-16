@@ -1,7 +1,7 @@
 <dl class="portlet portletCampaignFundraisers"
     i18n:domain="collective.salesforce.fundraising"
     tal:define="existing_campaign view/context/get_personal_fundraising_campaign_url|nothing;
-                create_link python:existing_campaign or view.context.absolute_url() + '/@@create-or-view-personal-campaign';
+                create_link python:existing_campaign or view.context.get_fundraising_campaign().absolute_url() + '/@@create-or-view-personal-campaign';
                 create_text python:'View My Fundraiser' if existing_campaign else 'Create My Campaign';
                 campaign python: view.context.get_fundraising_campaign();
                 fundraisers_count view/context/personal_fundraisers_count;

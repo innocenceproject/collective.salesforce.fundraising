@@ -103,7 +103,7 @@ def defaultPersonalThankYouDefaultValue(data):
 
 @form.default_value(field=IFundraisingCampaign['donation_form_tabs'])
 def defaultDonationFormTabsValue(data):
-    return get_settings().default_donation_form_tabs
+    return get_settings().available_form_views
 
 @grok.subscribe(IFundraisingCampaign, IObjectAddedEvent)
 def handleFundraisingCampaignCreated(campaign, event):

@@ -51,10 +51,12 @@
         <field name="date_start" type="zope.schema.Date" sf:field="StartDate">
             <title>Start Date</title>
             <description>The date this campaign starts</description>
+            <required>False</required>
         </field>
         <field name="date_end" type="zope.schema.Date" sf:field="EndDate">
             <title>End Date</title>
             <description>The date this campaign ends</description>
+            <required>False</required>
         </field>
         <field name="thank_you_message" type="plone.app.textfield.RichText">
             <title>Thank You Message</title>
@@ -68,6 +70,7 @@
             <title>Thanked Donations</title>
             <description>A list of Salesforce Opportunity IDs who have already been thanked</description>
             <value_type type="zope.schema.TextLine" />
+            <required>False</required>
         </field>
     </schema>
     

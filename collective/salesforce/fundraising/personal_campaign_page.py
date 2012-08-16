@@ -7,6 +7,8 @@ from zope.component import getUtility
 from zope.interface import alsoProvides
 from zope.app.content.interfaces import IContentType
 
+from AccessControl import getSecurityManager
+
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
 
@@ -131,6 +133,14 @@ class PersonalCampaignPageView(CampaignView):
     grok.name('view')
     grok.template('view')
 
+    def update(self):
+        super(PersonalCampaignPageView, self).update()
+        # FIXME - I tried for hours to get checkPermission from the security manager to work to no avail... falling back to old school method
+        pm = getToolByName(self.context, 'portal_membership')
+        self.can_edit = pm.checkPermission('collective.salesforce.fundraising: Edit Personal Campaign', self.context)
+        self.can_view_donors = pm.checkPermission('collective.salesforce.fundraising: View Personal Campaign Donors', self.context)
+        self.can_promote = pm.checkPermission('collective.salesforce.fundraising: Promote Personal Campaign', self.context)
+
 class PersonalCampaignPagesList(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
@@ -140,7 +150,7 @@ class PersonalCampaignPagesList(grok.View):
 
 class MyDonorsView(grok.View):
     grok.context(IPersonalCampaignPage)
-    grok.require('collective.salesforce.fundraising.ManagePersonalCampaign')
+    grok.require('collective.salesforce.fundraising.ViewPersonalCampaignDonors')
 
     grok.name('donors')
     grok.template('donors')
@@ -176,7 +186,7 @@ class SaveThankedStatusView(grok.View):
     """ A simple view meant to be called via AJAX when a fundraiser has marked
         a set of donations as either thanked or not thanked """
     grok.context(IPersonalCampaignPage)
-    grok.require('collective.salesforce.fundraising.ManagePersonalCampaign')
+    grok.require('collective.salesforce.fundraising.ViewPersonalCampaignDonors')
     grok.name('save_thanked_status')
 
     def render(self):
@@ -199,7 +209,7 @@ class SaveThankedStatusView(grok.View):
 
 class PromoteCampaignView(ShareView):
     grok.context(IPersonalCampaignPage)
-    grok.require('collective.salesforce.fundraising.ManagePersonalCampaign')
+    grok.require('collective.salesforce.fundraising.PromotePersonalCampaign')
 
     grok.name('promote')
     grok.template('promote')

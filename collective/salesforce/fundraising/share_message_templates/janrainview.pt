@@ -1,5 +1,8 @@
     <div class="share-message" id="share-message" tal:attributes="id string:share-message-${view/context/id}">
-        <img class="message-image" src="" tal:attributes="src string:${view/context/absolute_url}/@@images/image/thumb" />
+        <div class="message-image-wrapper">
+          <img class="message-image" src="" tal:attributes="src string:${view/context/absolute_url}/@@images/image/thumb" />
+          <div class="visualClear"></div>
+        </div>
         <div class="message-text">
             <h2 class="message-title" tal:content="view/context/title">Message Title</h2>
             <p class="message-description" tal:content="view/context/description"></p>
@@ -9,4 +12,5 @@
             </script>
             <a class="button button-share email-campaign" tal:attributes="href string:${context/absolute_url}/email">Email this message</a>
         </div>
+        <div class="visualClear"></div>
     </div>

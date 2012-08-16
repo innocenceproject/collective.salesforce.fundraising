@@ -1,9 +1,13 @@
+from zope import schema
 from five import grok
 from plone.directives import form
 from z3c.form import button, field
+from plone.directives import dexterity
 from plone.dexterity.utils import createContentInContainer
 from Products.statusmessages.interfaces import IStatusMessage
 from Products.CMFCore.utils import getToolByName
+from plone.namedfile.field import NamedBlobImage
+from plone.app.textfield import RichText
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.fundraising_campaign import IHideDonationForm
@@ -45,7 +49,6 @@ class CreatePersonalCampaignPageForm(form.Form):
 
         mtool = getToolByName(self.context, 'portal_membership')
         member = mtool.getAuthenticatedMember()
-        import pdb; pdb.set_trace()
         contact_id = member.getProperty('sf_object_id')
 
         settings = get_settings()
@@ -71,7 +74,6 @@ class CreatePersonalCampaignPageForm(form.Form):
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
 
-
         # Save the Id of the new campaign so it can be updated later.
         campaign.parent_sf_id = parent_campaign.sf_object_id
         campaign.sf_object_id = res[0]['id']
@@ -84,6 +86,60 @@ class CreatePersonalCampaignPageForm(form.Form):
     @button.buttonAndHandler(_(u"Cancel"))
     def handleCancel(self, action):
         return
+
+class EditPersonalCampaign(dexterity.EditForm):
+    grok.name('edit-personal-campaign')
+    grok.require('collective.salesforce.fundraising.EditPersonalCampaign')
+    grok.context(IPersonalCampaignPage)
+
+    label = _(u"Edit My Fundraiser")
+    description = _(u"Use the form below to edit your fundraiser's page to create the most effective appeal to your friends and family.")
+
+#    @button.buttonAndHandler(_(u"Save Changes"))
+#    def handleSaveChanges(self, action):
+#        data, errors = self.extractData()
+#        if errors:
+#            self.status = self.formErrorsMessage
+#            return
+#
+#
+#        settings = get_settings()
+#
+#        changed = False
+#        if data['title'] != self.context.Title():
+#            changed = True
+#        if data['description'] != self.context.Description():
+#            changed = True
+#        if data['goal'] != self.context.goal:
+#            changed = True
+#
+#        if changed:
+#            # Update the campaign in Salesforce
+#            sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+#            data = {
+#                'type': 'Campaign',
+#                'id': self.context.sf_object_id,
+#                'Name': data['title'],
+#                'Description': data['description'],
+#                'Public_Name__c': data['title'],
+#                'ExpectedRevenue': data['goal'],
+#                }
+#
+#            res = sfbc.update(data)
+#            if not res[0]['success']:
+#                raise Exception(res[0]['errors'][0]['message'])
+#
+#        campaign.reindexObject()
+#
+#        # Send the user to their new campaign.
+#        IStatusMessage(self.request).add(u'Your changes have been saved.  You can see your changes below.!')
+#        self.request.response.redirect(self.context.absolute_url())
+#        return
+#
+#    @button.buttonAndHandler(_(u"Cancel"))
+#    def handleCancel(self, action):
+#        return
+
 
 class CreateDonorQuote(form.Form):
     grok.name('create-donor-quote')
