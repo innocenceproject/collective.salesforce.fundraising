@@ -30,8 +30,22 @@
   </permission>
 
   <permission
-      id="collective.salesforce.fundraising.ManagePersonalCampaign"
-      title="collective.salesforce.fundraising: Manage Personal Campaign">
+      id="collective.salesforce.fundraising.ViewPersonalCampaignDonors"
+      title="collective.salesforce.fundraising: View Personal Campaign Donors">
+      <role name="Site Administrator" />
+      <role name="Manager" />
+  </permission>
+
+  <permission
+      id="collective.salesforce.fundraising.PromotePersonalCampaign"
+      title="collective.salesforce.fundraising: Promote Personal Campaign">
+      <role name="Site Administrator" />
+      <role name="Manager" />
+  </permission>
+
+  <permission
+      id="collective.salesforce.fundraising.EditPersonalCampaign"
+      title="collective.salesforce.fundraising: Edit Personal Campaign">
       <role name="Site Administrator" />
       <role name="Manager" />
   </permission>

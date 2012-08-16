@@ -7,7 +7,9 @@
   <permission>View</permission>
   <permission>Access contents information</permission>
   <permission>Modify portal content</permission>
-  <permission>collective.salesforce.fundraising: Manage Personal Campaign</permission>
+  <permission>collective.salesforce.fundraising: View Personal Campaign Donors</permission>
+  <permission>collective.salesforce.fundraising: Promote Personal Campaign</permission>
+  <permission>collective.salesforce.fundraising: Edit Personal Campaign</permission>
   
 
   <state state_id="published" title="Published">
@@ -28,12 +30,23 @@
     <permission-role>Site Administrator</permission-role>
    </permission-map>
    <permission-map name="Modify portal content" acquired="False">
-    <permission-role>Owner</permission-role>
     <permission-role>Editor</permission-role>
     <permission-role>Manager</permission-role>
     <permission-role>Site Administrator</permission-role>
    </permission-map>
-   <permission-map name="collective.salesforce.fundraising: Manage Personal Campaign" acquired="False">
+   <permission-map name="collective.salesforce.fundraising: View Personal Campaign Donors" acquired="False">
+    <permission-role>Owner</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Promote Personal Campaign" acquired="False">
+    <permission-role>Owner</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Edit Personal Campaign" acquired="False">
     <permission-role>Owner</permission-role>
     <permission-role>Reviewer</permission-role>
     <permission-role>Manager</permission-role>
@@ -60,7 +73,18 @@
     <permission-role>Manager</permission-role>
     <permission-role>Site Administrator</permission-role>
    </permission-map>
-   <permission-map name="collective.salesforce.fundraising: Manage Personal Campaign" acquired="False">
+   <permission-map name="collective.salesforce.fundraising: View Personal Campaign Donors" acquired="False">
+    <permission-role>Owner</permission-role>
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Promote Personal Campaign" acquired="False">
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Edit Personal Campaign" acquired="False">
     <permission-role>Reviewer</permission-role>
     <permission-role>Manager</permission-role>
     <permission-role>Site Administrator</permission-role>
@@ -87,8 +111,17 @@
     <permission-role>Manager</permission-role>
     <permission-role>Site Administrator</permission-role>
    </permission-map>
-   <permission-map name="collective.salesforce.fundraising: Manage Personal Campaign" acquired="False">
-    <permission-role>Owner</permission-role>
+   <permission-map name="collective.salesforce.fundraising: View Personal Campaign Donors" acquired="False">
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Promote Personal Campaign" acquired="False">
+    <permission-role>Reviewer</permission-role>
+    <permission-role>Manager</permission-role>
+    <permission-role>Site Administrator</permission-role>
+   </permission-map>
+   <permission-map name="collective.salesforce.fundraising: Edit Personal Campaign" acquired="False">
     <permission-role>Reviewer</permission-role>
     <permission-role>Manager</permission-role>
     <permission-role>Site Administrator</permission-role>
