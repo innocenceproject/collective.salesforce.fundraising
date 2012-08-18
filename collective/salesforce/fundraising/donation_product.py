@@ -1,0 +1,51 @@
+from five import grok
+from zope import schema
+from zope.interface import alsoProvides
+from zope.component import getUtility
+from zope.site.hooks import getSite
+from zope.app.content.interfaces import IContentType
+from Products.CMFCore.utils import getToolByName
+from plone.directives import dexterity, form
+
+from plone.namedfile.interfaces import IImageScaleTraversable
+
+from collective.salesforce.fundraising.authnet.dpm import DonationFormAuthnetDPM as BaseDonationFormAuthnetDPM
+
+
+# Interface class; used to define content-type schema.
+
+class IDonationProduct(form.Schema, IImageScaleTraversable):
+    """
+    A product such as a shirt or an event ticket which can be "purchased"
+    through a donation form
+    """
+
+    form.model("models/donation_product.xml")
+
+alsoProvides(IDonationProduct, IContentType)
+
+
+class DonationProduct(dexterity.Item):
+    grok.implements(IDonationProduct)
+
+    def get_container(self):
+        if not self.campaign_sf_id:
+            return None
+        site = getSite()
+        pc = getToolByName(site, 'portal_catalog')
+        res = pc.searchResults(sf_object_id=self.campaign_sf_id)
+        if not res:
+            return None
+        return res[0].getObject()
+
+#class DonationProductView(grok.View):
+#    grok.context(IDonationProduct)
+#    grok.require('zope2.View')
+#    grok.name('view')
+#    grok.template('view')
+   
+class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
+    grok.context(IDonationProduct)
+    grok.require('zope2.View')
+    grok.name('donation_form_authnet_dpm')
+    grok.template('donation_form_authnet_dpm')

@@ -1,0 +1,40 @@
+<?xml version="1.0" ?>
+<model xmlns="http://namespaces.plone.org/supermodel/schema"
+       xmlns:sf="http://namespaces.plone.org/salesforce/schema"
+       xmlns:form="http://namespaces.plone.org/supermodel/form">
+    
+    <schema sf:object="Product2" sf:criteria="" sf:container="get_container">
+        <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c">
+            <title>Title</title>
+            <description>Appears as the donation form tab name and on the receipt</description>
+        </field>
+        <field name="description" title="Description" type="zope.schema.Text" sf:field="Description">
+            <title>Description</title>
+            <description>A description of the item.  Shown only on receipt</description>
+        </field>
+        <field name="price" type="zope.schema.Int">
+            <title>Price</title>
+            <description>The per unit price</description>
+        </field>
+        <field name="date" type="zope.schema.TextLine">
+            <title>Date</title>
+            <description>If provided, shown as a separate attribute on receipt</description>
+            <required>False</required>
+        </field>
+        <field name="location" type="zope.schema.Text">
+            <title>Location</title>
+            <description>If provided, shown as a separate attribute on receipt</description>
+            <required>False</required>
+        </field>
+        <field name="Notes" type="zope.schema.Text">
+            <title>Notes</title>
+            <description>If provided, shown as a separate attribute on receipt</description>
+            <required>False</required>
+        </field>
+        <field name="campaign_sf_id" type="zope.schema.TextLine" sf:field="Campaign__c">
+            <title>Campaign Salesforce ID</title>
+            <description>The ID of the Salesforce Campaign where the Product can be purchased</description>
+            <readonly>True</readonly>
+        </field>
+    </schema>
+</model>
