@@ -16,7 +16,13 @@
   <permission
       id="collective.salesforce.fundraising.AddPersonalCampaign"
       title="collective.salesforce.fundraising: Add personal campaign">
-      <role name="Member" />
+      <role name="Site Administrator" />
+      <role name="Manager" />
+  </permission>
+
+  <permission
+      id="collective.salesforce.fundraising.AddDonationProduct"
+      title="collective.salesforce.fundraising: Add donation product">
       <role name="Site Administrator" />
       <role name="Manager" />
   </permission>
@@ -24,7 +30,13 @@
   <permission
       id="collective.salesforce.fundraising.AddDonorQuote"
       title="collective.salesforce.fundraising: Add donor quote">
-      <role name="Member" />
+      <role name="Site Administrator" />
+      <role name="Manager" />
+  </permission>
+
+  <permission
+      id="collective.salesforce.fundraising.Donate"
+      title="collective.salesforce.fundraising: Donate">
       <role name="Site Administrator" />
       <role name="Manager" />
   </permission>
