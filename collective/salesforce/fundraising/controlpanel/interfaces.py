@@ -134,6 +134,23 @@ class IFundraisingSettings(Interface):
         default=u"10",
     )
 
+    # FIXME: Add validation for the structure here
+    product_ask_levels = schema.List(
+        title=_(u"Product Quantity Ask Levels"),
+        description=_(u"Enter sets of product quanity ask amounts one per line in the format ID|1,2,3,4,5,6 and use the value for ID in the url when calling the donation form"),
+        default=[
+            u"1|1,2,3,4,5,10",
+            u"5|5,10,25,50,75,100",
+        ],
+        value_type=schema.TextLine(),
+    )
+
+    default_product_ask = schema.TextLine(
+        title=_(u"Default Product Quantity Ask"),
+        description=_(u"Enter the ID of the default Product Ask Level set to use for Donation Products if no set is specified in the url"),
+        default=u"1",
+    )
+
     default_fundraising_seals = schema.List(
         title=_(u"Default Fundraising Seals"),
         description=_(u"Enter the full physical path (from Zope root) to the default seals to display on Fundraising Campaigns"),

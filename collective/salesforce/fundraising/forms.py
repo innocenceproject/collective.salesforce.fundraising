@@ -20,7 +20,7 @@ from collective.salesforce.fundraising.utils import get_settings
 
 class CreatePersonalCampaignPageForm(form.Form):
     grok.name('create-personal-campaign-page')
-    grok.require('collective.salesforce.fundraising.AddPersonalCampaign')
+    #grok.require('collective.salesforce.fundraising.AddPersonalCampaign')
     grok.context(IFundraisingCampaign)
     grok.implements(IHideDonationForm)
 

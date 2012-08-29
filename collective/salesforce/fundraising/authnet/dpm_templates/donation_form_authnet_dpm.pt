@@ -12,6 +12,7 @@
       <input type="hidden" name="c_campaign_id" value="" tal:attributes="value view/context/sf_object_id" />
       <input type="hidden" name="c_source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
       <input type="hidden" name="c_source_url" value="" tal:attributes="value view/context/get_source_url" />
+      <input type="hidden" name="c_form_name" value="donation_form_authnet_dpm" />
 
       <fieldset class="fieldset-donation-amount">
         <legend>Select an Amount</legend>

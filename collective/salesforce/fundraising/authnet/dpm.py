@@ -43,26 +43,35 @@ class DonationFormAuthnetDPM(grok.View):
     grok.template('donation_form_authnet_dpm')
 
     def update(self):
-        settings = get_settings()
-        level_id = self.request.form.get('levels', settings.default_donation_ask_one_time)
+        self.settings = get_settings()
+        self.update_levels()
+        self.update_fingerprint()
+        self.update_error()
+        self.update_countries()
+        self.update_states()
+
+    def update_levels(self):
+        level_id = self.request.form.get('levels', self.settings.default_donation_ask_one_time)
         self.levels = None
-        for row in settings.donation_ask_levels:
+        for row in self.settings.donation_ask_levels:
             row_id, amounts = row.split('|')
             if row_id == level_id:
                 self.levels = amounts.split(',')
         if not self.levels:
-            self.levels = settings.donation_ask_levels[0].split('|')[1].split(',')
-        
+            self.levels = self.settings.donation_ask_levels[0].split('|')[1].split(',')
+       
+    def update_fingerprint(self): 
         self.sequence = str(uuid.uuid4())
         self.fingerprint_url = self.context.absolute_url() + '/authnet_fingerprint'
 
         self.relay_url = getSite().absolute_url() + '/post_authnet_dpm_donation'
-        self.login_key = get_settings().authnet_login_key
-
+        self.login_key = self.settings.authnet_login_key
         # Handle prefill values passed to form.  This should only happen from authnet errors
         self.amount = self.request.get('x_amount', None)
+
         self.fingerprint = build_authnet_fingerprint(self.amount, self.sequence)
 
+    def update_error(self):
         self.error = self.request.form.get('error', None)
         response_code = self.request.form.get('response_code',None)
         reason_code = self.request.form.get('reason_code', None)
@@ -76,9 +85,11 @@ class DonationFormAuthnetDPM(grok.View):
             self.response_text = response_codes[self.response_code]
             self.reason_text = reason_codes[self.reason_code]
 
+    def update_countries(self):
         self.countries = CountryAvailability().getCountryListing()
         self.countries.sort()
 
+    def update_states(self):
         self.states = states_list
 
     def xss_clean(self, value):
@@ -154,6 +165,7 @@ class AuthnetCallbackDPM(grok.View):
         response_code = int(self.request.form.get('x_response_code'))
         reason_code = int(self.request.form.get('x_response_reason_code'))
         campaign_id = self.request.form.get('c_campaign_id')
+        form_name = self.request.form.get('c_form_name', 'donation_form_authnet_dpm')
 
         pc = getToolByName(self.context, 'portal_catalog') 
         res = pc.searchResults(sf_object_id = campaign_id)

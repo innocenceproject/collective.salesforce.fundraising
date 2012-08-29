@@ -1,4 +1,4 @@
-    <form method="post" action="https://secure.authorize.net/gateway/transact.dll" id="donation-form-single" class="donation-form donation-form-authnet-dpm">
+    <form method="post" action="https://secure.authorize.net/gateway/transact.dll"  class="donation-form donation-form-authnet-dpm donation-form-product" tal:attributes="id string:donation-form-product-${view/context/id}">
       <input type="hidden" name="x_recurring_billing" value="FALSE" />
       <input type="hidden" name="x_type" value="AUTH_CAPTURE" />
       <input type="hidden" name="x_description" value="Donation" />
@@ -12,17 +12,28 @@
       <input type="hidden" name="c_campaign_id" value="" tal:attributes="value view/context/sf_object_id" />
       <input type="hidden" name="c_source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
       <input type="hidden" name="c_source_url" value="" tal:attributes="value view/context/get_source_url" />
+      <input type="hidden" name="c_form_name" value="" tal:attributes="value view/context/id" />
 
       <fieldset class="fieldset-donation-amount">
-        <legend>Select an Amount</legend>
+        <h3 class="product-name" tal:content="view/context/title" />
+        <legend>How Many?</legend>
+        <div class="product-price">
+          <span class="currency">$</span><span class="value" tal:content="string:${view/context/price}" />
+          <em class="description">each</em>
+        </div>
 
         <div class="field field-donation-amount">
    
           <div class="field-amount">
-            <label for="amount">or Enter an Amount</label>
-            <label for="amount" class="currency">$</label>
-            <input name="x_amount" type="number" required="required" min="5" pattern="[0-9][0-9]*" tal:attributes="value view/amount" />
-            <label for="amount">($5 minimum)</label>
+            <div class="field-quantity">
+              <label for="c_quantity">or Enter a Quantity</label>
+              <input name="c_quantity" type="number" required="required" min="1" pattern="[0-9][0-9]*" tal:attributes="value view/quantity" />
+            </div>
+            <div class="field-total">
+              <label for="x_amount" class="currency">$</label>
+              <input name="x_amount" type="text" required="required" readonly="true" min="5" pattern="[0-9][0-9]*" tal:attributes="value view/amount" />
+              <div class="visualClear"></div>
+            </div>
           </div>
   
           <div class="options">
