@@ -411,7 +411,16 @@ class CampaignView(grok.View):
         self.response_code = self.request.form.get('response_code',None)
         self.reason_code = self.request.form.get('reason_code', None)
 
-        self.ssl_seal = get_settings().ssl_seal
+        settings = get_settings()
+        self.ssl_seal = settings.ssl_seal
+        try:
+            self.forms_header = settings.donation_form_header
+        except AttributeError:
+            self.forms_header = None
+        try:
+            self.forms_description = settings.donation_form_description
+        except AttributeError:
+            self.forms_description = None
 
 class ThankYouView(grok.View):
     grok.context(IFundraisingCampaignPage)
