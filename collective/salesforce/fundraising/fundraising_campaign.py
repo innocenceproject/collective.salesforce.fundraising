@@ -388,8 +388,9 @@ class CampaignView(grok.View):
             self.request.response.setCookie('collective.salesforce.fundraising.source_campaign', self.source_campaign)
 
         tabs = []
-        if self.context.donation_form_tabs:
-            for tab in self.context.donation_form_tabs:
+        donation_form_tabs = self.context.donation_form_tabs
+        if donation_form_tabs:
+            for tab in donation_form_tabs:
                 parts = tab.split('|')
                 if len(parts) == 1:
                     label = parts[0]
@@ -397,7 +398,7 @@ class CampaignView(grok.View):
                     label = parts[1]
                 view_name = parts[0]
            
-                html = self.context.unrestrictedTraverse([view_name,])
+                html = self.context.unrestrictedTraverse(view_name.split('/'))
                 tabs.append({
                     'id': view_name,
                     'label': label,
