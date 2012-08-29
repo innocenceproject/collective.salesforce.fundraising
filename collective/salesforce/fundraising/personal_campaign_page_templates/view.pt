@@ -40,8 +40,16 @@
 
     <div class="personal-appeal" tal:content="structure view/context/personal_appeal/output"></div>
 
-    <div class="donation-form-wrapper">
-      <h2 class="page-section-header">Make a Donation</h2>
+    <div class="donation-form-wrapper"
+         tal:define="header view/forms_header|nothing;
+                     description view/forms_description|nothing">
+      <h2 class="page-section-header">
+        <tal:custom tal:condition="header" tal:replace="header">[custom header]</tal:custom>
+        <tal:default tal:condition="not:header">Make a donation</tal:default>
+      </h2>
+      <div class="donation-forms-description" 
+           tal:condition="description"
+           tal:content="structure description"/>
       <ul class="tabs">
         <li tal:repeat="tab view/donation_form_tabs">
           <span class="label-wrapper">
