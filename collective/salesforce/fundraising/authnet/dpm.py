@@ -165,6 +165,7 @@ class AuthnetCallbackDPM(grok.View):
         response_code = int(self.request.form.get('x_response_code'))
         reason_code = int(self.request.form.get('x_response_reason_code'))
         campaign_id = self.request.form.get('c_campaign_id')
+        form_name = self.request.form.get('c_form_name', 'donation_form_authnet_dpm')
 
         pc = getToolByName(self.context, 'portal_catalog') 
         res = pc.searchResults(sf_object_id = campaign_id)
