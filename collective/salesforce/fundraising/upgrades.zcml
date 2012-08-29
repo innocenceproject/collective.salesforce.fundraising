@@ -1,0 +1,14 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="collective.salesforce.fundraising">
+
+  <genericsetup:upgradeDepends
+      title="collective.salesforce.fundraising: add donation form settings"
+      description="Add global header and description settings for donation form views"
+      source="1"
+      destination="2"
+      profile="collective.salesforce.fundraising:default"
+      import_steps="plone.app.registry" />
+
+</configure>

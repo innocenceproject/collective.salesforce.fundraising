@@ -41,6 +41,20 @@ class IFundraisingSettings(Interface):
         required=True,
     )
 
+    donation_form_header = schema.TextLine(
+        title=_(u"Header to Display Above Donation Form"),
+        description=_(u"The text entered here will appear as a header above all donation forms.  If left empty, the default value 'Make A Donation' will be used"),
+        default=u'',
+        required=False,
+    )
+
+    donation_form_description = schema.Text(
+        title=_(u"Description to Display Above Donation Forms"),
+        description=_(u"The text entered here will be displayed above all donation forms.  If left empty, no text will appear.  HTML is allowed"),
+        default=u'',
+        required=False,
+    )
+
     donation_receipt_legal = schema.Text(
         title=_(u"Donation Receipt Legal Text"),
         description=_(u"Enter any legal text you want displayed at the bottom of html receipt.  For example, you might want to state that all donations are tax deductable and include the organization's Tax ID"),
