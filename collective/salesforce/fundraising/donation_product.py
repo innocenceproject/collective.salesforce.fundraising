@@ -1,10 +1,7 @@
-from Acquisition import aq_base
+from Acquisition import aq_base, aq_inner, aq_parent
 from five import grok
-from zope import schema
 from zope.app.container.interfaces import IObjectAddedEvent
 from zope.interface import alsoProvides
-from zope.component import getUtility
-from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
 from Products.CMFCore.utils import getToolByName
 from Products.statusmessages.interfaces import IStatusMessage
@@ -42,6 +39,11 @@ def handleDonationProductCreated(product, event):
             'Description': product.description,
             'Name': product.title,
         }
+        container = product.get_container()
+        if container:
+            campaign_id = container.get_parent_sfid()
+            product.campaign_sf_id = campaign_id
+            data['Campaign__c'] = campaign_id
 
         res = sfbc.create(data)
         if not res[0]['success']:
@@ -66,21 +68,17 @@ class DonationProduct(dexterity.Item):
     grok.implements(IDonationProduct)
 
     def get_container(self):
-        if not self.campaign_sf_id:
-            return None
-        site = getSite()
-        pc = getToolByName(site, 'portal_catalog')
-        res = pc.searchResults(sf_object_id=self.campaign_sf_id)
-        if not res:
-            return None
-        return res[0].getObject()
+        container = aq_parent(aq_inner(self))
+        if hasattr(container, 'sf_object_id'):
+            return container
+        return None
 
 #class DonationProductView(grok.View):
 #    grok.context(IDonationProduct)
 #    grok.require('zope2.View')
 #    grok.name('view')
 #    grok.template('view')
-   
+
 class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
     grok.context(IDonationProduct)
     grok.require('zope2.View')
@@ -105,9 +103,9 @@ class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
         if not self.levels:
             self.levels = self.settings.product_ask_levels[0].split('|')[1].split(',')
 
+
 class AuthnetFingerprint(BaseAuthnetFingerprint):
     grok.context(IDonationProduct)
 
     def update(self):
         super(AuthnetFingerprint, self).update()
-
