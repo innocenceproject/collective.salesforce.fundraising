@@ -132,8 +132,8 @@
             <div class="subfield subfield-show-amount">
               <div class="options">
                 <div class="option">
-                  <input id="honorary-show-amount" type="checkbox" name="show_amount" value="Yes" checked="checked"  />
-                  <label for="honorary-show-amount">Include gift amount in message</label>
+                  <input id="honorary-show-amount" type="checkbox" name="show_amount" value="Yes"  />
+                  <label for="honorary-show-amount">Check this box if you would like to include the gift amount in your message.</label>
                 </div>
               </div>
             </div>
