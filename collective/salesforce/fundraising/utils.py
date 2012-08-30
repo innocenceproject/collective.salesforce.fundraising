@@ -26,5 +26,5 @@ def get_standard_pricebook_id(sfbc):
         # the 'standard' pricebook __must__ have an entry before any other
         # pricebooks can, so make sure we get the 'standard' one.
         res = sfbc.query("SELECT Id from Pricebook2 WHERE IsStandard=True")
-        pb_id = settings.sf_standard_pricebook_id = res[0]['Id']
+        pb_id = settings.sf_standard_pricebook_id = unicode(res[0]['Id'])
     return pb_id

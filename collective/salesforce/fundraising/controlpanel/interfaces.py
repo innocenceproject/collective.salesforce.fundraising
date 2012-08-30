@@ -215,7 +215,7 @@ class IFundraisingSettings(Interface):
     sf_standard_pricebook_id = schema.TextLine(
         title=_(u"Salesforce Standard Pricebook ID"),
         description = _(u"The Salesforce Record ID of the Standard Pricebook.  This value will be autopopulated if left empty."),
-        default='',
+        default=u'',
         required=False,
     )
 
