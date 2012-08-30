@@ -21,7 +21,7 @@ from plone.namedfile import NamedBlobImage
 JANRAIN_API_BASE_URL = 'https://rpxnow.com/api/v2'
 
 js_template = """<script type="text/javascript">
-(function() {
+window.onload = function() {
     if (typeof window.janrain !== 'object') window.janrain = {};
     if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
     
@@ -54,11 +54,11 @@ js_template = """<script type="text/javascript">
     s.parentNode.insertBefore(e, s);
 
 
-})();
+}
 </script>
 
 <script type="text/javascript">
-(function() {
+window.onload = function() {
     if (typeof window.janrain !== 'object') window.janrain = {};
     if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
     if (typeof window.janrain.settings.share !== 'object') window.janrain.settings.share = {};
@@ -84,21 +84,23 @@ js_template = """<script type="text/javascript">
 
     var s = document.getElementsByTagName('script')[0];
     s.parentNode.insertBefore(e, s);
-})();
+};
 </script>
 """
 
 SHARE_JS_TEMPLATE = """
-  $('#%(link_id)s').click(function () {
-    janrain.engage.share.reset();
-    janrain.engage.share.setUrl('%(url)s');
-    janrain.engage.share.setTitle('%(title)s');
-    janrain.engage.share.setDescription('%(description)s');
-    janrain.engage.share.setImage('%(image)s');
-    janrain.engage.share.setMessage('%(message)s');
-    janrain.engage.share.setActionLink({'name': 'Donate', 'link':'%(url)s'});
-    janrain.engage.share.show();
-    return false;
+  $(document).ready(function () {
+    $('#%(link_id)s').click(function () {
+      janrain.engage.share.reset();
+      janrain.engage.share.setUrl('%(url)s');
+      janrain.engage.share.setTitle('%(title)s');
+      janrain.engage.share.setDescription('%(description)s');
+      janrain.engage.share.setImage('%(image)s');
+      janrain.engage.share.setMessage('%(message)s');
+      janrain.engage.share.setActionLink({'name': 'Donate', 'link':'%(url)s'});
+      janrain.engage.share.show();
+      return false;
+    });
   });
 """
 
