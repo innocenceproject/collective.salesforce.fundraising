@@ -21,7 +21,7 @@ from plone.namedfile import NamedBlobImage
 JANRAIN_API_BASE_URL = 'https://rpxnow.com/api/v2'
 
 js_template = """<script type="text/javascript">
-window.onload = function() {
+(function() {
     if (typeof window.janrain !== 'object') window.janrain = {};
     if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
     
@@ -54,7 +54,7 @@ window.onload = function() {
     s.parentNode.insertBefore(e, s);
 
 
-}
+})();
 </script>
 
 <script type="text/javascript">
