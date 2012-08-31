@@ -27,6 +27,7 @@ from zope.site.hooks import getSite
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
+from collective.salesforce.fundraising.utils import get_standard_pricebook_id
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.us_states import states_list
@@ -173,13 +174,18 @@ class AuthnetCallbackDPM(grok.View):
             return 'ERROR: Campaign with ID %s not found' % campaign_id
         campaign = res[0].getObject()
 
+        sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+
         product = None
         product_id = self.request.form.get('c_product_id', None)
+        quantity = self.request.form.get('c_quantity', None)
+        pricebook_id = None
         if product_id:
             res = pc.searchResults(sf_object_id=product_id)
             if not res:
                 return 'ERROR: Product with ID %s not found' % product_id
             product = res[0].getObject()
+            pricebook_id = get_standard_pricebook_id(sfbc)
 
         # If the response was a failure of some kind or another, re-render the form with the error message
         # The response goes back to Authorize.net who then renders it through their servers to the user
@@ -289,7 +295,6 @@ class AuthnetCallbackDPM(grok.View):
                 mtool.logoutUser()
 
             # Create the Opportunity object and Opportunity Contact Role (2 API calls)
-            sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
 
             transaction_id = None
             data = {
@@ -306,8 +311,17 @@ class AuthnetCallbackDPM(grok.View):
             }
             if settings.sf_opportunity_record_type_one_time:
                 data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
+
             if product_id and product is not None:
-                data['Product__c'] = product_id
+                # Set the pricebook on the Opportunity to the standard pricebook
+                data['Pricebook2Id'] = pricebook_id
+
+                # Set amount to 0 since the amount is incremented automatically by Salesforce
+                # when an OpportunityLineItem is created against the Opportunity
+                data['Amount'] = 0
+
+                # Set a custom name with the product info and quantity
+                data['Name'] = '%s %s - %s (Qty %s)' % (first_name, last_name, product.title, quantity)
 
             res = sfbc.create(data)
 
@@ -326,6 +340,19 @@ class AuthnetCallbackDPM(grok.View):
 
             if not role_res[0]['success']:
                 raise Exception(role_res[0]['errors'][0]['message'])
+
+            # If there is a product, add the OpportunityLineItem (1 API Call)
+            if product_id and product is not None:
+                line_item_res = sfbc.create({
+                    'type': 'OpportunityLineItem',
+                    'OpportunityId': opportunity['id'],
+                    'PricebookEntryId': product.pricebook_entry_sf_id,
+                    'UnitPrice': product.price,
+                    'Quantity': quantity,
+                })
+                
+                if not line_item_res[0]['success']:
+                    raise Exception(line_item_res[0]['errors'][0]['message'])
 
             # Create the Campaign Member (1 API Call).  Note, we ignore errors on this step since
             # trying to add someone to a campaign that they're already a member of throws

@@ -55,12 +55,16 @@ def handleDonationProductCreated(product, event):
         pedata = {'type': 'PricebookEntry',
                   'Pricebook2Id': pricebook_id,
                   'Product2Id': product.sf_object_id,
+                  'IsActive': True,
                   'UnitPrice': product.price}
         pe_res = sfbc.create(pedata)
         if not pe_res[0]['success']:
             req = product.REQUEST
             msg = u'Unable to set price for this product in salesforce'
             IStatusMessage(req).add(msg, type=u'warning')
+
+        # Record the pricebook entry id
+        product.pricebook_entry_sf_id = pe_res[0]['id']
     return
 
 
