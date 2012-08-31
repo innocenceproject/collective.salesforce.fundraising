@@ -32,7 +32,7 @@ from collective.salesforce.fundraising.fundraising_campaign import IFundraisingC
 from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.authnet.codes import response_codes
 from collective.salesforce.fundraising.authnet.codes import reason_codes
-            
+
 
 class DonationFormAuthnetDPM(grok.View):
     """ Renders a donation form setup to submit through Authorize.net's Direct Post Method (DPM) """
@@ -59,8 +59,8 @@ class DonationFormAuthnetDPM(grok.View):
                 self.levels = amounts.split(',')
         if not self.levels:
             self.levels = self.settings.donation_ask_levels[0].split('|')[1].split(',')
-       
-    def update_fingerprint(self): 
+
+    def update_fingerprint(self):
         self.sequence = str(uuid.uuid4())
         self.fingerprint_url = self.context.absolute_url() + '/authnet_fingerprint'
 
@@ -95,7 +95,7 @@ class DonationFormAuthnetDPM(grok.View):
     def xss_clean(self, value):
         # FIXME: This needs to be implemented
         return value
-    
+
 
 
 REDIRECT_HTML = """
@@ -138,8 +138,8 @@ def build_authnet_fingerprint(amount, sequence=None):
     data['x_fp_hash'] = hmac.new(transaction_key, msg).hexdigest()
 
     return data
-    
-    
+
+
 class AuthnetFingerprint(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.name('authnet_fingerprint')
@@ -167,11 +167,19 @@ class AuthnetCallbackDPM(grok.View):
         campaign_id = self.request.form.get('c_campaign_id')
         form_name = self.request.form.get('c_form_name', 'donation_form_authnet_dpm')
 
-        pc = getToolByName(self.context, 'portal_catalog') 
+        pc = getToolByName(self.context, 'portal_catalog')
         res = pc.searchResults(sf_object_id = campaign_id)
         if not res:
             return 'ERROR: Campaign with ID %s not found' % campaign_id
         campaign = res[0].getObject()
+
+        product = None
+        product_id = self.request.form.get('c_product_id', None)
+        if product_id:
+            res = pc.searchResults(sf_object_id=product_id)
+            if not res:
+                return 'ERROR: Product with ID %s not found' % product_id
+            product = res[0].getObject()
 
         # If the response was a failure of some kind or another, re-render the form with the error message
         # The response goes back to Authorize.net who then renders it through their servers to the user
@@ -225,7 +233,7 @@ class AuthnetCallbackDPM(grok.View):
             country = self.request.form.get('x_country', None)
             amount = int(float(self.request.form.get('x_amount', None)))
             trans_id = self.request.form.get('x_trans_id', None)
-    
+
             res = get_brains_for_email(self.context, email, self.request)
             # If no existing user, create one which creates the contact in SF (1 API call)
             if not res:
@@ -237,14 +245,14 @@ class AuthnetCallbackDPM(grok.View):
                     'city': city,
                     'state': state,
                     'zip': zipcode,
-                    'country': country, 
+                    'country': country,
                 }
-   
-                # Treat the email_opt_in field as a ratchet.  Once toggled on, it stays on even if unchecked 
-                # on a subsequent donation.  Unsubscribing is the way to prevent emails. 
+
+                # Treat the email_opt_in field as a ratchet.  Once toggled on, it stays on even if unchecked
+                # on a subsequent donation.  Unsubscribing is the way to prevent emails.
                 if email_opt_in:
                     data['email_opt_in'] = email_opt_in
-    
+
                 # Create the user
                 people_container = getattr(getSite(), 'people')
                 person = createContentInContainer(
@@ -253,7 +261,7 @@ class AuthnetCallbackDPM(grok.View):
                     checkConstraints=False,
                     **data
                 )
-    
+
             # If existing user, fill with updated data from subscription profile (1 API call, Person update handler)
             else:
                 # Authenticate the user temporarily to fetch their person object with some level of permissions applied
@@ -275,14 +283,14 @@ class AuthnetCallbackDPM(grok.View):
                     person.country = country
                     person.phone = phone
                     person.reindexObject()
-    
+
                     person.upsertToSalesforce()
-    
+
                 mtool.logoutUser()
-    
+
             # Create the Opportunity object and Opportunity Contact Role (2 API calls)
             sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-    
+
             transaction_id = None
             data = {
                 'type': 'Opportunity',
@@ -298,14 +306,16 @@ class AuthnetCallbackDPM(grok.View):
             }
             if settings.sf_opportunity_record_type_one_time:
                 data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
+            if product_id and product is not None:
+                data['Product__c'] = product_id
 
             res = sfbc.create(data)
-    
+
             if not res[0]['success']:
                 raise Exception(res[0]['errors'][0]['message'])
-    
+
             opportunity = res[0]
-        
+
             role_res = sfbc.create({
             'type': 'OpportunityContactRole',
                 'OpportunityId': opportunity['id'],
@@ -313,10 +323,10 @@ class AuthnetCallbackDPM(grok.View):
                 'IsPrimary': True,
                 'Role': 'Decision Maker',
             })
-    
+
             if not role_res[0]['success']:
                 raise Exception(role_res[0]['errors'][0]['message'])
-    
+
             # Create the Campaign Member (1 API Call).  Note, we ignore errors on this step since
             # trying to add someone to a campaign that they're already a member of throws
             # an error.  We want to let people donate more than once.
@@ -328,7 +338,7 @@ class AuthnetCallbackDPM(grok.View):
                     'ContactId': person.sf_object_id,
                     'Status': 'Responded',
                 })
-        
+
             # Record the transaction and its amount in the campaign
             campaign.add_donation(amount)
 
@@ -337,9 +347,9 @@ class AuthnetCallbackDPM(grok.View):
 
             # If this is an honorary or memorial donation, redirect to the form to provide details
             is_honorary = self.request.form.get('c_is_honorary', None)
-            if is_honorary == 'true': 
+            if is_honorary == 'true':
                 redirect_url = '%s/honorary-memorial-donation?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
             else:
                 redirect_url = '%s/thank-you?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
-    
+
             return REDIRECT_HTML % {'redirect_url': redirect_url}

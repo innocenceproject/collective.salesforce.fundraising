@@ -212,6 +212,13 @@ class IFundraisingSettings(Interface):
         default=True,
     )
 
+    sf_standard_pricebook_id = schema.TextLine(
+        title=_(u"Salesforce Standard Pricebook ID"),
+        description = _(u"The Salesforce Record ID of the Standard Pricebook.  This value will be autopopulated if left empty."),
+        default=u'',
+        required=False,
+    )
+
     janrain_api_key = schema.TextLine(
         title=_(u"Janrain API Key"),
         description=_(u"If provided, Janrain integration functionality will be turned on allowing for social login and social sharing"),
