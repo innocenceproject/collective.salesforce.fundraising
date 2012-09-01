@@ -309,10 +309,11 @@ class AuthnetCallbackDPM(grok.View):
                 'Source_Campaign__c': campaign.get_source_campaign(),
                 'Source_Url__c': campaign.get_source_url(),
             }
-            if settings.sf_opportunity_record_type_one_time:
-                data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
 
             if product_id and product is not None:
+                # record product donations as a particular type, if possible
+                if settings.sf_opportunity_record_type_product:
+                    data['RecordTypeID'] = settings.sf_opportunity_record_type_product
                 # Set the pricebook on the Opportunity to the standard pricebook
                 data['Pricebook2Id'] = pricebook_id
 
@@ -322,6 +323,10 @@ class AuthnetCallbackDPM(grok.View):
 
                 # Set a custom name with the product info and quantity
                 data['Name'] = '%s %s - %s (Qty %s)' % (first_name, last_name, product.title, quantity)
+            else:
+                # this is a one-time donation, record is as such if possible
+                if settings.sf_opportunity_record_type_one_time:
+                    data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
 
             res = sfbc.create(data)
 
