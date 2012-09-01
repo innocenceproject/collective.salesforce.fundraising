@@ -35,6 +35,7 @@ from Products.statusmessages.interfaces import IStatusMessage
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import sanitize_soql
+from collective.salesforce.fundraising.utils import compare_sf_ids
 from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 
@@ -274,24 +275,69 @@ class FundraisingCampaignPage(object):
     def clear_donation_from_cache(self, donation_id, amount):
         """ Clears a donation from the cache.  This is useful if its value needs to be refreshed
             on the next time it's called but you don't want to call it now. """
-        key = ('lookup_donation', (self, donation_id, amount), frozenset([]))
+        donation_key = ('lookup_donation', (self, donation_id, amount), frozenset([]))
+        lineitem_key = ('lookup_donation_product_line_items',
+                        (self, donation_id),
+                        frozenset([]))
         self._memojito_.clear()
-        if self._memojito_.has_key(key):
-            del self._memojito_[key]
+        if self._memojito_.has_key(donation_key):
+            del self._memojito_[donation_key]
+        if self._memojito_.has_key(lineitem_key):
+            del self._memojito_[lineitem_key]
  
     @instance.memoize
     def lookup_donation(self, donation_id, amount):
         sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
         return sfbc.query(RECEIPT_SOQL % (donation_id, amount, self.sf_object_id))
 
+    @instance.memoize
+    def lookup_donation_product_line_items(self, donation_id):
+        """get any line-items for the given opportunity
+
+        resolve them to object title, price and quantity before caching result
+        """
+        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
+        pc = getToolByName(self, 'portal_catalog')
+        typename = 'collective.salesforce.fundraising.donationproduct'
+        items = sfbc.query(LINE_ITEM_SOQL % donation_id)
+        lines = []
+        for item in items:
+            qty = int(item['Quantity'])
+            prod_id = item['PricebookEntry']['Product2Id']
+            entry_id = item['PricebookEntry']['Id']
+            brains = pc(portal_type=typename, sf_object_id=prod_id)
+            if not brains:
+                continue
+            prod = brains[0].getObject()
+            lines.append({'product': prod.title,
+                          'price': prod.price,
+                          'quantity': qty})
+        return lines
+
     def send_donation_receipt(self, request, donation_id, amount):
         donation = self.lookup_donation(donation_id, amount)
-        settings = get_settings() 
+        settings = get_settings()
+        
+        # if this donation was a product purchase, get line items:
+        lineitems = []
+        is_product_purchase = False
+        # the id we store in settings may or may not exist, and may or may not
+        # be identical to the one we get back (sf passes ids of two different
+        # lengths, although they mark the same record)
+        recordtype = donation[0]['Opportunity']['RecordTypeId']
+        producttype = settings.sf_opportunity_record_type_product
+        if recordtype and producttype:
+            if compare_sf_ids(recordtype, producttype):
+                is_product_purchase = True
+            
+        if is_product_purchase:
+            lineitems = self.lookup_donation_product_line_items(donation_id)
 
         # Construct the email bodies
         pt = getToolByName(self, 'portal_transforms')
         email_view = getMultiAdapter((self, request), name='thank-you-email')
         email_view.set_donation_keys(donation_id, amount)
+        email_view.set_line_items(lineitems)
         email_body = email_view()
         txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
 
@@ -702,6 +748,7 @@ RECEIPT_SOQL = """select
     Opportunity.Honorary_Zip__c, 
     Opportunity.Honorary_Country__c, 
     Opportunity.Honorary_Message__c, 
+    Opportunity.RecordTypeId, 
     Contact.Id, 
     Contact.FirstName, 
     Contact.LastName, 
@@ -720,6 +767,15 @@ RECEIPT_SOQL = """select
         and OpportunityId = '%s'
         and Opportunity.Amount = %d
         and Opportunity.CampaignId = '%s'
+"""
+
+LINE_ITEM_SOQL = """SELECT
+    Quantity, 
+    PricebookEntry.Product2Id, 
+    PricebookEntry.Id 
+    FROM OpportunityLineItem 
+    WHERE 
+        OpportunityId = '%s'
 """
 
 class DonationReceipt(grok.View):
@@ -753,7 +809,11 @@ class DonationReceipt(grok.View):
     def set_donation_keys(self, donation_id, amount):
         self.donation_id = donation_id
         self.amount = int(amount)
-    
+
+    def set_line_items(self, line_items):
+        self.line_items = line_items
+
+
 class ThankYouEmail(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
@@ -770,6 +830,7 @@ class ThankYouEmail(grok.View):
         
         self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
         self.receipt_view.set_donation_keys(self.donation_id, self.amount)
+        self.receipt_view.set_line_items(self.line_items)
         self.receipt = self.receipt_view()
 
         settings = get_settings()
@@ -779,7 +840,11 @@ class ThankYouEmail(grok.View):
     def set_donation_keys(self, donation_id, amount):
         self.donation_id = donation_id
         self.amount = int(amount)
-    
+
+    def set_line_items(self, line_items):
+        self.line_items = line_items
+
+
 class HonoraryEmail(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')

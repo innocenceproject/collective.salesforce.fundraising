@@ -28,3 +28,14 @@ def get_standard_pricebook_id(sfbc):
         res = sfbc.query("SELECT Id from Pricebook2 WHERE IsStandard=True")
         pb_id = settings.sf_standard_pricebook_id = unicode(res[0]['Id'])
     return pb_id
+
+
+def compare_sf_ids(id1, id2):
+    """compare two given ids, which may or may not be the same length
+    """
+    id1, id2 = map(lambda x: x.lower(), [id1, id2])
+    if len(id1) == len(id2):
+        return id1 == id2
+
+    shrt, lng = sorted([id1, id2], key=lambda x: len(x))
+    return shrt == lng[:len(shrt)]
