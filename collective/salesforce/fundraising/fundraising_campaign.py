@@ -317,6 +317,10 @@ class FundraisingCampaignPage(object):
                           'quantity': qty})
         return lines
 
+    def get_display_goal_pct(self):
+        settings = get_settings()
+        return settings.campaign_status_completion_threshold
+
     def send_donation_receipt(self, request, donation_id, amount):
         donation = self.lookup_donation(donation_id, amount)
         settings = get_settings()

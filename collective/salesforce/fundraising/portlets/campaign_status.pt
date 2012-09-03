@@ -7,7 +7,8 @@
                 days_remaining campaign/get_days_remaining;
                 timeline_percent campaign/get_percent_timeline;
                 donors campaign/donations_count;
-                show_goal python: goal_percent > 3;
+		display_goal_pct campaign/get_display_goal_pct;
+                show_goal python: goal_percent > display_goal_pct;
                 show_timeline python: days_remaining >= 0 and days_remaining < 90;
                 show_portlet python: show_goal or show_timeline;
                 is_personal python: getattr(campaign, 'parent_sf_id', None);

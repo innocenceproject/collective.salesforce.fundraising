@@ -285,3 +285,10 @@ class IFundraisingSettings(Interface):
         description=_(u"If you want to use Recurly for recurring donation management, enter the code for the plan here."),
         required=False,
     )
+
+    campaign_status_completion_threshold = schema.Int(
+        title=_(u"Campaign Status Completion Threshold"),
+        description = _(u"The percentage of campaign goal completion that should be reached before displaying status on campaign pages."),
+        default=3,
+        required=False,
+    )
