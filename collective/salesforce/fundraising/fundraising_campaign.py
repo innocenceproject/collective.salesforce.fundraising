@@ -956,5 +956,4 @@ def activate_campaign_portlets(page, event):
             if content_type_assignments is None:
                 return
             for name, assignment in content_type_assignments.items():
-                print name, assignment
                 page_manager_assignments[name] = assignment
