@@ -11,6 +11,7 @@ from zope.formlib import form
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from Products.CMFCore.utils import getToolByName
 
+from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising import MessageFactory as _
 
 from zope.i18nmessageid import MessageFactory
@@ -71,6 +72,12 @@ class Renderer(base.Renderer):
     """
 
     render = ViewPageTemplateFile('campaign_status.pt')
+
+    def get_campaign(self):
+        if IFundraisingCampaign.providedBy(self.context):
+            return self.context
+        else:
+            return self.context.aq_inner.aq_parent
 
     def addcommas(self, num):
         locale.setlocale(locale.LC_ALL, '')

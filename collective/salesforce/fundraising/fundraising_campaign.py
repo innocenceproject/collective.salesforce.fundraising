@@ -1,7 +1,6 @@
 import locale
 import random
 import smtplib
-import uuid
 from datetime import date
 
 from email.mime.multipart import MIMEMultipart
@@ -12,6 +11,7 @@ from plone.directives import dexterity, form
 
 from zope.component import getUtility
 from zope.component import getMultiAdapter
+from zope.component import queryUtility
 
 from plone.i18n.locales.countries import CountryAvailability
 
@@ -24,13 +24,16 @@ from zope.app.container.interfaces import IObjectAddedEvent
 from plone.z3cform.interfaces import IWrappedForm
 
 from plone.app.textfield import RichText
-from plone.namedfile import NamedBlobImage
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
 
+from plone.portlets.interfaces import IPortletAssignmentMapping
+from plone.portlets.interfaces import IPortletManager
+from plone.portlets.constants import CONTENT_TYPE_CATEGORY
+
 from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
-from Products.statusmessages.interfaces import IStatusMessage
+from Products.ATContentTypes.interfaces import IATDocument
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
@@ -266,7 +269,7 @@ class FundraisingCampaignPage(object):
                     parent.donations_count = parent.donations_count + 1
 
     def get_external_media_oembed(self):
-        external_media = getattr(self.context, 'external_media_url', None)
+        external_media = getattr(self, 'external_media_url', None)
         if external_media:
             consumer = getUtility(IConsumer)
             # FIXME - don't hard code maxwidth
@@ -931,3 +934,27 @@ class MemorialEmail(grok.View):
                 self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
             except:
                 self.honorary['message'] = honorary['message']
+
+
+# Pages added inside the campaign need to display the same portlets as the
+# campaign.
+@grok.subscribe(IATDocument, IObjectAddedEvent)
+def activate_campaign_portlets(page, event):
+    if IFundraisingCampaign.providedBy(event.newParent):
+        category = CONTENT_TYPE_CATEGORY
+        pt = 'collective.salesforce.fundraising.fundraisingcampaign'
+        campaign = event.newParent
+        campaign_manager = getUtility(IPortletManager, name='plone.rightcolumn',
+                context=campaign)
+        campaign_manager_assignments = campaign_manager[category]
+        page_manager = queryUtility(IPortletManager, name='plone.rightcolumn',
+                context=page)
+        if page_manager is not None:
+            page_manager_assignments = getMultiAdapter((page,
+                page_manager), IPortletAssignmentMapping)
+            content_type_assignments = campaign_manager_assignments.get(pt, None)
+            if content_type_assignments is None:
+                return
+            for name, assignment in content_type_assignments.items():
+                print name, assignment
+                page_manager_assignments[name] = assignment

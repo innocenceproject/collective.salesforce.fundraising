@@ -1,15 +1,16 @@
 <dl class="portlet portletCampaignStatus"
     i18n:domain="collective.salesforce.fundraising"
-    tal:define="goal view/context/goal;
-                goal_percent view/context/get_percent_goal;
-                raised view/context/donations_total;
-                days_remaining view/context/get_days_remaining;
-                timeline_percent view/context/get_percent_timeline;
-                donors view/context/donations_count;
+    tal:define="campaign view/get_campaign;
+                goal campaign/goal;
+                goal_percent campaign/get_percent_goal;
+                raised campaign/donations_total;
+                days_remaining campaign/get_days_remaining;
+                timeline_percent campaign/get_percent_timeline;
+                donors campaign/donations_count;
                 show_goal python: goal_percent > 3;
                 show_timeline python: days_remaining >= 0 and days_remaining < 90;
                 show_portlet python: show_goal or show_timeline;
-                is_personal python: getattr(view.context, 'parent_sf_id', None);
+                is_personal python: getattr(campaign, 'parent_sf_id', None);
                 addcommas nocall: view/addcommas;"
     tal:condition="show_portlet">
 
@@ -34,8 +35,8 @@
       <div class="progress-bar">
         <span class="value" tal:content="timeline_percent">23</span>
       </div>
-      <span class="campaign-start-date" tal:content="python: view.context.date_start.strftime('%B %d')">May 1</span>
-      <span class="campaign-end-date" tal:content="python: view.context.date_end.strftime('%B %d')">June 24</span>
+      <span class="campaign-start-date" tal:content="python: campaign.date_start.strftime('%B %d')">May 1</span>
+      <span class="campaign-end-date" tal:content="python: campaign.date_end.strftime('%B %d')">June 24</span>
     </dd>
 
     <dd class="portletItem" tal:condition="donors">
