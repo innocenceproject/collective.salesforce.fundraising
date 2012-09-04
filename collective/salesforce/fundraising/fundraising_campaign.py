@@ -344,7 +344,6 @@ class FundraisingCampaignPage(object):
         pt = getToolByName(self, 'portal_transforms')
         email_view = getMultiAdapter((self, request), name='thank-you-email')
         email_view.set_donation_keys(donation_id, amount)
-        email_view.set_line_items(lineitems)
         email_body = email_view()
         txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
 
@@ -491,7 +490,6 @@ class ThankYouView(grok.View):
             self.donation_id = self.request.form.get('form.widgets.donation_id', None)
         if not self.amount:
             self.amount = self.request.form.get('form.widgets.amount', None)
-            
 
         self.receipt_view = None
         self.receipt = None
@@ -786,7 +784,10 @@ LINE_ITEM_SOQL = """SELECT
 """
 
 class DonationReceipt(grok.View):
-    """ Looks up an opportunity in Salesforce and prepares a donation receipt.  Uses amount and id as keys """
+    """ Looks up an opportunity in Salesforce and prepares a donation receipt.
+
+    Uses amount and id as keys
+    """
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
 
@@ -806,6 +807,9 @@ class DonationReceipt(grok.View):
         if not len(res['records']):
             raise ValueError('Donation with id %s and amount %s was not found.' % (donation_id, amount))
 
+        self.line_items = self.context.lookup_donation_product_line_items(
+            self.donation_id)
+
         settings = get_settings()
         self.organization_name = settings.organization_name
         self.donation_receipt_legal = settings.donation_receipt_legal
@@ -816,9 +820,6 @@ class DonationReceipt(grok.View):
     def set_donation_keys(self, donation_id, amount):
         self.donation_id = donation_id
         self.amount = int(amount)
-
-    def set_line_items(self, line_items):
-        self.line_items = line_items
 
 
 class ThankYouEmail(grok.View):
@@ -837,7 +838,6 @@ class ThankYouEmail(grok.View):
         
         self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
         self.receipt_view.set_donation_keys(self.donation_id, self.amount)
-        self.receipt_view.set_line_items(self.line_items)
         self.receipt = self.receipt_view()
 
         settings = get_settings()
@@ -847,9 +847,6 @@ class ThankYouEmail(grok.View):
     def set_donation_keys(self, donation_id, amount):
         self.donation_id = donation_id
         self.amount = int(amount)
-
-    def set_line_items(self, line_items):
-        self.line_items = line_items
 
 
 class HonoraryEmail(grok.View):

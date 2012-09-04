@@ -7,7 +7,8 @@
       <tr>
         <td width="100%" valign="top">
 
-          <div class="donation-details" style="padding: 0 20px">
+          <div class="donation-details" style="padding: 0 20px"
+            tal:define="line_items view/line_items|nothing">
             <div class="donation-amount"><b>Gift Amount: $<span tal:replace="python: int(view.donation.Amount)" /></b></div>
             <div class="donation-date" tal:content="string:Date: ${view/donation/CloseDate}" />
             <tal:if_recurring condition="view/donation/npe03__Recurring_Donation__c">
@@ -15,6 +16,19 @@
             <div class="donation-recurring"><b>Repeats Monthly</b></div>
             <div>We will deduct $<span tal:replace="python: int(view.donation.Amount)" /> from your account each month going forward</div>
             </tal:if_recurring>
+            <tal:if_products condition="line_items">
+            <br />
+            <table class="donation-lineitems" style="width:100%;">
+              <caption style="text-align:left;font-weight:bold;border-bottom:1px solid black">Items Purchased</caption>
+              <tr style="font-size:90%;text-align:left"><th>Item</th><th>Price</th><th>Quantity</th><th>Total</th></tr>
+              <tr tal:repeat="line line_items">
+                <td tal:content="line/product">[Product Name]</td>
+                <td>$<span tal:replace="line/price">[Product Price]</span></td>
+                <td tal:content="line/quantity">[Product Quantity]</td>
+                <td>$<span tal:replace="python: line['price'] * line['quantity']">[Product Total]</span></td>
+              </tr>
+            </table>
+            </tal:if_products>
           </div>
           <br />
           <div class="donor-details" style="padding: 0 20px 20px 20px">
