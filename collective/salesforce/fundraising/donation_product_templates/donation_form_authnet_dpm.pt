@@ -9,7 +9,7 @@
       <input type="hidden" name="x_fp_timestamp" value="" tal:attributes="value view/fingerprint/x_fp_timestamp" />
       <input type="hidden" name="x_fp_hash" value="" tal:attributes="value view/fingerprint/x_fp_hash" />
       <input type="hidden" id="authnet_dpm_fingerprint_url" value="" tal:attributes="value view/fingerprint_url" />
-      <input type="hidden" name="c_campaign_id" value="" tal:attributes="value view/context/campaign_sf_id" />
+      <input type="hidden" name="c_campaign_id" value="" tal:attributes="value view/campaign_sf_id" />
       <input type="hidden" name="c_product_id" value="" tal:attributes="value view/context/sf_object_id" />
       <input type="hidden" name="c_source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
       <input type="hidden" name="c_source_url" value="" tal:attributes="value view/context/get_source_url" />
