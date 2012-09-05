@@ -107,6 +107,17 @@ class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
         if not self.levels:
             self.levels = self.settings.product_ask_levels[0].split('|')[1].split(',')
 
+    def campaign_sf_id(self):
+        """get the sf_object_id of the acquisition parent of the donation
+
+        because a donation product may be acquired from a personal fundraising
+        page contained within the fundraising page to which the product
+        belongs, we must get the campaign id of the correct campaing, the 
+        acquisition parent, not the containment parent.
+        """
+        acquired_parent = aq_parent(self.context)
+        return acquired_parent.sf_object_id
+        
 
 class AuthnetFingerprint(BaseAuthnetFingerprint):
     grok.context(IDonationProduct)
