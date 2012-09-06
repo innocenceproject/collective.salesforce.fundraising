@@ -247,14 +247,14 @@ class RpxPostLogin(grok.View):
         if photo and (not person.portrait or not person.portrait.size):
             img_data = urllib2.urlopen(photo).read()
             person.portrait = NamedBlobImage(img_data)
-        
+
         # See if came_from was passed
         came_from = self.request.form.get('came_from', None)
         # fix odd bug where came_from is a list of two values
         if came_from and isinstance(came_from, (list, tuple)):
             came_from = came_from[0]
             self.request.form['came_from'] = came_from
-        
+
         # merge in with standard plone login process.  
         login_next = self.context.restrictedTraverse('login_next')
         login_next()
