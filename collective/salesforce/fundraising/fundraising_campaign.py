@@ -6,6 +6,7 @@ from datetime import date
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from Acquisition import aq_base
 from five import grok
 from plone.directives import dexterity, form
 
@@ -24,6 +25,7 @@ from zope.app.container.interfaces import IObjectAddedEvent
 from plone.z3cform.interfaces import IWrappedForm
 
 from plone.app.textfield import RichText
+from plone.app.textfield.value import RichTextValue
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
 
@@ -74,6 +76,18 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         title=u"Donation Form Tabs",
         description=u"Enter the view names for each tab you wish to display with this form.  You can provide a friendly name for the tab by using the format VIEWNAME|LABEL",
         value_type=schema.TextLine(),
+    )
+
+    donation_form_header = schema.TextLine(
+        title=u"Header for Donation Forms",
+        description=u"This header will be displayed above donation forms for this campaign.  If no value is supplied, the default site-wide header will be used.",
+        required=False,
+    )
+
+    donation_form_description = RichText(
+        title=u"Description for Donation Forms",
+        description=u"If provided, this value will be displayed above donation forms for this campaign.  If no value is provided, and a site-wide default is set, that default will be used.",
+        required=False,
     )
 
     fundraising_seals = schema.List(
@@ -466,14 +480,28 @@ class CampaignView(grok.View):
 
         settings = get_settings()
         self.ssl_seal = settings.ssl_seal
-        try:
-            self.forms_header = settings.donation_form_header
-        except AttributeError:
-            self.forms_header = None
-        try:
-            self.forms_description = settings.donation_form_description
-        except AttributeError:
-            self.forms_description = None
+
+        for name in ['donation_form_header', 'donation_form_description']:
+            setattr(self, name, self.get_local_or_default(name))
+    
+    def get_local_or_default(self, field):
+        """for fields of the context object with both local and site-wide 
+        default values. Return the local value if provided, else return the 
+        setting, else return None
+
+        always looks for values on the fundraising campaign object only
+        """
+        local_campaign = aq_base(self.context.get_fundraising_campaign())
+        val = getattr(local_campaign, field, None)
+        if not val:
+            settings = get_settings()
+            val = getattr(settings, field, None)
+        # convert rich text objects, if present:
+        if val and isinstance(val, RichTextValue):
+            val = val.output
+
+        return val
+
 
 class ThankYouView(grok.View):
     grok.context(IFundraisingCampaignPage)
