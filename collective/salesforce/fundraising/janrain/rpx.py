@@ -247,19 +247,17 @@ class RpxPostLogin(grok.View):
         if photo and (not person.portrait or not person.portrait.size):
             img_data = urllib2.urlopen(photo).read()
             person.portrait = NamedBlobImage(img_data)
-       
-        # Set a status message informing the user they are logged in
-        IStatusMessage(self.request).add(u'You are now logged in.')
         
         # See if came_from was passed
         came_from = self.request.form.get('came_from', None)
-        if came_from:
-            # For some reason, came_from is getting passed twice by Janrain
-            #return self.request.RESPONSE.redirect(came_from)
-            return self.request.RESPONSE.redirect(came_from[0])
-
-        # Redirect
-        return self.request.RESPONSE.redirect(self.context.absolute_url())
+        # fix odd bug where came_from is a list of two values
+        if came_from and isinstance(came_from, (list, tuple)):
+            came_from = came_from[0]
+            self.request.form['came_from'] = came_from
+        
+        # merge in with standard plone login process.  
+        login_next = self.context.restrictedTraverse('login_next')
+        login_next()
 
 #class RpxXdCommView(grok.View):
 #    """ Implement the rpx_xdcomm.html cross domain file """
