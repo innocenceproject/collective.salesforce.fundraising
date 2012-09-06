@@ -278,6 +278,8 @@ class FundraisingCampaignPage(object):
     def clear_donation_from_cache(self, donation_id, amount):
         """ Clears a donation from the cache.  This is useful if its value needs to be refreshed
             on the next time it's called but you don't want to call it now. """
+        if not hasattr(self, '_memojito_'):
+            return None
         donation_key = ('lookup_donation', (self, donation_id, amount), frozenset([]))
         lineitem_key = ('lookup_donation_product_line_items',
                         (self, donation_id),
