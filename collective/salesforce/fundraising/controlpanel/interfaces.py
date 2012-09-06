@@ -42,15 +42,15 @@ class IFundraisingSettings(Interface):
     )
 
     donation_form_header = schema.TextLine(
-        title=_(u"Header to Display Above Donation Form"),
-        description=_(u"The text entered here will appear as a header above all donation forms.  If left empty, the default value 'Make A Donation' will be used"),
+        title=_(u"Default Header for Donation Forms"),
+        description=_(u"The text entered here will appear as a header above donation forms.  If left empty, the default value 'Make A Donation' will be used.  This value may be overridden by providing a value on a specific fundraising campaign."),
         default=u'',
         required=False,
     )
 
     donation_form_description = schema.Text(
-        title=_(u"Description to Display Above Donation Forms"),
-        description=_(u"The text entered here will be displayed above all donation forms.  If left empty, no text will appear.  HTML is allowed"),
+        title=_(u"Default Description for Donation Forms"),
+        description=_(u"The text entered here will be displayed above donation forms.  If left empty, no text will appear.  HTML is allowed. This value may be overridden by providing a value on a specific fundraising campaign"),
         default=u'',
         required=False,
     )
