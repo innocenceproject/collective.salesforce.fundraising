@@ -121,6 +121,8 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
     def clear_donations_from_cache(self):
         """ Clears the donations cache.  This should be called anytime a new donation comes in 
             for the campaign so a fresh list is pulled after any changes """
+        if not hasAttr(self, '_memojito_'):
+            return None
         key = ('get_donations', (self), frozenset([]))
         self._memojito_.clear()
         if self._memojito_.has_key(key):
