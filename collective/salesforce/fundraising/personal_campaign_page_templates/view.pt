@@ -8,7 +8,7 @@
 <body>
 <metal:main fill-slot="content-title">
   <metal:content-title define-macro="content-title">
-    <h1 class="documentFirstHeading" tal:content="python: view.context.get_fundraising_campaign().title"></h1>
+    <h1 class="documentFirstHeading"><a href="" tal:define="campaign view/context/get_fundraising_campaign" tal:attributes="href campaign/absolute_url" tal:content="campaign/title"></a></h1>
   </metal:content-title>
 </metal:main>
 
@@ -37,8 +37,6 @@
 
     <h2 class="personal-campaign-title" tal:content="view/context/title" />
     <div class="personal-campaign-description" tal:content="view/context/description" />
-
-    <div class="personal-appeal" tal:content="structure view/context/personal_appeal/output"></div>
 
     <div class="donation-form-wrapper"
          tal:define="header view/forms_header|nothing;
@@ -72,7 +70,7 @@
       </div>
     </div>
 
-    <div id="campaign-body" tal:content="structure context/body/output|nothing" />
+    <div class="personal-appeal" tal:content="structure view/context/personal_appeal/output"></div>
 
   </div>
   </metal:content-core>
