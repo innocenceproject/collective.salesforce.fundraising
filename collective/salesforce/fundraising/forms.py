@@ -1,3 +1,4 @@
+import copy
 from zope import schema
 from five import grok
 from plone.directives import form
@@ -26,12 +27,24 @@ class CreatePersonalCampaignPageForm(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IPersonalCampaignPage).select('title', 'description', 'image', 'goal', 'personal_appeal', 'thank_you_message')
+        fields = field.Fields(IPersonalCampaignPage).select('title', 'description', 'image', 'goal', 'personal_appeal', 'thank_you_message')
+        image_field = copy.copy(fields['image'].field)
+        image_field.required = True
+        fields['image'].field = image_field
+        return fields
 
     ignoreContext = True
 
     label = _(u"Create Personal Campaign Page")
     description = _(u"Set a goal and encourage your friends, family, and colleagues to donate towards your goal.")
+
+    def update(self):
+        super(CreatePersonalCampaignPageForm, self).update()
+        existing_personal_campaign = self.context.get_personal_fundraising_campaign_url()
+        if existing_personal_campaign:
+            messages = IStatusMessage(self.request)
+            messages.add("You can't create more than one personal page per campaign.")
+            self.request.response.redirect(self.context.absolute_url())
 
     @button.buttonAndHandler(_(u'Create'))
     def handleOk(self, action):

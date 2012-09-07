@@ -24,6 +24,8 @@ from collective.salesforce.fundraising.fundraising_campaign import FundraisingCa
 from collective.salesforce.fundraising.fundraising_campaign import CampaignView
 from collective.salesforce.fundraising.fundraising_campaign import ShareView
 
+from collective.salesforce.fundraising.utils import get_settings
+
 from collective.salesforce.fundraising import MessageFactory as _
 
 
@@ -50,13 +52,11 @@ alsoProvides(IPersonalCampaignPage, IContentType)
 
 @form.default_value(field=IPersonalCampaignPage['personal_appeal'])
 def personalAppealDefaultValue(data):
-    context = data.context
-    return context.default_personal_appeal
+    return get_settings().default_personal_appeal
         
 @form.default_value(field=IPersonalCampaignPage['thank_you_message'])
 def thankYouDefaultValue(data):
-    context = data.context
-    return context.default_personal_thank_you
+    return get_settings().default_personal_thank_you_message
         
 
 
