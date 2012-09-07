@@ -17,14 +17,14 @@
 
   <div class="my-donors-wrapper">
 
-    <a id="link-personal-campaign-home" href="" tal:attributes="href view/context/absolute_url">Back to My Fundraiser</a>
+    <a id="link-personal-campaign-home" href="" tal:attributes="href view/context/absolute_url">Back to My Fundraising Page</a>
 
     <div class="instructions">
       <p>An essential part of fundraising is making sure to thank your donors.
          The list below shows who has donated to your campaign and how much 
          they donated.  When you have sent someone a thank you, simply check the box
          to the left of their name to mark them as "Thank You Sent".  Come back to
-         this page every few days during your fundraiser to see who you have yet to 
+         this page every few days during your fundraising to see who you have yet to 
          thank.</p>
     </div>  
   

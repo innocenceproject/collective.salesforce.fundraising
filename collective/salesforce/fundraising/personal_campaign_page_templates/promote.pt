@@ -21,7 +21,7 @@ jQuery(function($) {
 
 <metal:main fill-slot="content-title">
   <metal:content-title define-macro="content-title">
-    <h1 class="documentFirstHeading">Promote My Fundraiser</h1>
+    <h1 class="documentFirstHeading">Promote My Fundraising Page</h1>
   </metal:content-title>
 </metal:main>
 
@@ -33,14 +33,14 @@ jQuery(function($) {
 <metal:main fill-slot="content-core">
   <metal:content_core define-macro="content-core">
 
-    <a id="link-personal-campaign-home" href="" tal:attributes="href view/context/absolute_url">Back to My Fundraiser</a>
+    <a id="link-personal-campaign-home" href="" tal:attributes="href view/context/absolute_url">Back to My Fundraising Page</a>
 
     <div id="content">
 
       <div class="instructions">
-        <p>Setting up your fundraiser's page is an important first step to reaching 
+        <p>Setting up your fundraising page is an important first step to reaching 
            your fundraising goal.  The next step is to let your friends and family know
-           about your fundraiser.  Below are some sample prewritten fundraising
+           about your fundraising page.  Below are some sample prewritten fundraising
            appeals you can share on social networks to promote your campaign.  Click on
            the message below that you think would be most persuasive to your friends
            and family.

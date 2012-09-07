@@ -2,7 +2,7 @@
     i18n:domain="collective.salesforce.fundraising"
     tal:define="existing_campaign view/context/get_personal_fundraising_campaign_url|nothing;
                 create_link python:existing_campaign or view.context.get_fundraising_campaign().absolute_url() + '/@@create-or-view-personal-campaign';
-                create_text python:'View My Fundraiser' if existing_campaign else 'Create My Campaign';
+                create_text python:'My Fundraising Page' if existing_campaign else 'Create My Campaign';
                 campaign python: view.context.get_fundraising_campaign();
                 fundraisers_count view/context/personal_fundraisers_count;
                 fundraisers_raised python: '$%i' % (int(campaign.donations_total) - int(campaign.direct_donations_total));
@@ -22,22 +22,22 @@
     <dd class="portletItem">
       <tal:if_count condition="fundraisers_count">
       <a href="#" tal:attributes="href view_all"><span class="count" tal:content="fundraisers_count">17</span></a>
-      <span class="count-text">people have started fundraisers to help us</span>
+      <span class="count-text">people have already started fundraising.</span>
       </tal:if_count>
       <tal:if_not_count condition="not: fundraisers_count">
-        <span>Be the first to create your own fundraiser to help us</span>
+        <span>Be the first to start fundraising. Create your page.</span>
       </tal:if_not_count>
       <div class="clear"></div>
 
       <a class="button button-create-personal-campaign" href="#"
            tal:condition="python: view.context.allow_personal and not existing_campaign"
            tal:attributes="href create_link"
-           tal:content="create_text">Start a Fundraiser</a>
+           tal:content="create_text">Become a Fundraiser</a>
 
       <a class="button button-view-personal-campaign" href="#"
            tal:condition="python: view.context.allow_personal and existing_campaign"
            tal:attributes="href create_link"
-           tal:content="create_text">View My Fundraiser</a>
+           tal:content="create_text">My Fundraising Page</a>
 
       <div class="clear"></div>
     </dd>

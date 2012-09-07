@@ -105,8 +105,8 @@ class EditPersonalCampaign(dexterity.EditForm):
     grok.require('collective.salesforce.fundraising.EditPersonalCampaign')
     grok.context(IPersonalCampaignPage)
 
-    label = _(u"Edit My Fundraiser")
-    description = _(u"Use the form below to edit your fundraiser's page to create the most effective appeal to your friends and family.")
+    label = _(u"Edit My Fundraising Page")
+    description = _(u"Use the form below to edit your fundraising page to create the most effective appeal to your friends and family.")
 
 #    @button.buttonAndHandler(_(u"Save Changes"))
 #    def handleSaveChanges(self, action):

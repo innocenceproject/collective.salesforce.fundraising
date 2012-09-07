@@ -62,7 +62,7 @@
       <dl class="collapsible" 
           tal:attributes="class python: 'collapsible collapsedOnLoad' if 'fundraiser' in view.hide else 'collapsible'"
           tal:condition="context/can_create_personal_campaign_page">
-        <dt class="collapsibleHeader">Start a Fundraiser</dt>
+        <dt class="collapsibleHeader">Start a Fundraising Page</dt>
         <dd class="collapsibleContent">
           <p>Have friends and family who would also like to donate?  Setting up your own personal campaign page is easy.  Just click the button below to get started.</p>
 
