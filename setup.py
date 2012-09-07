@@ -38,6 +38,8 @@ setup(name='collective.salesforce.fundraising',
           'iso8601',
           'recurly',
           'dexterity.membrane',
+          'z3c.relationfield',
+          'plone.directives.dexterity',
           # -*- Extra requirements: -*-
       ],
       extras_require={
