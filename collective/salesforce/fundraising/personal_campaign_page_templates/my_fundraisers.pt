@@ -1,0 +1,69 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.salesforce.fundraising">
+<body>
+<metal:main fill-slot="content-title">
+  <metal:content-title define-macro="content-title">
+    <h1 class="documentFirstHeading">My Fundraisers</h1>
+  </metal:content-title>
+</metal:main>
+
+<metal:description fill-slot="content-description">
+  <metal:content-description define-macro="content-description">
+   <tal:person tal:define="person view/person|nothing">
+    <div class="documentDescription"
+         tal:condition="person">
+      Thanks for your fundraising.  Here's a list of the personal fundraisers
+      you have created.
+    </div>
+    <div class="documentDescription"
+         tal:condition="not:person">
+      You are not currently a fundraiser.
+    </div>
+   </tal:person>
+  </metal:content-description>
+</metal:description>
+
+<metal:main fill-slot="content-core">
+  <metal:content-core define-macro="content-core">  
+   <tal:fundraisers tal:define="fundraisers view/my_fundraisers|nothing">
+    <table id="personal-fundraisers" tal:condition="fundraisers">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>In Campaign</th>
+          <th>Donations</th>
+          <th>Total Raised</th>
+          <th>Goal</th>
+        </tr>
+      </thead>
+      <tbody>
+       <tal:line tal:repeat="fundraiser fundraisers">
+        <tr>
+          <td>
+            <a tal:content="fundraiser/title" 
+               tal:attributes="href fundraiser/absolute_url;
+                               title fundraiser/description;">[title]</a></td>
+          <td tal:define="campaign fundraiser/get_fundraising_campaign">
+            <a tal:content="campaign/title"
+               tal:attributes="href campaign/absolute_url;
+                               title campaign/description;">[campaign]</a></td>
+          <td tal:content="fundraiser/donations_count">[count]</td>
+          <td tal:define="total fundraiser/donations_total">
+            $<span tal:replace="total">[total]</span></td>
+          <td tal:define="goal fundraiser/goal">
+            $<span tal:replace="goal">[goal]</span></td>
+        </tr>
+       </tal:line>
+      </tbody>
+    </table>
+    <p tal:condition="not:fundraisers">There are no fundraisers currently listed for you</p>
+   </tal:fundraisers>
+  </metal:content-core>
+</metal:main>
+</body>
+</html>

@@ -1,5 +1,5 @@
 from sets import Set
-from datetime import date
+# from datetime import date
 from five import grok
 from plone.directives import dexterity, form
 
@@ -8,26 +8,30 @@ from zope.interface import alsoProvides
 from zope.interface import Interface
 from zope.app.content.interfaces import IContentType
 
-from AccessControl import getSecurityManager
+# from AccessControl import getSecurityManager
 
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
 
-from plone.z3cform.interfaces import IWrappedForm
+# from plone.z3cform.interfaces import IWrappedForm
 from plone.app.textfield import RichText
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
+from plone.uuid.interfaces import IUUID
+from plone.uuid.interfaces import IUUIDAware
+from dexterity.membrane.membrane_helpers import get_membrane_user
 
-from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
+# from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import FundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import CampaignView
 from collective.salesforce.fundraising.fundraising_campaign import ShareView
 
 from collective.salesforce.fundraising.utils import get_settings
-
 from collective.salesforce.fundraising import MessageFactory as _
 
+
+_marker = object()
 
 # Interface class; used to define content-type schema.
 
@@ -122,7 +126,7 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
     def clear_donations_from_cache(self):
         """ Clears the donations cache.  This should be called anytime a new donation comes in 
             for the campaign so a fresh list is pulled after any changes """
-        if not hasAttr(self, '_memojito_'):
+        if not hasattr(self, '_memojito_'):
             return None
         key = ('get_donations', (self), frozenset([]))
         self._memojito_.clear()
@@ -145,11 +149,53 @@ class PersonalCampaignPageView(CampaignView):
         self.can_promote = pm.checkPermission('collective.salesforce.fundraising: Promote Personal Campaign', self.context)
 
 class PersonalCampaignPagesList(grok.View):
+    """This view is accessible from anywhere in the site, do not write 
+    template code for it that assumes a fundraiser as the context
+    """
     grok.context(Interface)
     grok.require('zope2.View')
 
     grok.name('my_fundraisers')
-    grok.template('compact_view')
+    grok.template('my_fundraisers')
+
+    _person = _marker
+    _fundraiser_type = 'collective.salesforce.fundraising.personalcampaignpage'
+    
+    def update(self):
+        self.fundraisers = self.my_fundraisers()
+    
+    def person(self):
+        """provide access to the logged-in user
+        """
+        if self._person is not _marker:
+            return self._person
+
+        mtool = getToolByName(self.context, 'portal_membership')
+        if mtool.isAnonymousUser():
+            self._person = None
+            return self._person
+        
+        member = mtool.getAuthenticatedMember()
+        person = get_membrane_user(self.context, member.id,
+                                   'collective.salesforce.fundraising.person',
+                                   get_object=True)
+        self._person = person
+        return self._person
+
+    def my_fundraisers(self):
+        me = self.person()
+        if not me:
+            return []
+        pc = getToolByName(self.context, 'portal_catalog')
+        idvals = me.id
+        my_uuid = None
+        if IUUIDAware.providedBy(me):
+            my_uuid = IUUID(me)
+        if my_uuid:
+            idvals = [idvals, my_uuid]
+        my_brains = pc(portal_type=self._fundraiser_type,
+                       Creator=idvals)
+        return [b.getObject() for b in my_brains]
 
 class MyDonorsView(grok.View):
     grok.context(IPersonalCampaignPage)
