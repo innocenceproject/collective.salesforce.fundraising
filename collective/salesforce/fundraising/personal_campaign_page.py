@@ -5,6 +5,7 @@ from plone.directives import dexterity, form
 
 from zope.component import getUtility
 from zope.interface import alsoProvides
+from zope.interface import Interface
 from zope.app.content.interfaces import IContentType
 
 from AccessControl import getSecurityManager
@@ -144,10 +145,10 @@ class PersonalCampaignPageView(CampaignView):
         self.can_promote = pm.checkPermission('collective.salesforce.fundraising: Promote Personal Campaign', self.context)
 
 class PersonalCampaignPagesList(grok.View):
-    grok.context(IFundraisingCampaignPage)
+    grok.context(Interface)
     grok.require('zope2.View')
 
-    grok.name('compact_view')
+    grok.name('my_fundraisers')
     grok.template('compact_view')
 
 class MyDonorsView(grok.View):
