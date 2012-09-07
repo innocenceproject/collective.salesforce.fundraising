@@ -1,4 +1,4 @@
-    <form method="post" action="https://secure.authorize.net/gateway/transact.dll"  class="donation-form donation-form-authnet-dpm donation-form-product" tal:attributes="id string:donation-form-product-${view/context/id}">
+    <form method="post" action="https://secure.authorize.net/gateway/transact.dll"  class="donation-form donation-form-authnet-dpm donation-form-product" tal:attributes="id view/form_id">
       <input type="hidden" name="x_recurring_billing" value="FALSE" />
       <input type="hidden" name="x_type" value="AUTH_CAPTURE" />
       <input type="hidden" name="x_description" value="Donation" />
@@ -13,7 +13,7 @@
       <input type="hidden" name="c_product_id" value="" tal:attributes="value view/context/sf_object_id" />
       <input type="hidden" name="c_source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
       <input type="hidden" name="c_source_url" value="" tal:attributes="value view/context/get_source_url" />
-      <input type="hidden" name="c_form_name" value="" tal:attributes="value view/context/id" />
+      <input type="hidden" name="c_form_name" value="" tal:attributes="value view/form_id" />
 
       <fieldset class="fieldset-donation-amount">
         <h3 class="product-name" tal:content="view/context/title" />
@@ -52,7 +52,7 @@
 
       </fieldset>
 
-      <div class="donation-form-error" tal:condition="view/reason_text">
+      <div class="donation-form-error" tal:condition="python: view.reason_text and view.form_id == view.request.form.get('error', None)">
         <h5>Processing Error</h5>
         <p>There was an issue processing your gift.  The error message from the payment processor was:</p>
         <em><span tal:replace="view/response_text" />: (<span tal:replace="view/reason_code" />) <span tal:replace="view/reason_text/text" /></em>
@@ -170,7 +170,7 @@
             </div>
             <div class="subfield subfield-state">
               <input type="text" placeholder="State" />
-              <select name="honorary_state">
+              <select name="x_state">
                 <option value="">---</option>
                 <option tal:repeat="state view/states" 
                    tal:attributes="value python: state[0]; selected python: view.request.form.get('x_state', None) == state[0]" 

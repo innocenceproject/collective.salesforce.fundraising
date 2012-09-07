@@ -330,6 +330,9 @@ class FundraisingCampaignPage(object):
             prod = brains[0].getObject()
             lines.append({'product': prod.title,
                           'price': prod.price,
+                          'date': prod.date,
+                          'location': prod.location,
+                          'notes': prod.notes,
                           'quantity': qty})
         return lines
 

@@ -12,7 +12,7 @@
       <input type="hidden" name="c_campaign_id" value="" tal:attributes="value view/context/sf_object_id" />
       <input type="hidden" name="c_source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
       <input type="hidden" name="c_source_url" value="" tal:attributes="value view/context/get_source_url" />
-      <input type="hidden" name="c_form_name" value="donation_form_authnet_dpm" />
+      <input type="hidden" name="c_form_name" value="" tal:attributes="value view/form_id" />
 
       <fieldset class="fieldset-donation-amount">
         <legend>Select an Amount</legend>
@@ -41,7 +41,7 @@
 
       </fieldset>
 
-      <div class="donation-form-error" tal:condition="view/reason_text">
+      <div class="donation-form-error" tal:condition="python: view.reason_text and view.request.form.get('error', None) == view.form_id">
         <h5>Processing Error</h5>
         <p>There was an issue processing your gift.  The error message from the payment processor was:</p>
         <em><span tal:replace="view/response_text" />: (<span tal:replace="view/reason_code" />) <span tal:replace="view/reason_text/text" /></em>
@@ -159,7 +159,7 @@
             </div>
             <div class="subfield subfield-state">
               <input type="text" placeholder="State" />
-              <select name="honorary_state">
+              <select name="x_state">
                 <option value="">---</option>
                 <option tal:repeat="state view/states" 
                    tal:attributes="value python: state[0]; selected python: view.request.form.get('x_state', None) == state[0]" 

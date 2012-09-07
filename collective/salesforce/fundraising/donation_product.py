@@ -89,6 +89,10 @@ class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
     grok.name('donation_form_authnet_dpm')
     grok.template('donation_form_authnet_dpm')
 
+    @property
+    def form_id(self):
+        return "product_%s_donation_form_authnet_dpm" % self.context.id
+
     def update(self):
         super(DonationFormAuthnetDPM, self).update()
         self.quantity = self.request.form.get('c_quantity', None)

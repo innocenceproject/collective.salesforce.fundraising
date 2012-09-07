@@ -28,6 +28,18 @@
                 <td>$<span tal:replace="python: line['price'] * line['quantity']">[Product Total]</span></td>
               </tr>
             </table>
+
+            <span tal:condition="nothing">NOTE: This next section assumes there is only one product in the purchase and would need to be changed to handle multiple product purchases</span>
+            <div class="product-info" tal:define="item python: line_items[0]" tal:condition="python: item['location'] or item['date'] or item['notes']">
+              <div tal:condition="item/location"><b>Location</b></div>
+              <div tal:condition="item/location" tal:content="item/location"></div>
+              <br />
+              <div tal:condition="item/date"><b>Date</b></div>
+              <div tal:condition="item/date" tal:content="item/date"></div>
+              <br />
+              <div tal:condition="item/notes"><b>Notes</b></div>
+              <div tal:condition="item/notes" tal:content="item/notes"></div>
+            </div>
             </tal:if_products>
           </div>
           <br />

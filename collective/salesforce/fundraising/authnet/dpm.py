@@ -43,6 +43,8 @@ class DonationFormAuthnetDPM(grok.View):
     grok.name('donation_form_authnet_dpm')
     grok.template('donation_form_authnet_dpm')
 
+    form_id = 'donation_form_authnet_dpm'
+
     def update(self):
         self.settings = get_settings()
         self.update_levels()
@@ -166,7 +168,7 @@ class AuthnetCallbackDPM(grok.View):
         response_code = int(self.request.form.get('x_response_code'))
         reason_code = int(self.request.form.get('x_response_reason_code'))
         campaign_id = self.request.form.get('c_campaign_id')
-        form_name = self.request.form.get('c_form_name', 'donation_form_authnet_dpm')
+        form_name = self.request.form.get('c_form_name')
 
         pc = getToolByName(self.context, 'portal_catalog')
         res = pc.searchResults(sf_object_id = campaign_id)
@@ -193,7 +195,7 @@ class AuthnetCallbackDPM(grok.View):
             IStatusMessage(self.request).add(u'There was an error processing your donation.  The error message was (%s).  Please try again or contact us if you continue to have issues' % self.request.get('x_response_reason_text'))
 
             redirect_data = {
-                'error': 'donation_form_authnet_dpm',
+                'error': form_name,
                 'response_code': response_code,
                 'reason_code': reason_code,
             }
