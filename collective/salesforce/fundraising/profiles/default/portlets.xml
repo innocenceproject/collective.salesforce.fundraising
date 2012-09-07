@@ -147,4 +147,22 @@
      <property name="title">Quotes</property>
    </assignment> 
 
+   <assignment
+     manager="collective.pluggablelogin"
+     category="context"
+     key="/"
+     type="portlets.Login"
+     name="login"
+     remove=""
+     />
+
+   <assignment
+     manager="collective.pluggablelogin"
+     category="context"
+     key="/"
+     type="portlets.Register"
+     name="register"
+     remove=""
+     />
+
 </portlets>
