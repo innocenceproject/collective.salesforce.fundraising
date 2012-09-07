@@ -63,6 +63,14 @@ class Renderer(base.Renderer):
         mt = getToolByName(self.context, 'portal_membership')
         return mt.isAnonymousUser()
 
+    @property
+    def available(self):
+        """Do not show if we are on the same page or in the create form"""
+        existing_url = self.context.get_personal_fundraising_campaign_url()
+        same = existing_url == self.context.absolute_url()
+        creating = 'create-personal-campaign-page' in self.request.URL
+        return not same and not creating
+
 # NOTE: If this portlet does not have any configurable parameters, you can
 # inherit from NullAddForm and remove the form_fields variable.
 
