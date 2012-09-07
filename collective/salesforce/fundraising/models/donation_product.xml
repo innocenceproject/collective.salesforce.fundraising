@@ -26,7 +26,7 @@
             <description>If provided, shown as a separate attribute on receipt</description>
             <required>False</required>
         </field>
-        <field name="Notes" type="zope.schema.Text">
+        <field name="notes" type="zope.schema.Text">
             <title>Notes</title>
             <description>If provided, shown as a separate attribute on receipt</description>
             <required>False</required>
