@@ -1,5 +1,7 @@
 import copy
-from zope import schema
+
+from zope.component import getMultiAdapter
+
 from five import grok
 from plone.directives import form
 from z3c.form import button, field
@@ -7,8 +9,6 @@ from plone.directives import dexterity
 from plone.dexterity.utils import createContentInContainer
 from Products.statusmessages.interfaces import IStatusMessage
 from Products.CMFCore.utils import getToolByName
-from plone.namedfile.field import NamedBlobImage
-from plone.app.textfield import RichText
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.fundraising_campaign import IHideDonationForm
@@ -17,6 +17,7 @@ from collective.salesforce.fundraising.donor_quote import IDonorQuote
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
+from collective.salesforce.fundraising.utils import send_confirmation_email
 
 
 class CreatePersonalCampaignPageForm(form.Form):
@@ -91,6 +92,17 @@ class CreatePersonalCampaignPageForm(form.Form):
         campaign.parent_sf_id = parent_campaign.sf_object_id
         campaign.sf_object_id = res[0]['id']
         campaign.reindexObject(idxs=['sf_object_id'])
+
+        # Send email confirmation and links.
+        data['parent'] = parent_campaign
+        data['campaign'] = campaign
+        data['FirstName'] = member.getProperty('fullname', 'friend')
+        email_view = getMultiAdapter((campaign, self.request), name='page-confirmation-email')
+        email_view.set_page_values(data)
+        email_body = email_view()
+        email_to = member.getProperty('email')
+        subject = 'New Personal Campaign Page Created'
+        send_confirmation_email(campaign, subject, email_to, email_body)
 
         # Send the user to their new campaign.
         IStatusMessage(self.request).add(u'Welcome to your personal campaign page!')

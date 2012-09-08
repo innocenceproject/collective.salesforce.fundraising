@@ -1,4 +1,10 @@
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 from zope.component import getUtility
+from Products.CMFCore.utils import getToolByName
+
 from plone.registry.interfaces import IRegistry
 from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
 
@@ -39,3 +45,38 @@ def compare_sf_ids(id1, id2):
 
     shrt, lng = sorted([id1, id2], key=lambda x: len(x))
     return shrt == lng[:len(shrt)]
+
+
+def send_confirmation_email(context, subject, mail_to, email_body):
+        # Construct the email bodies
+        pt = getToolByName(context, 'portal_transforms')
+        txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
+
+        # Determine to and from addresses
+        portal_url = getToolByName(context, 'portal_url')
+        portal = portal_url.getPortalObject()
+        mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
+
+        # Construct the email message                
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = mail_from
+        msg['To'] = mail_to
+        part1 = MIMEText(txt_body, 'plain')
+        part2 = MIMEText(email_body, 'html')
+
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Attempt to send it
+        try:
+            host = getToolByName(context, 'MailHost')
+            # The `immediate` parameter causes an email to be sent immediately
+            # (if any error is raised) rather than sent at the transaction
+            # boundary or queued for later delivery.
+            host.send(msg, immediate=True)
+
+        except smtplib.SMTPRecipientsRefused:
+            # fail silently so errors here don't freak out the donor about their transaction which was successful
+            pass
+

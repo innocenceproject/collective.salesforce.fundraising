@@ -263,3 +263,11 @@ class PromoteCampaignView(ShareView):
     grok.name('promote')
     grok.template('promote')
 
+class PageConfirmationEmailView(grok.View):
+    grok.context(IPersonalCampaignPage)
+
+    grok.name('page-confirmation-email')
+    grok.template('page_confirmation_email')
+
+    def set_page_values(self, data):
+        self.data = data
