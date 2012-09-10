@@ -25,7 +25,7 @@ from collective.salesforce.fundraising.utils import send_confirmation_email
 
 class CreatePersonalCampaignPageForm(form.Form):
     grok.name('create-personal-campaign-page')
-    #grok.require('collective.salesforce.fundraising.AddPersonalCampaign')
+    grok.require('collective.salesforce.fundraising.AddPersonalCampaign')
     grok.context(IFundraisingCampaign)
     grok.implements(IHideDonationForm)
 
