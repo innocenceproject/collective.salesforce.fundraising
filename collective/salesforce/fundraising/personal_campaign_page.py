@@ -12,6 +12,7 @@ from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
 
 from plone.app.textfield import RichText
+from plone.app.layout.viewlets.interfaces import IAboveContent
 from plone import namedfile
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
@@ -168,8 +169,14 @@ class PersonalCampaignPageView(CampaignView):
     grok.name('view')
     grok.template('view')
 
+class PersonalCampaignPageToolbarViewlet(grok.Viewlet):
+    grok.name('collective.salesforce.fundraising.PersonalCampaignPageToolbar')
+    grok.require('zope2.View')
+    grok.context(IPersonalCampaignPage)
+    grok.template('personal-campaign-toolbar')
+    grok.viewletmanager(IAboveContent)
+
     def update(self):
-        super(PersonalCampaignPageView, self).update()
         # FIXME - I tried for hours to get checkPermission from the security manager to work to no avail... falling back to old school method
         pm = getToolByName(self.context, 'portal_membership')
         self.can_edit = pm.checkPermission('collective.salesforce.fundraising: Edit Personal Campaign', self.context)
