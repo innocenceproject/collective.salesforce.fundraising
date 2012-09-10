@@ -1,5 +1,5 @@
 from sets import Set
-# from datetime import date
+from zope import schema
 from five import grok
 from plone.directives import dexterity, form
 
@@ -8,20 +8,17 @@ from zope.interface import alsoProvides
 from zope.interface import Interface
 from zope.app.content.interfaces import IContentType
 
-# from AccessControl import getSecurityManager
-
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
 
-# from plone.z3cform.interfaces import IWrappedForm
 from plone.app.textfield import RichText
+from plone import namedfile
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
 from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IUUIDAware
 from dexterity.membrane.membrane_helpers import get_membrane_user
 
-# from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import FundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import CampaignView
@@ -53,6 +50,37 @@ class IPersonalCampaignPage(form.Schema, IImageScaleTraversable):
 
 
 alsoProvides(IPersonalCampaignPage, IContentType)
+
+class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
+    """
+    Limited editing interface for a Personal Campaign Page
+    """
+
+    title = schema.TextLine(
+        title=_(u"Title"),
+        description=_(u"Provide a brief title for your campaign"),
+    )
+    description = schema.TextLine(
+        title=_(u"Description"),
+        description=_(u"Provide a 1-3 sentence pitch for your campaign"),
+    )
+    image = namedfile.field.NamedBlobImage(
+        title=_(u"Image"),
+        description=_(u"Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks."),
+    )
+    goal = schema.Int(
+        title=_(u"Goal"),
+        description=_(u"Set the dollar amount goal you aim to raise in your campaign"),
+    )
+    personal_appeal = RichText(
+        title=u"Personal Appeal",
+        description=u"Your donors will want to know why to donate to your campaign.  You can use the default text or personalize your appeal.  Remember, your page will mostly be visited by people who know you so a personalized message is often more effective",
+    )    
+
+    thank_you_message = RichText(
+        title=u"Thank You Message",
+        description=u"This message will be shown to your donors after they donate.  You can use the default text or personalize your thank you message",
+    )    
 
 @form.default_value(field=IPersonalCampaignPage['personal_appeal'])
 def personalAppealDefaultValue(data):
@@ -86,7 +114,7 @@ where
 
 
 class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
-    grok.implements(IPersonalCampaignPage, IFundraisingCampaignPage)
+    grok.implements(IEditPersonalCampaignPage, IPersonalCampaignPage, IFundraisingCampaignPage)
 
     @property
     def donation_form_tabs(self):

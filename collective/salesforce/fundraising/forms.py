@@ -1,6 +1,8 @@
 import copy
 
+from zope import schema
 from zope.component import getMultiAdapter
+from zope.interface import Interface
 
 from five import grok
 from plone.directives import form
@@ -13,6 +15,7 @@ from Products.CMFCore.utils import getToolByName
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.fundraising_campaign import IHideDonationForm
 from collective.salesforce.fundraising.personal_campaign_page import IPersonalCampaignPage
+from collective.salesforce.fundraising.personal_campaign_page import IEditPersonalCampaignPage
 from collective.salesforce.fundraising.donor_quote import IDonorQuote
 
 from collective.salesforce.fundraising import MessageFactory as _
@@ -119,6 +122,7 @@ class EditPersonalCampaign(dexterity.EditForm):
 
     label = _(u"Edit My Fundraising Page")
     description = _(u"Use the form below to edit your fundraising page to create the most effective appeal to your friends and family.")
+    schema = IEditPersonalCampaignPage
 
 #    @button.buttonAndHandler(_(u"Save Changes"))
 #    def handleSaveChanges(self, action):
