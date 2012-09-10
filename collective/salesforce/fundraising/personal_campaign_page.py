@@ -85,11 +85,11 @@ class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
 
 @form.default_value(field=IPersonalCampaignPage['personal_appeal'])
 def personalAppealDefaultValue(data):
-    return get_settings().default_personal_appeal
+    return data.context.get_fundraising_campaign().default_personal_appeal.output
         
 @form.default_value(field=IPersonalCampaignPage['thank_you_message'])
 def thankYouDefaultValue(data):
-    return get_settings().default_personal_thank_you_message
+    return data.context.get_fundraising_campaign().default_personal_thank_you.output
         
 
 
