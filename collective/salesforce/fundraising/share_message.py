@@ -78,13 +78,17 @@ class JanrainView(grok.View):
         self.link_id = 'share-message-' + self.context.id
         url = self.context.aq_parent.absolute_url() + '?source_campaign=' + self.context.sf_object_id
         url = url.replace("'","\\'")
+        self.show_email_share = get_settings().enable_share_via_email
+        comment = self.context.comment
+        if comment:
+            comment = comment.replace("'","\\'")
         self.message_js = SHARE_JS_TEMPLATE % {
             'link_id': self.link_id,
             'url': url,
             'title': self.context.title.replace("'","\\'"),
             'description': self.context.description.replace("'","\\'"),
             'image': self.context.absolute_url() + '/@@images/image',
-            'message': self.context.comment.replace("'","\\'"),
+            'message': comment,
         }
 
 

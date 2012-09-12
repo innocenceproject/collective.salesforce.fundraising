@@ -93,6 +93,13 @@ class IFundraisingSettings(Interface):
         required=False,
     )
 
+    enable_share_via_email = schema.Bool(
+        title=_(u"Enable Share via Email?"),
+        description=_(u"If enabled, share messages will have a button to share via email which will send an email using Plone's built in mail configuration."),
+        required=False,
+        default=True,
+    )
+
     available_form_views = schema.List(
         title=_(u"Available form views"),
         description=_(u"This is a list of views available on fundraising campaigns which will render the donation form for the campaign.  This list is used as the vocabulary when building new forms"),
