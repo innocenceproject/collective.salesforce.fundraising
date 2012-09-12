@@ -38,8 +38,8 @@
         <form action="" method="post" tal:attributes="action string:/@@email-login-redirect">
           <label>Email Address</label>
           <input type="hidden" name="came_from" value="" tal:attributes="value view/request/form/came_from|nothing" />
-          <input type="email" name="email" value="" />
-          <input type="submit" value="Continue" />
+          <input id="field-login-email" type="email" name="email" value="" />
+          <input id="button-login-email-submit" type="submit" value="Continue" />
         </form>
       </div>
     </div>
