@@ -54,9 +54,11 @@ jQuery(function($) {
           <tal:message content="structure message/@@view" />
         </tal:message_loop>
 
+
       </form>
 
     </div>
+    <div class="visualClear"></div>
 
   </metal:content_core>
 </metal:main>

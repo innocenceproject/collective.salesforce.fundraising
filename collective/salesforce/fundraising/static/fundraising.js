@@ -1,3 +1,12 @@
+var $_GET = {};
+
+document.location.search.replace(/\??(?:([^=]+)=([^&]*)&?)/g, function () {
+    function decode(s) {
+        return decodeURIComponent(s.split("+").join(" "));
+    }
+
+    $_GET[decode(arguments[1])] = decode(arguments[2]);
+});
 
 function form_input_is_int(input){
   return !isNaN(input)&&parseInt(input)==input;
@@ -557,6 +566,22 @@ $(document).ready(function () {
     $('.donation-form-error').each(function () {
         var tab_index = $(this).parents('.panel').prevAll().length; 
         $(this).parents('.donation-form-wrapper').find('.tabs').data('tabs').click(tab_index); 
+    });
+
+    // Handle tab=X on pluggable login form
+    $('.login-portlet-wrapper').each(function () {
+        var tab_index = $_GET['tab'];
+        if (tab_index != null) {
+            $(this).find('.formTabs').data('tabs').click(parseInt(tab_index));
+        }    
+    });
+
+    // Inject email=X value from url into __ac_name on login form
+    $('input#__ac_name').each(function () {
+        var email = $_GET['email'];
+        if (email != null) {
+            $(this).val(email);
+        }
     });
     
 });})(jQuery);

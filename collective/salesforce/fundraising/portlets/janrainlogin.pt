@@ -32,96 +32,17 @@
 
     <div class="divider divider-or">or</div>
 
-
     <div id="form-login">
-        <tal:block condition="view/show" i18n:domain="plone"
-           define="ac_name view/login_name; ac_password view/login_password">
-
-        <form action="login_form"
-              id="loginform"
-              method="post"
-              tal:attributes="action view/login_form">
-
-            <div>
-                <input type="hidden" name="form.submitted" value="1" />
-                <input type="hidden" name="came_from" value=""
-                       tal:attributes="value context/@@plone_context_state/current_page_url" />
-                <input type="hidden" name="js_enabled" id="js_enabled" value="0" />
-                <input type="hidden" name="cookies_enabled" id="cookies_enabled" value="" />
-                <input type="hidden" name="login_name" id="login_name" value="" />
-                <input type="hidden" name="pwd_empty" id="pwd_empty" value="0" />
-            </div>
-
-            <div class="field"
-                 tal:define="use_email_as_login context/portal_properties/site_properties/use_email_as_login|nothing;">
-
-              <tal:loginname condition="not:use_email_as_login">
-                <label for=""
-                       tal:attributes="for ac_name"
-                       i18n:translate="label_login_name">Login Name</label>
-                <br />
-                <input type="text"
-                       size="10"
-                       alt="Login Name"
-                       tal:attributes="name ac_name; id ac_name;
-                                       value python:request.get(ac_name, '');"
-                       i18n:attributes="alt label_login_name;"/>
-              </tal:loginname>
-              <tal:email condition="use_email_as_login">
-                <label for=""
-                       tal:attributes="for ac_name"
-                       i18n:translate="label_email">E-mail</label>
-                <br />
-                <input type="text"
-                       size="10"
-                       alt="E-mail"
-                       tal:attributes="name ac_name; id ac_name;
-                                       value python:request.get(ac_name, '');"
-                       i18n:attributes="alt label_email;"/>
-              </tal:email>
-            </div>
-
-            <div class="field">
-                <label for=""
-                       tal:attributes="for ac_password"
-                       i18n:translate="label_password">Password</label>
-                <br />
-                <input type="password"
-                       size="10"
-                       alt="Password"
-                       tal:attributes="name ac_password; id ac_password;"
-                       i18n:attributes="alt label_password;"/>
-            </div>
-
-            <div i18n:translate="enable_cookies_message_before_login"
-                 class="cookiesMessage portalMessage"
-                 style="display:none">
-                Cookies are not enabled. You must enable cookies before you
-                can log in.
-            </div>
-
-            <div class="formControls">
-
-                <input class="context"
-                       type="submit"
-                       name="submit"
-                       value="Log in"
-                       alt="Log in"
-                       i18n:attributes="value label_log_in; alt label_log_in;"/>
-            </div>
+      <h3>Login Using Your Email Address</h3>
+      <div id="form-login-email-only">
+        <form action="" method="post" tal:attributes="action string:/@@email-login-redirect">
+          <label>Email Address</label>
+          <input type="hidden" name="came_from" value="" tal:attributes="value view/request/form/came_from|nothing" />
+          <input type="email" name="email" value="" />
+          <input type="submit" value="Continue" />
         </form>
-
-        <a href="register" class="tile" tal:attributes="href view/register_link">
-           <tal:block replace="structure context/info_icon.gif"/>
-           <span tal:omit-tag="">Don't have an account? Click here to create one.</span>
-        </a>
-        <a href="mail_password_form" class="tile" tal:attributes="href view/mail_password_form">
-           <tal:block replace="structure context/info_icon.gif"/>
-           <span tal:omit-tag="" i18n:translate="box_forgot_password_option">Forgot your password?</span>
-        </a>
-    </tal:block>
+      </div>
     </div>
-
 
     <div class="visualClear"></div>
   </dd>

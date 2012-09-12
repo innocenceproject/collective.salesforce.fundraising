@@ -1,18 +1,24 @@
+from urllib import quote
 from five import grok
 from zope import schema
 from zope.interface import alsoProvides
+from zope.interface import invariant
+from zope.interface import Invalid
 from zope.component import getUtility
+from AccessControl.SecurityManagement import newSecurityManager
 from zope.app.content.interfaces import IContentType
 from Products.CMFCore.utils import getToolByName
 from plone.directives import dexterity, form
-from dexterity.membrane.content.member import IMember
+from dexterity.membrane.content.member import IMember, IEmail
+from dexterity.membrane.membrane_helpers import get_brains_for_email
 from zope.app.container.interfaces import IObjectAddedEvent
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
-from collective.salesforce.content.interfaces import IModifiedViaSalesforceSync
-
 from plone.namedfile.interfaces import IImageScaleTraversable
+from Products.CMFCore.interfaces import ISiteRoot
 
-# Interface class; used to define content-type schema.
+from collective.salesforce.content.interfaces import IModifiedViaSalesforceSync
+from collective.salesforce.fundraising import MessageFactory as _
+
 
 class IPerson(form.Schema, IImageScaleTraversable, IMember):
     """
@@ -23,8 +29,45 @@ class IPerson(form.Schema, IImageScaleTraversable, IMember):
 
 alsoProvides(IPerson, IContentType)
 
+class IAddPerson(form.Schema, IEmail):
+    """
+    Add Interface for a Person with limited fields
+    NOTE: This seems to be the only way to get a custom edit form with limited
+    fields since we're using the model xml for most fields
+    """
+    
+    first_name = schema.TextLine(
+        title=_(u"First Name"),
+    )
+    last_name = schema.TextLine(
+        title=_(u"Last Name"),
+    )
+    email_opt_in = schema.Bool(
+        title=_(u"Join our Email List?"),
+        description=_(u"Check this box to receive occassional updates via email"),
+        required=False,
+        default=True,
+    )
+    password = schema.Password(
+        title=_(u"Password"),
+    )
+    password_confirm = schema.Password(
+        title=_(u"Confirm Password"),
+    )
+    came_from = schema.TextLine(
+        title=_(u"Redirect after create"),
+        required=False,
+    )
+
+    form.mode(came_from='hidden')
+
+    @invariant
+    def passwordsInvariant(data):
+        if data.password != data.password_confirm:
+            raise Invalid(_(u"Your passwords do not match, please enter the same password in both fields"))
+
 class Person(dexterity.Item):
-    grok.implements(IPerson)
+    grok.implements(IAddPerson, IPerson)
 
     def upsertToSalesforce(self):
         sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
@@ -107,3 +150,53 @@ def upsertModifiedSalesforceContact(person, event):
     # upsert Contact in Salesforce
     person.upsertToSalesforce()
 
+
+class EmailLoginRouter(grok.View):
+    grok.name('email-login-redirect')
+    grok.context(ISiteRoot)
+
+    def render(self):
+        came_from = self.request.form.get('came_from',None)
+        came_from_arg = ''
+        if came_from:
+            came_from_arg = '&came_from=%s' % quote(came_from)
+        email = self.request.form.get('email',None)
+        if not email:
+            return self.request.response.redirect(self.context.absolute_url() + '/login' + came_from_arg)
+   
+        category = self.get_user_category(email)
+        if category == None:
+            return self.request.response.redirect(self.context.absolute_url() + '/create-user-account?email=' + quote(email) + came_from_arg)
+        if category == 'registered':
+            # redirect to login
+            # FIXME: This code assumes the login portlet is the second tab on the pluggable login page.  I'm sure there's a better way to do this.
+            return self.request.response.redirect(self.context.absolute_url() + '/login?tab=1&email=' + quote(email) + came_from_arg)
+        if category == 'social' or category == 'donor_only':
+            return self.request.response.redirect(self.context.absolute_url() + '/set-password-form?email=' + quote(email) + came_from_arg)
+        
+    def get_user_category(self, email):
+        """ Returns either registered, social, donor_only, or None """
+        res = get_brains_for_email(self.context, email)
+        if not res:
+            return None
+
+        mtool = getToolByName(self.context, 'portal_membership')
+        acl = getToolByName(self.context, 'acl_users')
+        newSecurityManager(None, acl.getUser(email))
+        mtool.loginUser()
+
+        category = 'donor_only'
+
+        person = res[0].getObject()
+
+        if person.social_signin:
+            category = 'social'
+
+        if person.registered:
+            category = 'registered'
+
+        mtool.logoutUser()
+
+        return category
+
+    

@@ -80,14 +80,14 @@
     <permission-role>Site Administrator</permission-role>
    </permission-map>
    <permission-map name="collective.salesforce.fundraising: Add personal campaign" acquired="False">
-    <permission-role>Member</permission-role>
+    <permission-role>Authenticated</permission-role>
     <permission-role>Owner</permission-role>
     <permission-role>Reviewer</permission-role>
     <permission-role>Manager</permission-role>
     <permission-role>Site Administrator</permission-role>
    </permission-map>
    <permission-map name="collective.salesforce.fundraising: Add donor quote" acquired="False">
-    <permission-role>Member</permission-role>
+    <permission-role>Authenticated</permission-role>
     <permission-role>Owner</permission-role>
     <permission-role>Reviewer</permission-role>
     <permission-role>Manager</permission-role>
@@ -95,7 +95,7 @@
    </permission-map>
    <permission-map name="collective.salesforce.fundraising: Donate" acquired="False">
     <permission-role>Anonymous</permission-role>
-    <permission-role>Member</permission-role>
+    <permission-role>Authenticated</permission-role>
     <permission-role>Manager</permission-role>
     <permission-role>Site Administrator</permission-role>
    </permission-map>
@@ -195,14 +195,14 @@
     <permission-role>Site Administrator</permission-role>
    </permission-map>
    <permission-map name="collective.salesforce.fundraising: Add personal campaign" acquired="False">
-    <permission-role>Member</permission-role>
+    <permission-role>Authenticated</permission-role>
     <permission-role>Owner</permission-role>
     <permission-role>Reviewer</permission-role>
     <permission-role>Manager</permission-role>
     <permission-role>Site Administrator</permission-role>
    </permission-map>
    <permission-map name="collective.salesforce.fundraising: Add donor quote" acquired="False">
-    <permission-role>Member</permission-role>
+    <permission-role>Authenticated</permission-role>
     <permission-role>Owner</permission-role>
     <permission-role>Reviewer</permission-role>
     <permission-role>Manager</permission-role>

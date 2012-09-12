@@ -12,8 +12,8 @@
     <dt class="portletHeader">
       <span class="portletTopLeft"></span>
       <span>
-        <a href="#" tal:attributes="href view_all" tal:content="view/data/title">
-          Get Involved
+        <a href="#" tal:attributes="href view_all">
+          Become a Fundraiser
         </a>
       </span>
       <span class="portletTopRight"></span>
@@ -32,7 +32,7 @@
       <a class="button button-create-personal-campaign" href="#"
            tal:condition="python: view.context.allow_personal and not existing_campaign"
            tal:attributes="href create_link"
-           tal:content="create_text">Become a Fundraiser</a>
+           tal:content="create_text">Create My Page</a>
 
       <a class="button button-view-personal-campaign" href="#"
            tal:condition="python: view.context.allow_personal and existing_campaign"

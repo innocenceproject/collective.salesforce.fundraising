@@ -211,6 +211,7 @@ class RpxPostLogin(grok.View):
                 'zip': address.get('postalCode', None),
                 'country': address.get('country', None),
                 'gender': profile.get('gender', None),
+                'social_signin': True,
             }
 
             # Create the user
@@ -237,6 +238,9 @@ class RpxPostLogin(grok.View):
             mtool.loginUser()
 
             person = res[0].getObject()
+
+            if person.social_signin == False:
+                person.social_signin = True
             
         # Set the photo
         photo = profile.get('photo', None)

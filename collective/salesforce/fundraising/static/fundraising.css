@@ -189,3 +189,8 @@ a.button-create-personal-campaign:hover {
   display: block;
   text-align: right;
 }
+
+#content .login-portlet-wrapper .formTabs {
+  display: none;
+  
+}

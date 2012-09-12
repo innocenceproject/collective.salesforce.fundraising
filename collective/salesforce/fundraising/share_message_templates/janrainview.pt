@@ -10,7 +10,7 @@
             <script type="text/javascript" tal:content="view/message_js">
                 // share js goes here
             </script>
-            <a class="button button-share email-campaign" tal:attributes="href string:${context/absolute_url}/email">Email this message</a>
+            <a tal:condition="view/show_email_share" class="button button-share email-campaign" tal:attributes="href string:${context/absolute_url}/email">Email this message</a>
         </div>
         <div class="visualClear"></div>
     </div>

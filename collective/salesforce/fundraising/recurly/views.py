@@ -156,7 +156,7 @@ class PostRecurlySubscription(grok.View):
             person = res[0].getObject()
             old_data = [person.address, person.city, person.state, person.zip, person.country, person.phone]
             new_data = [street_address, billing_info.city, billing_info.state, billing_info.zip, billing_info.country, billing_info.phone]
-
+    
             if new_data != old_data:
                 
                 person.address = street_address

@@ -56,6 +56,19 @@
             <title>Gender</title>
             <required>False</required>
         </field>
+
+        <field name="registered" type="zope.schema.Bool">
+            <title>Registered?</title>
+            <description>If checked, this user has created a site login account</description>
+            <required>False</required>
+        </field>
+
+        <field name="social_signin" type="zope.schema.Bool">
+            <title>Social Sign In?</title>
+            <description>If checked, this user has used social sign in</description>
+            <required>False</required>
+        </field>
+
     </schema>
     
 </model>
