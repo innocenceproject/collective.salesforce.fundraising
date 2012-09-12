@@ -33,8 +33,6 @@ jQuery(function($) {
 <metal:main fill-slot="content-core">
   <metal:content_core define-macro="content-core">
 
-    <a id="link-personal-campaign-home" href="" tal:attributes="href view/context/absolute_url">Back to My Fundraising Page</a>
-
     <div id="content">
 
       <div class="instructions">

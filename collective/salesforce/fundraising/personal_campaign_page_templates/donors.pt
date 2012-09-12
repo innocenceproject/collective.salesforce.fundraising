@@ -17,8 +17,6 @@
 
   <div class="my-donors-wrapper">
 
-    <a id="link-personal-campaign-home" href="" tal:attributes="href view/context/absolute_url">Back to My Fundraising Page</a>
-
     <div class="instructions">
       <p>An essential part of fundraising is making sure to thank your donors.
          The list below shows who has donated to your campaign and how much 

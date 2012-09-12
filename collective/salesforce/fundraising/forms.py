@@ -360,7 +360,12 @@ class AddPersonForm(form.SchemaForm):
    
         # Create the login user
         reg = getToolByName(self.context, 'portal_registration')
-        reg.addMember(data['email'], data['password']) 
+        props = {
+            'fullname': u'%s %s' % (data['first_name'], data['last_name']),
+            'username': data['email'],
+            'email': data['email'],
+        }
+        reg.addMember(data['email'], data['password'], properties=props) 
 
         # Create the user object
         people_container = getattr(getSite(), 'people')
