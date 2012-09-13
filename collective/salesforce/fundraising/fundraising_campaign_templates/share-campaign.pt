@@ -34,7 +34,7 @@ jQuery(function($) {
             tal:attributes="action string:${context/absolute_url}/share-campaign" method="POST">
 
         <tal:message_loop repeat="message view/messages">
-          <tal:message content="structure message/@@view" />
+          <tal:message content="structure message" />
         </tal:message_loop>
 
       </form>

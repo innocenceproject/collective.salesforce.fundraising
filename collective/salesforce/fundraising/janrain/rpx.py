@@ -29,10 +29,12 @@ js_template = """<script type="text/javascript">
 
     function isReady() {
         janrain.ready = true;
-        
-        janrain.events.onAuthWidgetLoad.addHandler(function () {
-            janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
-        });
+
+        if (janrain.events != null) {        
+            janrain.events.onAuthWidgetLoad.addHandler(function () {
+                janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
+            });
+        }
     };
     if (document.addEventListener) {
       document.addEventListener("DOMContentLoaded", isReady, false);
@@ -89,19 +91,21 @@ window.onload = function() {
 """
 
 SHARE_JS_TEMPLATE = """
-  $(document).ready(function () {
-    $('#%(link_id)s').click(function () {
-      janrain.engage.share.reset();
-      janrain.engage.share.setUrl('%(url)s');
-      janrain.engage.share.setTitle('%(title)s');
-      janrain.engage.share.setDescription('%(description)s');
-      janrain.engage.share.setImage('%(image)s');
-      janrain.engage.share.setMessage('%(message)s');
-      janrain.engage.share.setActionLink({'name': 'Donate', 'link':'%(url)s'});
-      janrain.engage.share.show();
-      return false;
+  (function ($) {
+    $(document).ready(function () {
+      $('#%(link_id)s').click(function () {
+        janrain.engage.share.reset();
+        janrain.engage.share.setUrl('%(url)s');
+        janrain.engage.share.setTitle('%(title)s');
+        janrain.engage.share.setDescription('%(description)s');
+        janrain.engage.share.setImage('%(image)s');
+        janrain.engage.share.setMessage('%(message)s');
+        janrain.engage.share.setActionLink({'name': 'Donate', 'link':'%(url)s'});
+        janrain.engage.share.show();
+        return false;
+      });
     });
-  });
+  })(jQuery);
 """
 
 def GenPasswd():

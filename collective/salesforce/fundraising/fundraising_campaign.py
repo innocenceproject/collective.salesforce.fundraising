@@ -104,9 +104,6 @@ alsoProvides(IFundraisingCampaign, IContentType)
 class IFundraisingCampaignPage(Interface):
     """ Marker interface for campaigns that act like a fundraising campaign """
 
-class IHideDonationForm(Interface):
-    """ Marker interface for views where the donation form viewlet should not be shown """
-
 @form.default_value(field=IFundraisingCampaign['thank_you_message'])
 def thankYouDefaultValue(data):
     return get_settings().default_thank_you_message
@@ -699,7 +696,6 @@ class HonoraryMemorialView(grok.View):
 class ShareView(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
-    grok.implements(IHideDonationForm)
     
     grok.name('share-campaign')
     grok.template('share-campaign')
@@ -727,7 +723,11 @@ class ShareView(grok.View):
         if len(res) > 3:
             res = random.sample(res, 3)
 
-        self.messages = res
+        self.messages = []
+        for message in res:
+            self.message_view = getMultiAdapter((message, self.request), name='view')
+            self.message_view.set_url(self.context.absolute_url() + '?source_campaign=')
+            self.messages.append(self.message_view())
 
 class CreateOrViewPersonalCampaignView(grok.View):
     grok.context(IFundraisingCampaign)
@@ -750,7 +750,6 @@ class CreateOrViewPersonalCampaignView(grok.View):
 class PersonalCampaignPagesList(grok.View):
     grok.context(IFundraisingCampaign)
     grok.require('zope2.View')
-    grok.implements(IHideDonationForm)
     
     grok.name('personal-fundraisers')
     grok.template('personal-fundraisers')

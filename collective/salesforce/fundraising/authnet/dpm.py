@@ -104,11 +104,11 @@ class DonationFormAuthnetDPM(grok.View):
 REDIRECT_HTML = """
     <html>
       <head>
-        <script type='text/javascript' charset='utf-8'>
+        <script type="text/javascript" charset="utf-8">
           window.location='%(redirect_url)s';
         </script>
         <noscript>
-          <meta http-equiv='refresh' content='1;url=%(redirect_url)s'>
+          <meta http-equiv="refresh" content="1;url=%(redirect_url)s">
         </noscript>
       </head>
       <body></body>
@@ -171,7 +171,10 @@ class AuthnetCallbackDPM(grok.View):
         form_name = self.request.form.get('c_form_name')
 
         pc = getToolByName(self.context, 'portal_catalog')
-        res = pc.searchResults(sf_object_id = campaign_id)
+        res = pc.searchResults(
+            sf_object_id = campaign_id,
+            portal_type = ['collective.salesforce.fundraising.fundraisingcampaign','collective.salesforce.fundraising.personalcampaignpage'],
+        )
         if not res:
             return 'ERROR: Campaign with ID %s not found' % campaign_id
         campaign = res[0].getObject()
@@ -183,7 +186,7 @@ class AuthnetCallbackDPM(grok.View):
         quantity = self.request.form.get('c_quantity', None)
         pricebook_id = None
         if product_id:
-            res = pc.searchResults(sf_object_id=product_id)
+            res = pc.searchResults(sf_object_id=product_id, portal_type='collective.salesforce.fundraising.donationproduct')
             if not res:
                 return 'ERROR: Product with ID %s not found' % product_id
             product = res[0].getObject()

@@ -14,12 +14,12 @@
 	  Description: <span tal:content="view/data/Description" /> <br />
 	  Goal: <span tal:content="view/data/ExpectedRevenue" /> <br />
 
-		  <p>You can view yor page using the following link:</p>
+		  <p>You can view your page using the following link:</p>
 		  <p><a tal:attributes="href view/data/campaign/absolute_url"
 			  tal:content="view/data/campaign/absolute_url"></a></p>
 
-		  <p>You can edit yor page using the following link:</p>
-		  <p><a tal:attributes="href string:${view/data/campaign/absolute_url}/edit"
+		  <p>You can edit your page using the following link:</p>
+		  <p><a tal:attributes="href string:${view/data/campaign/absolute_url}/edit-personal-campaign"
 			  tal:content="string:${view/data/campaign/absolute_url}/edit"></a></p>
 
 

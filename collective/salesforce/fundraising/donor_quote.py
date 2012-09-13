@@ -31,7 +31,10 @@ class DonorQuote(dexterity.Item):
             return None
         site = getSite()
         pc = getToolByName(site, 'portal_catalog')
-        res = pc.searchResults(sf_object_id=self.campaign_sf_id)
+        res = pc.searchResults(
+            sf_object_id=self.campaign_sf_id, 
+            portal_type = ['collective.salesforce.fundraising.fundraisingcampaign','collective.salesforce.fundraising.personalcampaignpage'],
+        )
         if not res:
             return None
         return res[0].getObject()

@@ -10,11 +10,11 @@
             <dt class="campaign-goal" tal:content="python: '$%i' % view.context.goal">$300</dt>
             <dd class="campaign-goal">Goal</dd>
         </dl>
-        <div class="campaign-image"><img src="" tal:attributes="src string:${view/context/absolute_url}/@@images/image/mini" /></div>
         <div class="campaign-text">
             <h2 class="campaign-title">
                 <a href="#" tal:attributes="href view/context/absolute_url" tal:content="view/context/title">Campaign Title</a>
             </h2>
+            <div class="campaign-image"><img src="" tal:attributes="src string:${view/context/absolute_url}/@@images/image/mini" /></div>
             <p class="campaign-description" tal:content="view/context/description"></p>
         </div>
         <div class="visualClear"></div>

@@ -1,16 +1,18 @@
-var $_GET = {};
+var _GET_VARS = {};
 
 document.location.search.replace(/\??(?:([^=]+)=([^&]*)&?)/g, function () {
     function decode(s) {
         return decodeURIComponent(s.split("+").join(" "));
     }
 
-    $_GET[decode(arguments[1])] = decode(arguments[2]);
+    _GET_VARS[decode(arguments[1])] = decode(arguments[2]);
 });
 
 function form_input_is_int(input){
   return !isNaN(input)&&parseInt(input)==input;
 }
+
+(function ($) {
 
 // Donation form logic
 function showHideDonationForm(form) {
@@ -360,13 +362,7 @@ function getPosition(trigger, el, conf) {
     return {top: top, left: left};
 }
 
-
-$(document).ready(function () {
-
-    
-});
-
-(function($) {$(document).ready(function() {
+$(document).ready(function() {
     // Replace the default login form overlay with a custom one that initialized the Janrain widget after load
     $('#portal-personaltools a[href$="/login"], #portal-personaltools a[href$="/login_form"], .discussion a[href$="/login"], .discussion a[href$="/login_form"]').each(function () {
         pb.remove_overlay($(this));
@@ -570,7 +566,7 @@ $(document).ready(function () {
 
     // Handle tab=X on pluggable login form
     $('.login-portlet-wrapper').each(function () {
-        var tab_index = $_GET['tab'];
+        var tab_index = _GET_VARS['tab'];
         if (tab_index != null) {
             $(this).find('.formTabs').data('tabs').click(parseInt(tab_index));
         }    
@@ -578,7 +574,7 @@ $(document).ready(function () {
 
     // Inject email=X value from url into __ac_name on login form
     $('input#__ac_name').each(function () {
-        var email = $_GET['email'];
+        var email = _GET_VARS['email'];
         if (email != null) {
             $(this).val(email);
         }

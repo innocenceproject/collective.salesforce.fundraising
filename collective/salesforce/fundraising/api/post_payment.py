@@ -12,7 +12,10 @@ class PostPayment(BrowserView):
 
         # Fetch the campaign by campaign_id
         pc = getToolByName(self.context, 'portal_catalog')
-        res = pc.searchResults(sf_object_id = campaign_id)
+        res = pc.searchResults(
+            sf_object_id = campaign_id, 
+            portal_type = ['collective.salesforce.fundraising.fundraisingcampaign','collective.salesforce.fundraising.personalcampaignpage'],
+        )
         if not res:
             raise ValueError('ERROR: No fundraising campaign was found with the id %s' % campaign_id)
         campaign = res[0].getObject()

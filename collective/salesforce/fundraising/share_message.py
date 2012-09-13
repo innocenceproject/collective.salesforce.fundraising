@@ -35,7 +35,10 @@ class ShareMessage(dexterity.Item):
             return None
         site = getSite()
         pc = getToolByName(site, 'portal_catalog')
-        res = pc.searchResults(sf_object_id=self.parent_sf_id)
+        res = pc.searchResults(
+            sf_object_id=self.parent_sf_id, 
+            portal_type = ['collective.salesforce.fundraising.fundraisingcampaign','collective.salesforce.fundraising.personalcampaignpage'],
+        )
         if not res:
             return None
         return res[0].getObject()
@@ -76,20 +79,30 @@ class JanrainView(grok.View):
 
     def update(self):
         self.link_id = 'share-message-' + self.context.id
-        url = self.context.aq_parent.absolute_url() + '?source_campaign=' + self.context.sf_object_id
-        url = url.replace("'","\\'")
+        if not hasattr(self, 'url'):
+            self.set_url()
         self.show_email_share = get_settings().enable_share_via_email
         comment = self.context.comment
         if comment:
             comment = comment.replace("'","\\'")
         self.message_js = SHARE_JS_TEMPLATE % {
             'link_id': self.link_id,
-            'url': url,
+            'url': self.url,
             'title': self.context.title.replace("'","\\'"),
             'description': self.context.description.replace("'","\\'"),
             'image': self.context.absolute_url() + '/@@images/image',
             'message': comment,
         }
+
+    def set_url(self, url=None):
+        if url:
+            if url.find('?source_campaign=') == -1:
+                url = url + '?source_campaign=' + self.context.sf_object_id
+            self.url = url
+        else:
+            self.url = self.context.aq_parent.absolute_url() + '?source_campaign=' + self.context.sf_object_id
+        self.url = self.url.replace("'","\\'")
+        
 
 
 class InvalidEmailError(schema.ValidationError):

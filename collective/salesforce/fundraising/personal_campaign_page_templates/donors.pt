@@ -12,18 +12,20 @@
   </metal:content-title>
 </metal:main>
 
+<metal:main fill-slot="content-description">
+  <metal:content-description define-macro="content-description">
+  </metal:content-description>
+</metal:main>
+
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">
 
   <div class="my-donors-wrapper">
 
     <div class="instructions">
-      <p>An essential part of fundraising is making sure to thank your donors.
-         The list below shows who has donated to your campaign and how much 
-         they donated.  When you have sent someone a thank you, simply check the box
-         to the left of their name to mark them as "Thank You Sent".  Come back to
-         this page every few days during your fundraising to see who you have yet to 
-         thank.</p>
+      <h3>Thank you!</h3>
+
+      <p>Below is a list of your donors.  Please be sure to let them know how much you appreciate their support! You can use this list to keep track of who you have thanked. </p>
     </div>  
   
     <h3 class="thanked-counts">

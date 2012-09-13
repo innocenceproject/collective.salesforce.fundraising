@@ -256,6 +256,7 @@ class ISetPassword(form.Schema):
     )
     came_from = schema.TextLine(
         title=_(u"Redirect after login"),
+        required=False,
     )
 
     form.mode(came_from='hidden')

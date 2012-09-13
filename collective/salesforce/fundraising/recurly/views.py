@@ -18,7 +18,9 @@ from collective.salesforce.fundraising.fundraising_campaign import IFundraisingC
 import recurly
 
 
-RECURLY_SUBSCRIBE_JS = """  Recurly.config({
+RECURLY_SUBSCRIBE_JS = """ 
+(function () {
+  Recurly.config({
     subdomain: '%(subdomain)s',
     currency: 'USD'
   });
@@ -35,7 +37,7 @@ RECURLY_SUBSCRIBE_JS = """  Recurly.config({
     enableCoupons: false,
     collectCompany: false
   });
-
+});
 """
 
 class DonationFormRecurly(grok.View):

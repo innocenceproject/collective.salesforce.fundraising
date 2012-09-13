@@ -199,4 +199,43 @@ class EmailLoginRouter(grok.View):
 
         return category
 
+   
+class CleanupSalesforceIds(grok.View):
+    grok.name('cleanup-salesforce-person-ids')
+    grok.require('cmf.ModifyPortalContent')
+    grok.context(ISiteRoot) 
+
+    def render(self):
+        
+        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
     
+        soql = "select Id, Email from Contact where Online_Fundraising_User__c = True"
+      
+        # FIXME: Handle paginated query in case the number of contacts is > 200 
+        res = sfbc.query(soql)
+
+        num_person_updated = 0
+        num_member_updated = 0
+        num_skipped = 0
+
+        mtool = getToolByName(self.context, 'portal_membership')
+
+        for contact in res:
+            person_res = get_brains_for_email(self.context, contact.Email)
+            if not person_res:
+                num_skipped += 1
+                continue
+            person = person_res[0].getObject()
+            if person.sf_object_id != contact.Id:
+                num_updated += 1
+                person.sf_object_id = contact.Id
+                person.reindexObject(idxs=['sf_object_id'])
+           
+            member = mtool.getMemberById(person.email)
+            if not member:
+                continue
+            if member.getProperty('sf_object_id') != person.sf_object_id:
+                num_member_updated = 0
+                member.setMemberProperties({'sf_object_id': person.sf_object_id})
+
+        return "Updated %s Person objects, %s Member objects, and skipped %s non-existing Contacts" % (num_person_updated, num_member_updated, num_skipped)

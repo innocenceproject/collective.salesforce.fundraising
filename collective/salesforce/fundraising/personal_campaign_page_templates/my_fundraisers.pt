@@ -31,7 +31,7 @@
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">  
    <tal:fundraisers tal:define="fundraisers view/my_fundraisers|nothing">
-    <table id="personal-fundraisers" tal:condition="fundraisers">
+    <table id="personal-fundraisers" tal:condition="fundraisers" class="listing">
       <thead>
         <tr>
           <th>Title</th>

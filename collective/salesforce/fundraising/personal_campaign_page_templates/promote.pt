@@ -36,20 +36,18 @@ jQuery(function($) {
     <div id="content">
 
       <div class="instructions">
-        <p>Setting up your fundraising page is an important first step to reaching 
-           your fundraising goal.  The next step is to let your friends and family know
-           about your fundraising page.  Below are some sample prewritten fundraising
-           appeals you can share on social networks to promote your campaign.  Click on
-           the message below that you think would be most persuasive to your friends
-           and family.
-        </p>
+        <h3>Spread the Word!</h3>
+
+        <p>Promote your fundraising page and ask your friends and family to help you reach your goal! Click on a message below to share via your email, Facebook, Twitter, or LinkedIn. You can also simply copy and paste the link to your page into any email message.</p>
+
+        <p>Your Page: <a href="#" tal:attributes="href context/absolute_url" tal:content="context/absolute_url">URL HERE</a></p>
       </div>
 
       <form class="share-campaign-wrapper"
             tal:attributes="action string:${context/absolute_url}/promote_campaign" method="POST">
 
         <tal:message_loop repeat="message view/messages">
-          <tal:message content="structure message/@@view" />
+          <tal:message content="structure message" />
         </tal:message_loop>
 
 

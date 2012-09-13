@@ -6,6 +6,7 @@ from plone.directives import dexterity, form
 from zope.component import getUtility
 from zope.interface import alsoProvides
 from zope.interface import Interface
+from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
 
 from Products.CMFCore.interfaces import ISiteRoot
@@ -18,7 +19,7 @@ from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
 from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IUUIDAware
-from dexterity.membrane.membrane_helpers import get_membrane_user
+from dexterity.membrane.membrane_helpers import get_brains_for_email
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import FundraisingCampaignPage
@@ -61,7 +62,7 @@ class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
         title=_(u"Title"),
         description=_(u"Provide a brief title for your campaign"),
     )
-    description = schema.TextLine(
+    description = schema.Text(
         title=_(u"Description"),
         description=_(u"Provide a 1-3 sentence pitch for your campaign"),
     )
@@ -126,7 +127,7 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
             return None
         site = getUtility(ISiteRoot)
         pc = getToolByName(site, 'portal_catalog')
-        res = pc.searchResults(sf_object_id=self.parent_sf_id)
+        res = pc.searchResults(sf_object_id=self.parent_sf_id, portal_type="collective.salesforce.fundraising.fundraisingcampaign")
         if not res:
             return None
         return res[0].getObject()
@@ -169,6 +170,13 @@ class PersonalCampaignPageView(CampaignView):
     grok.name('view')
     grok.template('view')
 
+class PersonalCampaignPageCompactView(CampaignView):
+    grok.context(IPersonalCampaignPage)
+    grok.require('zope2.View')
+
+    grok.name('compact_view')
+    grok.template('compact_view')
+
 class PersonalCampaignPageToolbarViewlet(grok.Viewlet):
     grok.name('collective.salesforce.fundraising.PersonalCampaignPageToolbar')
     grok.require('zope2.View')
@@ -183,7 +191,7 @@ class PersonalCampaignPageToolbarViewlet(grok.Viewlet):
         self.can_view_donors = pm.checkPermission('collective.salesforce.fundraising: View Personal Campaign Donors', self.context)
         self.can_promote = pm.checkPermission('collective.salesforce.fundraising: Promote Personal Campaign', self.context)
 
-class PersonalCampaignPagesList(grok.View):
+class MyPersonalCampaignPagesList(grok.View):
     """This view is accessible from anywhere in the site, do not write 
     template code for it that assumes a fundraiser as the context
     """
@@ -202,7 +210,7 @@ class PersonalCampaignPagesList(grok.View):
     def person(self):
         """provide access to the logged-in user
         """
-        if self._person is not _marker:
+        if self._person and self._person is not _marker:
             return self._person
 
         mtool = getToolByName(self.context, 'portal_membership')
@@ -211,10 +219,11 @@ class PersonalCampaignPagesList(grok.View):
             return self._person
         
         member = mtool.getAuthenticatedMember()
-        person = get_membrane_user(self.context, member.id,
-                                   'collective.salesforce.fundraising.person',
-                                   get_object=True)
-        self._person = person
+        res = get_brains_for_email(self.context, member.id)
+        if not res:
+            return self._person
+
+        self._person = res[0].getObject()
         return self._person
 
     def my_fundraisers(self):
@@ -222,14 +231,14 @@ class PersonalCampaignPagesList(grok.View):
         if not me:
             return []
         pc = getToolByName(self.context, 'portal_catalog')
-        idvals = me.id
+        idvals = [me.id, me.email]
         my_uuid = None
         if IUUIDAware.providedBy(me):
             my_uuid = IUUID(me)
         if my_uuid:
-            idvals = [idvals, my_uuid]
+            idvals.append(my_uuid)
         my_brains = pc(portal_type=self._fundraiser_type,
-                       Creator=idvals)
+                       Creator=idvals, sort_order='reverse', sort_on='created')
         return [b.getObject() for b in my_brains]
 
 class MyDonorsView(grok.View):
