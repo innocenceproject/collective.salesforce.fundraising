@@ -19,25 +19,27 @@ import recurly
 
 
 RECURLY_SUBSCRIBE_JS = """ 
-(function () {
-  Recurly.config({
-    subdomain: '%(subdomain)s',
-    currency: 'USD'
+(function ($) {
+  $(document).ready(function () {
+    Recurly.config({
+      subdomain: '%(subdomain)s',
+      currency: 'USD'
+    });
+  
+    Recurly.buildSubscriptionForm({
+      target: '#recurly-subscribe',
+      signature: '%(signature)s',
+      successURL: '%(success_url)s',
+      afterInject: setupRecurlyForm,
+      planCode: '%(plan_code)s',
+      collectPhone: true,
+      distinguishContactFromBillingInfo: true,
+      enableAddOns: false,
+      enableCoupons: false,
+      collectCompany: false
+    });
   });
-
-  Recurly.buildSubscriptionForm({
-    target: '#recurly-subscribe',
-    signature: '%(signature)s',
-    successURL: '%(success_url)s',
-    afterInject: setupRecurlyForm,
-    planCode: '%(plan_code)s',
-    collectPhone: true,
-    distinguishContactFromBillingInfo: true,
-    enableAddOns: false,
-    enableCoupons: false,
-    collectCompany: false
-  });
-});
+})(jQuery);
 """
 
 class DonationFormRecurly(grok.View):
