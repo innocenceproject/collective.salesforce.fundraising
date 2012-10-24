@@ -84,6 +84,16 @@ class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
         description=u"This message will be shown to your donors after they donate.  You can use the default text or personalize your thank you message",
     )    
 
+@form.default_value(field=IEditPersonalCampaignPage['title'])
+def titleDefaultValue(data):
+    mtool = getToolByName(data.context, 'portal_membership')
+    member = mtool.getAuthenticatedMember()
+    res = get_brains_for_email(data.context, member.id)
+    if res:
+        person = res[0].getObject()
+        return "%s %s's Fundraising Page" % (person.first_name, person.last_name)
+    
+
 @form.default_value(field=IPersonalCampaignPage['personal_appeal'])
 def personalAppealDefaultValue(data):
     return data.context.get_fundraising_campaign().default_personal_appeal.output
@@ -147,6 +157,10 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         if self.goal and self.donations_total:
             return int((self.donations_total * 100) / self.goal)
         return 0
+
+    def get_display_goal_pct(self):
+        settings = get_settings()
+        return settings.personal_campaign_status_completion_threshold
 
     @instance.memoize
     def get_donations(self):
@@ -231,7 +245,13 @@ class MyPersonalCampaignPagesList(grok.View):
         if not me:
             return []
         pc = getToolByName(self.context, 'portal_catalog')
-        idvals = [me.id, me.email]
+        idvals = []
+        user_id = getattr(me, 'id', None)
+        if user_id:
+            idvals.append(user_id)
+        email = getattr(me, 'email', None)
+        if email:
+            idvals.append(email)
         my_uuid = None
         if IUUIDAware.providedBy(me):
             my_uuid = IUUID(me)

@@ -299,3 +299,10 @@ class IFundraisingSettings(Interface):
         default=3,
         required=False,
     )
+
+    personal_campaign_status_completion_threshold = schema.Int(
+        title=_(u"Campaign Status Completion Threshold"),
+        description = _(u"The percentage of personal campaign goal completion that should be reached before displaying status on personal campaign pages."),
+        default=0,
+        required=False,
+    )
