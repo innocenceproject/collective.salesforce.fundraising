@@ -44,7 +44,7 @@ jQuery(function($) {
       </div>
 
       <form class="share-campaign-wrapper"
-            tal:attributes="action string:${context/absolute_url}/promote_campaign" method="POST">
+            tal:attributes="action string:${context/absolute_url}/promote" method="POST">
 
         <tal:message_loop repeat="message view/messages">
           <tal:message content="structure message" />
@@ -52,6 +52,7 @@ jQuery(function($) {
 
 
       </form>
+
 
     </div>
     <div class="visualClear"></div>
