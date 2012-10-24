@@ -33,7 +33,7 @@
     <div class="divider divider-or">or</div>
 
     <div id="form-login">
-      <h3>Login Using Your Email Address</h3>
+      <h3>SIGNIN or REGISTER with your Email Address</h3>
       <div id="form-login-email-only">
         <form action="" method="post" tal:attributes="action string:/@@email-login-redirect">
           <label>Email Address</label>
