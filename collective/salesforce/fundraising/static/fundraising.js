@@ -12,6 +12,26 @@ function form_input_is_int(input){
   return !isNaN(input)&&parseInt(input)==input;
 }
 
+function setupRecurlyForm() {
+    // Do some mangling of the Recurly form to fit the same general form structure
+    var recurly_form = jQuery('#recurly-subscribe');
+    
+    if (recurly_form.length == 0) {
+        return false;
+    }
+
+    var address = recurly_form.find('div.address');
+    var accepted_cards = recurly_form.find('div.accepted_cards');
+    var names = recurly_form.find('.credit_card div.first_name, .credit_card div.last_name');
+    var card_cvv = recurly_form.find('div.card_cvv');
+
+    card_cvv.before(accepted_cards);
+    names.wrapAll('<div class="field compound name"></div>');
+
+    var button_submit = recurly_form.find('button.submit');
+    button_submit.text('Submit').after('<div class="discreet">Your card will be automatically charged every month</div>');
+}
+
 (function ($) {
 
 // Donation form logic
@@ -76,26 +96,6 @@ function populateRecurlyQuantity(amount) {
     if (form.length != 0) {
         form.find('.field.quantity input').val(amount);
     }
-}
-
-function setupRecurlyForm() {
-    // Do some mangling of the Recurly form to fit the same general form structure
-    var recurly_form = $('#recurly-subscribe');
-    
-    if (recurly_form.length == 0) {
-        return false;
-    }
-
-    var address = recurly_form.find('div.address');
-    var accepted_cards = recurly_form.find('div.accepted_cards');
-    var names = recurly_form.find('.credit_card div.first_name, .credit_card div.last_name');
-    var card_cvv = recurly_form.find('div.card_cvv');
-
-    card_cvv.before(accepted_cards);
-    names.wrapAll('<div class="field compound name"></div>');
-
-    var button_submit = recurly_form.find('button.submit');
-    button_submit.text('Submit').after('<div class="discreet">Your card will be automatically charged every month</div>');
 }
 
 function setupAuthnetDpmForm() {
@@ -577,6 +577,13 @@ $(document).ready(function() {
         var email = _GET_VARS['email'];
         if (email != null) {
             $(this).val(email);
+        }
+    });
+
+    // Cleanup issue with login portlet's handling of came_from
+    $('.portletLogin input[name="came_from"]').each(function () {
+        if ($(this).val() != _GET_VARS['came_from']) {
+            $(this).val(_GET_VARS['came_from']);
         }
     });
     
