@@ -36,13 +36,28 @@ class CreatePersonalCampaignPageForm(form.Form):
     grok.name('create-personal-campaign-page')
     grok.require('collective.salesforce.fundraising.AddPersonalCampaign')
     grok.context(IFundraisingCampaign)
+    schema = IEditPersonalCampaignPage
 
     @property
     def fields(self):
         fields = field.Fields(IPersonalCampaignPage).select('title', 'description', 'image', 'goal', 'personal_appeal', 'thank_you_message')
+
+        # Make the image field required
         image_field = copy.copy(fields['image'].field)
         image_field.required = True
         fields['image'].field = image_field
+
+        # Set the default title.  Since the title field is defined in the model xml, it's easiest to do this here
+        #mtool = getToolByName(self.context, 'portal_membership')
+        #member = mtool.getAuthenticatedMember()
+        #res = get_brains_for_email(self.context, member.getProperty('email'))
+        #if not res:
+        #    return None
+        #person = res[0].getObject()
+        #title_field = copy.copy(fields['title'].field)
+        #title_field.default = u"%s %s's Fundraising Page" % (person.first_name, person.last_name)
+        #fields['title'].field = title_field
+
         return fields
 
     ignoreContext = True
@@ -75,7 +90,11 @@ class CreatePersonalCampaignPageForm(form.Form):
 
         mtool = getToolByName(self.context, 'portal_membership')
         member = mtool.getAuthenticatedMember()
-        contact_id = member.getProperty('sf_object_id')
+        person_res = get_brains_for_email(self.context, member.getProperty('email'))
+        if not person_res:
+            contact_id = None
+        else: 
+            contact_id = person_res[0].getObject().sf_object_id
 
         settings = get_settings()
 
