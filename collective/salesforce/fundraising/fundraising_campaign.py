@@ -26,6 +26,7 @@ from plone.z3cform.interfaces import IWrappedForm
 
 from plone.app.textfield import RichText
 from plone.app.textfield.value import RichTextValue
+from plone.app.layout.viewlets.interfaces import IHtmlHead
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
 
@@ -266,6 +267,8 @@ class FundraisingCampaignPage(object):
             else:
                 self.direct_donations_count = 1
 
+            self.reindexObject(idxs=['get_goal_percent', 'donations_total', 'donations_count'])
+
             # Check if this is a personal campaign
             if hasattr(self, 'parent_sf_id'):
                 # Clear the cached list of donations for the personal campaign so a fresh list is fetched next time
@@ -278,6 +281,8 @@ class FundraisingCampaignPage(object):
                 if parent.sf_object_id == self.parent_sf_id:
                     parent.donations_total = parent.donations_total + amount
                     parent.donations_count = parent.donations_count + 1
+
+                parent.reindexObject(idxs=['get_goal_percent', 'donations_total', 'donations_count'])
 
     def get_external_media_oembed(self):
         external_media = getattr(self, 'external_media_url', None)
@@ -990,3 +995,25 @@ def activate_campaign_portlets(page, event):
                 return
             for name, assignment in content_type_assignments.items():
                 page_manager_assignments[name] = assignment
+
+FACEBOOK_META_TEMPLATE = """
+  <meta property="og:title" content="%(title)s">
+  <meta property="og:description" content="%(description)s">
+  <meta property="og:url" content="%(url)s">
+  <meta property="og:image" content="%(url)s/@@images/image">
+"""
+
+class FacebookMetaViewlet(grok.Viewlet):
+    """ Add Facebook og tags to head using campaign info """
+
+    grok.name('collective.salesforce.fundraising.FacebookMetaViewlet')
+    grok.require('zope2.View')
+    grok.context(IFundraisingCampaignPage)
+    grok.viewletmanager(IHtmlHead)
+
+    def render(self):
+        return FACEBOOK_META_TEMPLATE % {
+            'title': self.context.title,
+            'description': self.context.description,
+            'url': self.context.absolute_url(),
+        }
