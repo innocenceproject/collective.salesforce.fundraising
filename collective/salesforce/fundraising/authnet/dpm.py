@@ -257,6 +257,7 @@ class AuthnetCallbackDPM(grok.View):
                     'state': state,
                     'zip': zipcode,
                     'country': country,
+                    'phone': phone,
                 }
 
                 # Treat the email_opt_in field as a ratchet.  Once toggled on, it stays on even if unchecked
