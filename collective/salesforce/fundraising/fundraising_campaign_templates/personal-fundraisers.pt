@@ -17,6 +17,8 @@
 
     <div class="personal-fundraisers-wrapper">
 
+      <h2>Fundraiser Leaderboard</h2>
+
       <tal:message_loop repeat="b view/campaigns">
         <tal:message define="campaign b/getObject" replace="structure campaign/@@compact_view" />
       </tal:message_loop>
