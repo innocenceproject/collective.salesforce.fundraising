@@ -154,7 +154,8 @@ class RpxPostLogin(grok.View):
     def render(self):
         # Get the api key from registry
         settings = get_settings()
-        janrain_api_key = settings.janrain_api_key
+        # workaround for http://bugs.python.org/issue5285, map unicode to strings
+        janrain_api_key = str(settings.janrain_api_key)
 
         if not janrain_api_key:
             return None
