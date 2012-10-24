@@ -35,7 +35,7 @@
         </field>
         <field name="goal" type="zope.schema.Int" sf:field="ExpectedRevenue">
             <title>Goal</title>
-            <description>Set the dollar amount goal you aim to raise in your campaign</description>
+            <description>Please type in your goal amount . Do not include any symbols such as $ or commas</description>
             <default>0</default>
         </field>
         <field name="donations_total" type="zope.schema.Float" sf:field="AmountWonOpportunities">
