@@ -1,0 +1,30 @@
+<dl class="portlet portletMyFundraisers"
+    i18n:domain="collective.salesforce.fundraising"
+    tal:define="pages view/get_fundraisers"
+    tal:condition="pages">
+
+    <dt class="portletHeader">
+      <span class="portletTopLeft"></span>
+      <span>
+          My Fundraising Pages
+      </span>
+      <span class="portletTopRight"></span>
+    </dt>
+
+    <dd class="portletItem" tal:repeat="page pages">
+      <h5><a href="" tal:attributes="href page/absolute_url" tal:content="page/title">Page Title</a></h5>
+      <div class="progress-bar">
+        <span class="value" tal:content="page/get_percent_goal">56</span>
+      </div>
+      <strong>Goal:</strong> <span class="value" tal:content="python: '$' + str(int(page.goal))">$500</span>
+      <strong>Campaign:</strong> <a class="value" href="" tal:define="campaign page/get_fundraising_campaign" tal:attributes="href campaign/absolute_url" tal:content="campaign/title">$500</a>
+    </dd>
+
+    <dd class="portletFooter">
+        <span class="portletBottomLeft"></span>
+        <span>
+        </span>
+        <span class="portletBottomRight"></span>
+    </dd>
+
+</dl>

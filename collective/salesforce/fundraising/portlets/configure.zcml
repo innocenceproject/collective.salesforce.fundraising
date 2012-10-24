@@ -74,4 +74,14 @@
       addview=".janrainlogin.AddForm"
       />
 
+  <plone:portlet
+      name="collective.salesforce.fundraising.portlets.MyFundraisers"
+      interface=".my_fundraisers.IMyFundraisersPortlet"
+      assignment=".my_fundraisers.Assignment"
+      view_permission="zope2.View"
+      edit_permission="cmf.ManagePortal"
+      renderer=".my_fundraisers.Renderer"
+      addview=".my_fundraisers.AddForm"
+      />
+
 </configure>

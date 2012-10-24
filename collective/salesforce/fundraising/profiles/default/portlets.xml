@@ -37,6 +37,23 @@
      i18n:attributes="title; description"
    />
 
+   <portlet
+     addview="collective.salesforce.fundraising.portlets.MyFundraisers"
+     title="My Fundraising Pages"
+     description=""
+     i18n:attributes="title; description"
+   />
+
+   <assignment
+    type="collective.salesforce.fundraising.portlets.MyFundraisers"
+    manager="plone.rightcolumn"
+    category="context"
+    key="/"
+    name="my.fundraisers.portlet"
+    insert-before="*"
+    >
+   </assignment>
+
    <assignment
      type="collective.salesforce.fundraising.portlets.CampaignMedia"
      manager="plone.rightcolumn"
