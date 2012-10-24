@@ -21,7 +21,7 @@
       </tal:if_external_media>
 
       <tal:if_image condition="python: not external_media and image.size">
-      <img src="" tal:attributes="src python: campaign.absolute_url() + '/@@images/image/mini'" />
+      <img src="" tal:attributes="src python: campaign.absolute_url() + '/@@images/image/preview'" />
       </tal:if_image>
 
     </dd>
