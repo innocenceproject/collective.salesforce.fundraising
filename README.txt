@@ -3,7 +3,9 @@ Introduction
 
 collective.salesforce.fundraising is an online fundraising system designed to help non-profit organizations raise money online.  
 
-The system was initially developed for The Innocence Project, Inc. who sponsored the development with internal staff as well as consulting from Groundwire and design services from Exotic Objects (http://www.exoticobjects.com)
+The system was initially developed by The Innocence Project, Inc. who sponsored the development with internal staff as well as consulting from Groundwire and design services from Exotic Objects (http://www.exoticobjects.com)
+
+Additional development on personal fundraising and event ticketing was funded by the Innocence Project and jointly developed with Jazkarta (http://www.jazkarta.com).
 
 The first production site is now live at https://secure.innocenceproject.org
 
@@ -19,6 +21,8 @@ Features
 *  Campaigns with Timeline and Goal - If a Campaign is configured with a goal (Expected Revenue in Salesforce) and a start/end date (Start/End date in Salesforce), progress indicators in the right column indicate the progress towards the goal and the time remaining to reach the goal.
 
 *  Personal Fundraising - Allow users to create personal campaign pages off any campaign.  Users can set a goal and promote their campaign to their friends.  Personal Campaigns are created as a child Campaign of the main Fundraising Campaign in Salesforce and all donations rollup to the parent campaign in the Hierarchy.
+
+*  Donation Products - "Sell" a selectable quantity of Donation Products in a Fundraising Campaign.  Products can be physical or virtual items or event tickets.  Each products gets its own donation form tab and all donations in Salesforce are linked to the Product.
 
 *  Honorary/Memorial Donations - A checkbox on the donation form allows the user to classify their donation as an Honorary or Memorial donation.  On the next page after submitting the donation, the user can enter the Honorary/Memorial information including optionally sending a notification of their donation via either email (automatically sent by the system) or mail (manually handled through Salesforce)
 
