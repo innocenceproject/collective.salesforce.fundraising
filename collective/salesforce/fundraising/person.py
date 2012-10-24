@@ -227,7 +227,7 @@ class CleanupSalesforceIds(grok.View):
                 continue
             person = person_res[0].getObject()
             if person.sf_object_id != contact.Id:
-                num_updated += 1
+                num_person_updated += 1
                 person.sf_object_id = contact.Id
                 person.reindexObject(idxs=['sf_object_id'])
            
