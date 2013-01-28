@@ -184,6 +184,7 @@ class AuthnetCallbackDPM(grok.View):
         # Handle Donation Product forms
         product = None
         product_id = self.request.form.get('c_product_id', None)
+        c_products = self.request.form.get('c_products', None)
         quantity = self.request.form.get('c_quantity', None)
         pricebook_id = None
         if product_id:
@@ -191,18 +192,19 @@ class AuthnetCallbackDPM(grok.View):
             if not res:
                 return 'ERROR: Product with ID %s not found' % product_id
             product = res[0].getObject()
+
+        if product_id or c_products:
             pricebook_id = get_standard_pricebook_id(sfbc)
 
         # Handle Product Forms with multiple products, each with their own quantity
         products = []
-        products_csv = self.request.form.get('c_products', None)
-        if products_csv:
-            for item in products_csv.split(','):
+        if c_products:
+            for item in c_products.split(','):
                 item_id, item_quantity = item.split(':')
-                res = pc.searchResults(sf_id = item_id, portal_type='collective.salesforce.fundraising.donationproduct')
-                if not res:
+                product_res = pc.searchResults(sf_object_id = item_id, portal_type='collective.salesforce.fundraising.donationproduct')
+                if not product_res:
                     return 'ERROR: Product with ID %s not found' % product_id
-                products.append({'id': item_id, 'quantity': item_quantity, 'product': res[0].getObject()})
+                products.append({'id': item_id, 'quantity': item_quantity, 'product': product_res[0].getObject()})
 
         # If the response was a failure of some kind or another, re-render the form with the error message
         # The response goes back to Authorize.net who then renders it through their servers to the user
@@ -354,10 +356,14 @@ class AuthnetCallbackDPM(grok.View):
                 data['Amount'] = 0
 
                 # Set a custom name with the product info and quantity
-                data['Name'] = '%s %s - %s' % (first_name, last_name, quantity)
+                parent_form = products[0]['product'].get_parent_product_form()
+                title = 'Donation'
+                if parent_form:
+                    title = parent_form.title
+                data['Name'] = '%s %s - %s' % (first_name, last_name, title)
                 
             else:
-                # this is a one-time donation, record is as such if possible
+                # this is a one-time donation, record it as such if possible
                 if settings.sf_opportunity_record_type_one_time:
                     data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
 

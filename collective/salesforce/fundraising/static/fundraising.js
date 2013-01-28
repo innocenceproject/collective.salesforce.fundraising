@@ -93,6 +93,7 @@ function updateProductFormTotal(form) {
     });
     form.find('input[name="x_amount"]').val(new_total);
     updateAuthnetDpmFingerprint(form);
+    populateAuthnetDescription(form);
     
     if (new_total > 0) {
         form.find('a.button-checkout').addClass('available');

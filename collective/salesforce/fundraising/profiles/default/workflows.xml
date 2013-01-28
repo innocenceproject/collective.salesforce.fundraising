@@ -13,5 +13,14 @@
     <type type_id="collective.salesforce.fundraising.personalcampaignpage">
       <bound-workflow workflow_id="personal_campaign_page_workflow" />
     </type>
+    <type type_id="collective.salesforce.fundraising.donationproduct">
+      <bound-workflow workflow_id="" />
+    </type>
+    <type type_id="collective.salesforce.fundraising.productform">
+      <bound-workflow workflow_id="" />
+    </type>
+    <type type_id="collective.salesforce.fundraising.productfieldset">
+      <bound-workflow workflow_id="" />
+    </type>
   </bindings>
 </object>

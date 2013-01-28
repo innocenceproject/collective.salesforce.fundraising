@@ -6,6 +6,8 @@ from zope.app.content.interfaces import IContentType
 from Products.CMFCore.utils import getToolByName
 from Products.statusmessages.interfaces import IStatusMessage
 from plone.directives import dexterity, form
+from AccessControl import getSecurityManager
+from Products.CMFCore.permissions import ModifyPortalContent
 
 from plone.namedfile.interfaces import IImageScaleTraversable
 
@@ -38,6 +40,7 @@ def handleDonationProductCreated(product, event):
             'ProductCode': product.id,
             'Description': product.description,
             'Name': product.title,
+            'Donation_Only__c': product.donation_only,
         }
         container = product.get_container()
         if container:
@@ -77,6 +80,9 @@ class DonationProduct(dexterity.Item):
             return container
         return None
 
+    def get_parent_product_form(self):
+        return self.get_product_form()
+
 #class DonationProductView(grok.View):
 #    grok.context(IDonationProduct)
 #    grok.require('zope2.View')
@@ -88,6 +94,10 @@ class ProductFormComponent(grok.View):
     grok.require('zope2.View')
     grok.name('product_form_component')
     grok.template('product_form_component')
+
+    def update(self):
+        sm = getSecurityManager()
+        self.can_update = sm.checkPermission(ModifyPortalContent, self.context)
 
 class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
     grok.context(IDonationProduct)

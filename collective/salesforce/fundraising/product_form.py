@@ -45,6 +45,9 @@ alsoProvides(IProductFieldset, IContentType)
 class ProductForm(dexterity.Container):
     grok.implements(IProductForm)
 
+    def get_product_form(self):
+        return self
+
 class ProductFieldset(dexterity.Container):
     grok.implements(IProductFieldset)
 
