@@ -40,7 +40,9 @@ function showHideDonationForm(form) {
     if (form.hasClass('donation-form-product') == true) {
         min_value = 1;
     }
-    if (form.find('.field-amount input').val() >= min_value) {
+    var amount = form.find('.field-amount input[name="x_amount"]').val();
+
+    if (amount >= min_value) {
         form.parents('div.panel').find('.after-amount').slideDown();
     } else {
         form.parents('div.panel').find('.after-amount').slideUp();
@@ -74,6 +76,45 @@ function updateDonationProductTotal(form) {
     var price = form.find('.product-price .value').text();
     var total = quantity * price;
     form.find('input[name="x_amount"]').val(total);
+}
+
+function updateProductFormTotal(form) {
+    var new_total = 0;
+
+    form.find('input.field-product-quantity').each(function () {
+        var field = $(this);
+        if (field.val() != null && field.val() > 0) {
+            var price = field.parent().find('.price-wrapper .donation-product-price').text();
+            if (price != null && price > 0) {
+                var subtotal = price * field.val();
+                new_total = new_total + subtotal;
+            }
+        }
+    });
+    form.find('input[name="x_amount"]').val(new_total);
+    updateAuthnetDpmFingerprint(form);
+    
+    if (new_total > 0) {
+        form.find('a.button-checkout').addClass('available');
+    } else {
+        form.find('a.button-checkout').removeClass('available');
+    }
+}
+
+function updateProductFormItems(form) {
+    var products_field = form.find('input[name="c_products"]');
+    var products = [];
+     
+    form.find('input.field-product-quantity').each(function () {
+        var field = $(this);
+        if (field.val() != null && field.val() > 0) {
+            var sf_id = field.attr('id').replace('donationform-field-','');
+            var product = sf_id + ':' + field.val();
+            products.push(product);
+        }
+    });
+    
+    products_field.val(products.join(','));
 }
 
 function updateAuthnetDpmFingerprint(form) {
@@ -295,6 +336,28 @@ function setupHonoraryForm() {
     send_input.change(handleHonoraryShowAmountChange);
     send_input.change();
     
+}
+
+function setupProductForm() {
+    var form = $('form.donation-form.product-form');
+    
+    if (form.length == 0) {
+        return;
+    }
+
+    // Handle changes in quantity
+    form.find('input.field-product-quantity').each(function () {
+        $(this).keyup(function () {updateProductFormTotal(form)});
+        $(this).change(function () {updateProductFormTotal(form)});
+        $(this).keyup(function () {updateProductFormItems(form)});
+        $(this).change(function () {updateProductFormItems(form)});
+    });
+
+    // Wire up the checkout button
+    form.find('a.button-checkout').click(function () {
+        showHideDonationForm(form);
+        return false;
+    });
 }
 
 function populateAuthnetDescription() {
@@ -528,9 +591,7 @@ $(document).ready(function() {
 
     setupAuthnetDpmForm();
     setupHonoraryForm();
-
-    
-
+    setupProductForm();
 
     // Handle Fundraising Seal More Info link
     $('.fundraising-seal a').click(function () {

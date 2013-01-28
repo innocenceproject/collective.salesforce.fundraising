@@ -1,0 +1,11 @@
+<fieldset class="product-fieldset" tal:attributes="id string:product-fieldset-${view/context/getId}">
+  <legend tal:content="view/context/Title">Fieldset Title</legend>
+
+  <div class="product-fieldset-description" tal:content="view/context/Description"></div>
+
+  <div class="product-fieldset-contents">
+    <tal:contents_loop tal:repeat="item view/context/@@folderListing">
+      <span tal:define="item_obj item/getObject" tal:replace="structure item_obj/@@product_form_component" />
+    </tal:contents_loop>
+  </div>
+</fieldset>

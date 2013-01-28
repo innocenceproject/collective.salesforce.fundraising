@@ -19,6 +19,7 @@
     <element value="Link" />
     <element value="collective.salesforce.fundraising.personalfundraisingpage" />
     <element value="collective.salesforce.fundraising.donationproduct" />
+    <element value="collective.salesforce.fundraising.productform" />
     <element value="collective.salesforce.fundraising.donorquote" />
     <element value="collective.salesforce.fundraising.sharemessage" />
   </property>

@@ -46,12 +46,6 @@
             <required>False</required>
         </field>
 
-        <field name="portrait" type="plone.namedfile.field.NamedBlobImage">
-            <title>Portrait</title>
-            <description>The photo used to identify you on the site</description>
-            <required>False</required>
-        </field>
-
         <field name="gender" title="" type="zope.schema.TextLine" sf:field="Gender__c">
             <title>Gender</title>
             <required>False</required>

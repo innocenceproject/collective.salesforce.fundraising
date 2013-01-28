@@ -12,11 +12,6 @@
             <title>Description</title>
             <description>Provide a 1-3 sentence pitch for your campaign</description>
         </field>
-        <field name="image" type="plone.namedfile.field.NamedBlobImage">
-            <title>Image</title>
-            <description>Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks.</description>
-            <required>False</required>
-        </field>
         <field name="external_media_url" type="zope.schema.TextLine">
             <title>External Media URL</title>
             <description>A link to externally hosted media promoting the campaign.  For example, a Youtube video, a Flickr photo gallery, etc.</description>

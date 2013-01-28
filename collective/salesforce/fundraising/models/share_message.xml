@@ -12,10 +12,6 @@
             <title>Description</title>
             <description>The description of the link being shared</description>
         </field>
-        <field name="image" type="plone.namedfile.field.NamedBlobImage">
-            <title>Image</title>
-            <description>The image for the share message</description>
-        </field>
         <field name="comment" type="zope.schema.Text">
             <title>User comment</title>
             <description>Provide an example comment for the user.  The user can edit this text so it's just a suggestion</description>

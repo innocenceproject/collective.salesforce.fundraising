@@ -12,6 +12,7 @@ from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from Products.statusmessages.interfaces import IStatusMessage
 from plone.namedfile.interfaces import IImageScaleTraversable
+from plone.namedfile.field import NamedBlobImage
 from Products.validation.validators.BaseValidators import EMAIL_RE
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
@@ -23,6 +24,11 @@ class IShareMessage(form.Schema, IImageScaleTraversable):
     """
     A message to be shared on social networks
     """
+
+    image = NamedBlobImage(
+        title=u"Image",
+        description=u"Image used in the share message",
+    )
 
     form.model("models/share_message.xml")
 alsoProvides(IShareMessage, IContentType)

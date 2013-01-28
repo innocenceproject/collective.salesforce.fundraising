@@ -12,11 +12,6 @@
             <title>Name</title>
             <description>Enter your name as you would like it displayed to other potential donors.</description>
         </field>
-        <field name="image" type="plone.namedfile.field.NamedImage">
-            <title>Photo</title>
-            <description>(optional) Upload a photo to show with your quote.</description>
-            <required>False</required>
-        </field>
         <field name="campaign_sf_id" type="zope.schema.TextLine" sf:field="Campaign__c">
             <title>Campaign Salesforce ID</title>
             <description>The ID of the Salesforce Campaign the quote relates to</description>
