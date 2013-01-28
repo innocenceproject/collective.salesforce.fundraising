@@ -8,9 +8,13 @@
             <title>Title</title>
             <description>Appears as the donation form tab name and on the receipt</description>
         </field>
-        <field name="description" title="Description" type="zope.schema.Text" sf:field="Description">
+        <field name="description" type="zope.schema.Text" sf:field="Description">
             <title>Description</title>
             <description>A description of the item.  Shown only on receipt</description>
+        </field>
+        <field name="donation_only" type="zope.schema.Text" sf:field="Donation_Only__c">
+            <title>Donation Only?</title>
+            <description>If checked, treat purchases of this product as donations.  This is useful, for example, to create a form with multiple donation line items to different target funds allowing the user to allocate individual amounts to each line item.  IMPORTANT: If you check this, set the price to 1</description>
         </field>
         <field name="price" type="zope.schema.Int">
             <title>Price</title>
