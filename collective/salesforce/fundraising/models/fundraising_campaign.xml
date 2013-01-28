@@ -12,10 +12,6 @@
             <title>Description</title>
             <description>A brief description of this campaign (from Description field on Campaign in Salesforce)</description>
         </field>
-        <field name="image" type="plone.namedfile.field.NamedBlobImage">
-            <title>Image</title>
-            <description>The main promotional image for this campaign.  This image will be shown big and small so pick an image that looks good at all sizes.</description>
-        </field>
         <field name="external_media_url" type="zope.schema.TextLine">
             <title>External Media URL</title>
             <description>A link to externally hosted media promoting the campaign.  For example, a Youtube video, a Flickr photo gallery, etc.</description>

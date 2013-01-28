@@ -28,6 +28,7 @@ from plone.app.textfield import RichText
 from plone.app.textfield.value import RichTextValue
 from plone.app.layout.viewlets.interfaces import IHtmlHead
 from plone.namedfile.interfaces import IImageScaleTraversable
+from plone.namedfile.field import NamedBlobImage
 from plone.memoize import instance
 
 from plone.portlets.interfaces import IPortletAssignmentMapping
@@ -56,6 +57,11 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
     body = RichText(
         title=u"Fundraising Pitch",
         description=u"The body of the pitch for this campaign shown above the donation form",
+    )
+
+    image = NamedBlobImage(
+        title=u"Image",
+        description=u"The main promotional image for this campaign.  This image will be shown big and small so pick an image that looks good at all sizes.",
     )
 
     thank_you_message = RichText(
