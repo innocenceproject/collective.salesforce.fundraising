@@ -181,6 +181,7 @@ class AuthnetCallbackDPM(grok.View):
 
         sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
 
+        # Handle Donation Product forms
         product = None
         product_id = self.request.form.get('c_product_id', None)
         quantity = self.request.form.get('c_quantity', None)
@@ -191,6 +192,17 @@ class AuthnetCallbackDPM(grok.View):
                 return 'ERROR: Product with ID %s not found' % product_id
             product = res[0].getObject()
             pricebook_id = get_standard_pricebook_id(sfbc)
+
+        # Handle Product Forms with multiple products, each with their own quantity
+        products = []
+        products_csv = self.request.form.get('c_products', None)
+        if products_csv:
+            for item in products_csv.split(','):
+                item_id, item_quantity = item.split(':')
+                res = pc.searchResults(sf_id = item_id, portal_type='collective.salesforce.fundraising.donationproduct')
+                if not res:
+                    return 'ERROR: Product with ID %s not found' % product_id
+                products.append({'id': item_id, 'quantity': item_quantity, 'product': res[0].getObject()})
 
         # If the response was a failure of some kind or another, re-render the form with the error message
         # The response goes back to Authorize.net who then renders it through their servers to the user
@@ -329,10 +341,26 @@ class AuthnetCallbackDPM(grok.View):
 
                 # Set a custom name with the product info and quantity
                 data['Name'] = '%s %s - %s (Qty %s)' % (first_name, last_name, product.title, quantity)
+
+            elif products:
+                # record product donations as a particular type, if possible
+                if settings.sf_opportunity_record_type_product:
+                    data['RecordTypeID'] = settings.sf_opportunity_record_type_product
+                # Set the pricebook on the Opportunity to the standard pricebook
+                data['Pricebook2Id'] = pricebook_id
+
+                # Set amount to 0 since the amount is incremented automatically by Salesforce
+                # when an OpportunityLineItem is created against the Opportunity
+                data['Amount'] = 0
+
+                # Set a custom name with the product info and quantity
+                data['Name'] = '%s %s - %s' % (first_name, last_name, quantity)
+                
             else:
                 # this is a one-time donation, record is as such if possible
                 if settings.sf_opportunity_record_type_one_time:
                     data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
+
 
             res = sfbc.create(data)
 
@@ -361,6 +389,24 @@ class AuthnetCallbackDPM(grok.View):
                     'UnitPrice': product.price,
                     'Quantity': quantity,
                 })
+                
+                if not line_item_res[0]['success']:
+                    raise Exception(line_item_res[0]['errors'][0]['message'])
+
+            # If there are Products from a Product Form, create the OpportunityLineItems (1 API Call)
+            if products:
+                line_items = []
+                for item in products:
+                    line_item = {
+                        'type': 'OpportunityLineItem',
+                        'OpportunityId': opportunity['id'],
+                        'PricebookEntryId': item['product'].pricebook_entry_sf_id,
+                        'UnitPrice': item['product'].price,
+                        'Quantity': item['quantity'],
+                    }
+                    line_items.append(line_item)
+                
+                line_item_res = sfbc.create(line_items)
                 
                 if not line_item_res[0]['success']:
                     raise Exception(line_item_res[0]['errors'][0]['message'])

@@ -83,6 +83,12 @@ class DonationProduct(dexterity.Item):
 #    grok.name('view')
 #    grok.template('view')
 
+class ProductFormComponent(grok.View):
+    grok.context(IDonationProduct)
+    grok.require('zope2.View')
+    grok.name('product_form_component')
+    grok.template('product_form_component')
+
 class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
     grok.context(IDonationProduct)
     grok.require('zope2.View')
@@ -128,3 +134,4 @@ class AuthnetFingerprint(BaseAuthnetFingerprint):
 
     def update(self):
         super(AuthnetFingerprint, self).update()
+

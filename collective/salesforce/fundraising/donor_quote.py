@@ -4,6 +4,7 @@ from zope.interface import alsoProvides
 from zope.component import getUtility
 from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
+from plone.namedfile.field import NamedImage
 from Products.CMFCore.utils import getToolByName
 from plone.directives import dexterity, form
 
@@ -16,7 +17,11 @@ class IDonorQuote(form.Schema, IImageScaleTraversable):
     """
     A quote from a donor about why they donated
     """
-
+    image = NamedImage(
+        title=u"Photo",
+        description=u"(optional) Upload a photo to show with your quote.",
+        required = False,
+    )
     form.model("models/donor_quote.xml")
 
     #form.mode(contact_sf_id = 'hidden')

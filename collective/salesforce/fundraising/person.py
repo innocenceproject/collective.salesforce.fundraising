@@ -14,6 +14,7 @@ from dexterity.membrane.membrane_helpers import get_brains_for_email
 from zope.app.container.interfaces import IObjectAddedEvent
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 from plone.namedfile.interfaces import IImageScaleTraversable
+from plone.namedfile.field import NamedBlobImage
 from Products.CMFCore.interfaces import ISiteRoot
 
 from collective.salesforce.content.interfaces import IModifiedViaSalesforceSync
@@ -24,6 +25,12 @@ class IPerson(form.Schema, IImageScaleTraversable, IMember):
     """
     A person who is a user in Plone and a Contact in Salesforce
     """
+
+    portrait = NamedBlobImage(
+            title = u"Portrait",
+            description = u"The photo used to identify you on the site",
+            required = False,
+    )
 
     form.model("models/person.xml")
 
@@ -54,6 +61,7 @@ class IAddPerson(form.Schema, IEmail):
     password_confirm = schema.Password(
         title=_(u"Confirm Password"),
     )
+
     came_from = schema.TextLine(
         title=_(u"Redirect after create"),
         required=False,
