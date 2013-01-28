@@ -52,7 +52,7 @@ class StripeDonationForm(grok.View):
         if self.request.method == 'POST':
             resp = self.process_donation()
 
-        self.amount = self.request.form.get('amount', None)
+        self.amount = self.request.form.get('x_amount', None)
         if self.amount is not None:
             self.amount = int(self.amount)
 
@@ -88,10 +88,14 @@ class StripeDonationForm(grok.View):
 
     def process_donation(self):
         settings = get_stripe_settings()
-        resp = stripe.Charge.create(
-            amount=self.request.form.get('amount'),
-            card=self.request.form.get('token'),
-            currency=settings.currency,
+        stripe_util = getUtility(IStripeUtility)
+        # FIXME: Will error if anything but integer is in x_amount
+        amount = int(self.request.form.get('x_amount'))
+        # Stripe takes cents
+        amount = amount * 100
+        resp = stripe_util.charge_card(
+            token=self.request.form.get('stripeToken'),
+            amount=amount,
             description='test donation',
         )
         import pdb; pdb.set_trace()
@@ -161,7 +165,7 @@ class StripeDonationForm(grok.View):
             state = self.request.form.get('state', None)
             zipcode = self.request.form.get('zip', None)
             country = self.request.form.get('country', None)
-            amount = int(float(self.request.form.get('amount', None)))
+            amount = int(float(self.request.form.get('x_amount', None)))
 
             res = get_brains_for_email(self.context, email, self.request)
             # If no existing user, create one which creates the contact in SF (1 API call)
