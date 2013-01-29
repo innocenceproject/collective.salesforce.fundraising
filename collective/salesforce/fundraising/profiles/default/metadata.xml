@@ -7,6 +7,6 @@
         <dependency>profile-plone.app.registry:default</dependency>
         <dependency>profile-collective.oembed:default</dependency>
         <dependency>profile-dexterity.membrane:behavior</dependency>
-        <dependency>profile-collective.stripe:behavior</dependency>
+        <dependency>profile-collective.stripe:default</dependency>
     </dependencies>
 </metadata>
