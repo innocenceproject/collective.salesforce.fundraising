@@ -148,7 +148,7 @@ class AuthnetFingerprint(BaseAuthnetFingerprint):
         super(AuthnetFingerprint, self).update()
 
 class DonationFormStripe(BaseDonationFormStripe):
-    grok.context(IProductForm)
+    grok.context(IDonationProduct)
 
     def update_levels(self):
         """ Donation levels are not used on a product form """
@@ -166,5 +166,5 @@ class DonationFormStripe(BaseDonationFormStripe):
         return acquired_parent.sf_object_id
 
 class ProcessStripeDonation(BaseProcessStripeDonation):
-    grok.context(IProductForm)
+    grok.context(IDonationProduct)
     grok.name('process_stripe_donation')
