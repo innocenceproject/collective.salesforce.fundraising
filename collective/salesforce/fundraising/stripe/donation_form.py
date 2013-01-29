@@ -36,7 +36,7 @@ from collective.salesforce.fundraising.us_states import states_list
 from collective.stripe.utils import get_settings as get_stripe_settings
 from collective.stripe.utils import IStripeUtility
 
-class StripeDonationForm(grok.View):
+class DonationFormStripe(grok.View):
     """ Renders a donation form setup to submit through Authorize.net's Direct Post Method (DPM) """
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
