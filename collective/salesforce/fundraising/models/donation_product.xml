@@ -12,7 +12,7 @@
             <title>Description</title>
             <description>A description of the item.  Shown only on receipt</description>
         </field>
-        <field name="donation_only" type="zope.schema.Text" sf:field="Donation_Only__c">
+        <field name="donation_only" type="zope.schema.Bool" sf:field="Donation_Only__c">
             <title>Donation Only?</title>
             <description>If checked, treat purchases of this product as donations.  This is useful, for example, to create a form with multiple donation line items to different target funds allowing the user to allocate individual amounts to each line item.  IMPORTANT: If you check this, set the price to 1</description>
         </field>

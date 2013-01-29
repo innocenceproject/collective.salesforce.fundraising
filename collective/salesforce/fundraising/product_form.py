@@ -14,9 +14,8 @@ from plone.namedfile.interfaces import IImageScaleTraversable
 from collective.salesforce.fundraising.utils import get_standard_pricebook_id
 from collective.salesforce.fundraising.authnet.dpm import DonationFormAuthnetDPM as BaseDonationFormAuthnetDPM
 from collective.salesforce.fundraising.authnet.dpm import AuthnetFingerprint as BaseAuthnetFingerprint
-
-
-# Interface class; used to define content-type schema.
+from collective.salesforce.fundraising.stripe.donation_form import DonationFormStripe as BaseDonationFormStripe
+from collective.salesforce.fundraising.stripe.donation_form import ProcessStripeDonation as BaseProcessStripeDonation
 
 class IProductForm(form.Schema):
     """
@@ -99,3 +98,25 @@ class AuthnetFingerprint(BaseAuthnetFingerprint):
 
     def update(self):
         super(AuthnetFingerprint, self).update()
+
+class DonationFormStripe(BaseDonationFormStripe):
+    grok.context(IProductForm)
+
+    def update_levels(self):
+        """ Donation levels are not used on a product form """
+        return
+
+    def campaign_sf_id(self):
+        """get the sf_object_id of the acquisition parent of the donation
+
+        because a donation product may be acquired from a personal fundraising
+        page contained within the fundraising page to which the product
+        belongs, we must get the campaign id of the correct campaing, the 
+        acquisition parent, not the containment parent.
+        """
+        acquired_parent = aq_parent(self.context)
+        return acquired_parent.sf_object_id
+        
+class ProcessStripeDonation(BaseProcessStripeDonation):
+    grok.context(IProductForm)
+    grok.name('process_stripe_donation')

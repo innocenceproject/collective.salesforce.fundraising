@@ -48,6 +48,9 @@ from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 
 from collective.oembed.interfaces import IConsumer
 
+from collective.stripe.interfaces import IStripeEnabledView
+from collective.stripe.interfaces import IStripeModeChooser
+
 # Interface class; used to define content-type schema.
 
 class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
@@ -177,6 +180,12 @@ def handleFundraisingCampaignCreated(campaign, event):
 
 
 class FundraisingCampaignPage(object):
+    grok.implements(IStripeModeChooser)
+
+    def get_stripe_mode(self):
+        # FIXME: This should be based on a permission controlled by workflow and perhaps a request variable switch?
+        return 'test'
+
     def get_percent_goal(self):
         if self.goal and self.donations_total:
             return int((self.donations_total * 100) / self.goal)
@@ -444,6 +453,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
 
 class CampaignView(grok.View):
     grok.context(IFundraisingCampaignPage)
+    grok.implements(IStripeEnabledView)
     grok.require('zope2.View')
 
     grok.name('view')
