@@ -2,7 +2,7 @@
   <input class="field-product-quantity" type="number" tal:attributes="name fieldname; id fieldname;" />
   <label for="" tal:attributes="for fieldname" min="5" pattern="[0-9][0-9]*" tal:content="view/context/Title" />
   <span class="price-wrapper">
-    (<span class=price-prefix">$</span><span class="donation-product-price" tal:content="view/context/price"></span> each)
+    (<span class="price-prefix">$</span><span class="donation-product-price" tal:content="view/context/price"></span> each)
   </span>
   <div class="product-description" tal:content="view/context/Description" />
   <ul class="edit-links" tal:condition="nothing">

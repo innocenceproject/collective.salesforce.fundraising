@@ -64,10 +64,14 @@ function processNewAmountValue() {
     showHideDonationForm(form)
 
     // Recurly integration
-    populateRecurlyQuantity($(this).val());
+    if (form.hasClass('donation-form-recurly') == true) {
+        populateRecurlyQuantity($(this).val());
+    }
 
     // Authorize.net DPM integration
-    updateAuthnetDpmFingerprint(form);
+    if (form.hasClass('donation-form-authnet-dpm') == true) {
+        updateAuthnetDpmFingerprint(form);
+    }
 
 }
 
@@ -181,6 +185,67 @@ function setupAuthnetDpmForm() {
             updateAuthnetDpmFingerprint(form);
         }, 600000);
     });
+}
+
+function stripeDonationResponseHandler(status, response) {
+    // FIXME: This handler will currently only work with a single Stripe donation form on the page
+    //        Need to determine how to determine the originating form somehow (perhaps class on form before token generation?)
+    if (response.error) {
+        // Show the errors on the form
+        // FIXME: include basic html in template and just populate and show/hide here
+        $('.donation-form-stripe .fieldset-billing-info').before($('<div class="donation-form-error"><h5>Processing Error</h5><p>There was an issue processing your gift.  The error message was:</p><em>' + response.error.message + '</em></div>'));
+        $('.form-buttons').removeClass('submitted');
+        $('.form-buttons').removeClass('submitting');
+
+        // FIXME: this didn't work for some reason, possibly jquery version issues?
+        //$('.form-buttons input').prop('disabled', false);
+    } else {
+        var $form = $('.donation-form-stripe');
+        // token contains id, last4, and card type
+        var token = response.id;
+        // Insert the token into the form so it gets submitted to the server
+        $form.append($('<input type="hidden" name="stripeToken" />').val(token));
+
+        $.post(
+            $form.attr('action'), 
+            $form.serializeArray(), 
+            function (data, textStatus) {
+                if (data['success'] == true) {
+                    window.location = data['redirect'];
+                    return false;
+                } else {
+                    // FIXME: Populate donation-form-errors instead of alert
+                   alert('Transaction Failed: '+ data['message']);
+                }
+            },
+            'json'
+        );
+    }
+}
+
+function setupStripeForm() {
+    var forms = $('form.donation-form-stripe');
+    forms.each(function () {
+        var stripe_form = $(this);
+        stripe_form.submit(function (e) {
+            e.preventDefault();
+            // FIXME: this didn't work for some reason, possibly jquery version issues?
+            //stripe_form.find('.form-buttons input').prop('disabled', true);
+            
+            Stripe.createToken({
+                number: stripe_form.find('.subfield-card-number input').val(),
+                cvc: stripe_form.find('.subfield-card-cvc input').val(),
+                exp_month: stripe_form.find('select.card-expiration-month').val(),
+                exp_year: stripe_form.find('select.card-expiration-year').val()
+                //address_line1: stripe_form.find('.subfield-address input').val(),
+                //address_city: stripe_form.find('.subfield-city input').val(),
+                //address_state: stripe_form.find('.subfield-state input').val(),
+                //address_zip: stripe_form.find('.subfield-zip input').val(),
+                //address_country: stripe_form.find('.subfield-country input').val(),
+            }, stripeDonationResponseHandler);
+            return false;
+        });
+    })
 }
 
 function handleHonoraryTypeChange() {
@@ -593,6 +658,7 @@ $(document).ready(function() {
     setupAuthnetDpmForm();
     setupHonoraryForm();
     setupProductForm();
+    setupStripeForm();
 
     // Handle Fundraising Seal More Info link
     $('.fundraising-seal a').click(function () {
