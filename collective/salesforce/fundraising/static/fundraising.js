@@ -194,6 +194,8 @@ function stripeDonationResponseHandler(status, response) {
         // Show the errors on the form
         // FIXME: include basic html in template and just populate and show/hide here
         $('.donation-form-stripe .fieldset-billing-info').before($('<div class="donation-form-error"><h5>Processing Error</h5><p>There was an issue processing your gift.  The error message was:</p><em>' + response.error.message + '</em></div>'));
+        $('.form-buttons').removeClass('submitted');
+        $('.form-buttons').removeClass('submitting');
 
         // FIXME: this didn't work for some reason, possibly jquery version issues?
         //$('.form-buttons input').prop('disabled', false);
@@ -203,8 +205,21 @@ function stripeDonationResponseHandler(status, response) {
         var token = response.id;
         // Insert the token into the form so it gets submitted to the server
         $form.append($('<input type="hidden" name="stripeToken" />').val(token));
-        // and submit
-        $form.get(0).submit();
+
+        $.post(
+            $form.attr('action'), 
+            $form.serializeArray(), 
+            function (data, textStatus) {
+                if (data['success'] == true) {
+                    window.location = data['redirect'];
+                    return false;
+                } else {
+                    // FIXME: Populate donation-form-errors instead of alert
+                   alert('Transaction Failed: '+ data['message']);
+                }
+            },
+            'json'
+        );
     }
 }
 

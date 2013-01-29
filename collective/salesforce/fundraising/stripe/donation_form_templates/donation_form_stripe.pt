@@ -1,4 +1,4 @@
-    <form method="post" action="donation_form_stripe" id="donation-form-single" class="donation-form donation-form-stripe">
+    <form method="post" tal:attributes="action string:${view/context/absolute_url}/process_stripe_donation" id="donation-form-single" class="donation-form donation-form-stripe">
       <input type="hidden" name="description" value="Donation" />
       <input type="hidden" name="campaign_id" value="" tal:attributes="value view/context/sf_object_id" />
       <input type="hidden" name="source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
@@ -13,7 +13,7 @@
           <div class="field-amount">
             <label for="x_amount">or Enter an Amount</label>
             <label for="x_amount" class="currency">$</label>
-            <input name="x_amount" type="number" required="required" min="5" pattern="[0-9][0-9]*" tal:attributes="value view/amount" />
+            <input name="x_amount" type="number" required="required" min="5" pattern="[0-9][0-9]*" />
             <label for="x_amount">($5 minimum)</label>
           </div>
   
@@ -32,10 +32,10 @@
 
       </fieldset>
 
-      <div class="donation-form-error" tal:condition="nothing">
+      <div class="donation-form-error" tal:condition="view/error|nothing">
         <h5>Processing Error</h5>
-        <p>There was an issue processing your gift.  The error message from the payment processor was:</p>
-        <em><span tal:replace="nothing" />: (<span tal:replace="nothing" />) <span tal:replace="nothing" /></em>
+        <p>There was an issue processing your gift:</p>
+        <p class="error-message" tal:content="view/error">ERROR MESSAGE HERE</p>
       </div>   
  
       <fieldset class="fieldset-contact-info after-amount">
