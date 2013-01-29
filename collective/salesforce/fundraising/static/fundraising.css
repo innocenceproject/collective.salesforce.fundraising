@@ -434,8 +434,10 @@ a.button-create-personal-campaign:hover {
           display: block; }
       #content form.donation-form .field .subfield.subfield-card-number {
         width: 75%; }
+      #content form.donation-form .field .subfield.subfield-card-cvc,
       #content form.donation-form .field .subfield.subfield-card-cvv {
         width: 15%; }
+        #content form.donation-form .field .subfield.subfield-card-cvc .field-help,
         #content form.donation-form .field .subfield.subfield-card-cvv .field-help {
           text-align: right;
           width: 120px;
