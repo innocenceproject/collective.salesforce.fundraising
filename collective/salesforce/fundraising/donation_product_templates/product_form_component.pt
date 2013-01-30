@@ -1,5 +1,5 @@
 <div class="donation-product" tal:define="fieldname string:donationform-field-${view/context/sf_object_id}" >
-  <input class="field-product-quantity" type="number" tal:attributes="name fieldname; id fieldname;" />
+  <input class="field-product-quantity" type="text" min="0" tal:attributes="name fieldname; id fieldname;" />
   <label for="" tal:attributes="for fieldname" min="5" pattern="[0-9][0-9]*" tal:content="view/context/Title" />
   <span class="price-wrapper">
     (<span class="price-prefix">$</span><span class="donation-product-price" tal:content="view/context/price"></span> each)

@@ -26,11 +26,10 @@
 
       </fieldset>
 
-      <div class="donation-form-error" tal:condition="view/error|nothing">
-        <h5>Processing Error</h5>
-        <p>There was an issue processing your gift:</p>
+      <div class="donation-form-error" style="display: none">
+        <h5></h5>
         <p class="error-message" tal:content="view/error">ERROR MESSAGE HERE</p>
-      </div>   
+      </div>
  
       <fieldset class="fieldset-contact-info after-amount">
         <legend>Contact Info</legend>

@@ -192,10 +192,14 @@ function stripeDonationResponseHandler(status, response) {
     //        Need to determine how to determine the originating form somehow (perhaps class on form before token generation?)
     if (response.error) {
         // Show the errors on the form
-        // FIXME: include basic html in template and just populate and show/hide here
-        $('.donation-form-stripe .fieldset-billing-info').before($('<div class="donation-form-error"><h5>Processing Error</h5><p>There was an issue processing your gift.  The error message was:</p><em>' + response.error.message + '</em></div>'));
-        $('.form-buttons').removeClass('submitted');
-        $('.form-buttons').removeClass('submitting');
+        var form_error = $('.donation-form-error');
+        if (response.error.message.length > 0) {
+            form_error.find('h5').text('There was an issue processing your gift');
+            form_error.find('p.error-message').text(response.error.message);
+            $('.donation-form-error').slideDown();
+        }
+        $('.form-buttons input').removeClass('submitted');
+        $('.form-buttons input').removeClass('submitting');
 
         // FIXME: this didn't work for some reason, possibly jquery version issues?
         //$('.form-buttons input').prop('disabled', false);
@@ -206,20 +210,35 @@ function stripeDonationResponseHandler(status, response) {
         // Insert the token into the form so it gets submitted to the server
         $form.append($('<input type="hidden" name="stripeToken" />').val(token));
 
-        $.post(
-            $form.attr('action'), 
-            $form.serializeArray(), 
-            function (data, textStatus) {
+        $.ajax({
+            url: $form.attr('action'), 
+            data: $form.serializeArray(), 
+            type: 'POST',
+            success: function (data, textStatus) {
                 if (data['success'] == true) {
                     window.location = data['redirect'];
                     return false;
                 } else {
-                    // FIXME: Populate donation-form-errors instead of alert
-                   alert('Transaction Failed: '+ data['message']);
+                    $('html, body').animate({ scrollTop: form_error.prev().offset().top - $('body').offset().top});
+                    var form_error = $('.donation-form-error');
+                    form_error.find('h5').text('There was an issue processing your gift');
+                    form_error.find('p.error-message').text(data['message']);
+                    $('.donation-form-error').slideDown();
+                    $('.form-buttons input').removeClass('submitted');
+                    $('.form-buttons input').removeClass('submitting');
                 }
             },
-            'json'
-        );
+            error: function (data, textStatus) {
+                $('html, body').animate({ scrollTop: form_error.prev().offset().top - $('body').offset().top});
+                var form_error = $('.donation-form-error');
+                form_error.find('h5').text('There was an issue processing your gift');
+                form_error.find('p.error-message').text('Please try again or contact us for assistance');
+                $('.donation-form-error').slideDown();
+                $('.form-buttons input').removeClass('submitted');
+                $('.form-buttons input').removeClass('submitting');
+            },
+            dataType: 'json'
+        });
     }
 }
 
@@ -586,6 +605,10 @@ $(document).ready(function() {
              
             msg.css({ visibility: 'visible', position: 'absolute', top: pos.top, left: pos.left })
                 .fadeIn(conf.speed);     
+   
+            // Clear submitting and submitted classes to allow re-submission
+            $('.form-buttons input').removeClass('submitted');
+            $('.form-buttons input').removeClass('submitting');
 
             if (conf.singleError == true) {
                 return false;

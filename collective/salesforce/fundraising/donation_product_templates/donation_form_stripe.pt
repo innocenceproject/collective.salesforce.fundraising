@@ -20,7 +20,7 @@
           <div class="field-amount">
             <div class="field-quantity">
               <label for="c_quantity">or Enter a Quantity</label>
-              <input name="c_quantity" type="number" required="required" min="1" pattern="[0-9][0-9]*" tal:attributes="value view/quantity" />
+              <input name="c_quantity" type="text" required="required" min="0" pattern="[0-9][0-9]*" tal:attributes="value view/quantity" />
             </div>
             <div class="field-total">
               <label for="x_amount" class="currency">$</label>
@@ -44,13 +44,11 @@
 
       </fieldset>
 
-
-      <div class="donation-form-error" tal:condition="view/error|nothing">
-        <h5>Processing Error</h5>
-        <p>There was an issue processing your gift:</p>
+      <div class="donation-form-error" style="display: none">
+        <h5></h5>
         <p class="error-message" tal:content="view/error">ERROR MESSAGE HERE</p>
-      </div>   
- 
+      </div>
+
       <fieldset class="fieldset-contact-info after-amount">
         <legend>Contact Info</legend>
         <div class="field field-name">

@@ -13,7 +13,7 @@
           <div class="field-amount">
             <label for="x_amount">or Enter an Amount</label>
             <label for="x_amount" class="currency">$</label>
-            <input name="x_amount" type="number" required="required" min="5" pattern="[0-9][0-9]*" />
+            <input name="x_amount" type="text" required="required" min="5" pattern="[0-9][0-9]*" />
             <label for="x_amount">($5 minimum)</label>
           </div>
   
@@ -32,9 +32,8 @@
 
       </fieldset>
 
-      <div class="donation-form-error" tal:condition="view/error|nothing">
-        <h5>Processing Error</h5>
-        <p>There was an issue processing your gift:</p>
+      <div class="donation-form-error" style="display: none">
+        <h5></h5>
         <p class="error-message" tal:content="view/error">ERROR MESSAGE HERE</p>
       </div>   
  
