@@ -1,0 +1,98 @@
+<div class="donation-receipt">
+  <table width="100%" style="background-color: #fff; border: 1px solid #ddd">
+    <tbody>
+      <tr>
+        <td style="padding: 10px 20px 20px 20px"><b style="font-size: 16px; padding: 0; margin: 0">Transaction Summary: <span tal:replace="view/organization_name" /></b></td>
+      </tr>
+      <tr>
+        <td width="100%" valign="top">
+
+          <div class="donation-details" style="padding: 0 20px">
+            <div class="donation-amount"><b>Gift Amount: $<span tal:replace="python: int(view.context.amount)" /></b></div>
+            <div class="donation-date" tal:content="string:Date: ${view/context/created}" />
+            <tal:if_recurring condition="view/context/is_recurring">
+            <br />
+            <div class="donation-recurring"><b>Repeats Monthly</b></div>
+            <div>We will deduct $<span tal:replace="python: int(view.context.amount)" /> from your account each month going forward</div>
+            </tal:if_recurring>
+            <tal:if_products condition="view/products">
+            <br />
+            <table class="donation-lineitems" style="width:100%;">
+              <caption style="text-align:left;font-weight:bold;border-bottom:1px solid black">Items Purchased</caption>
+              <tr style="font-size:90%;text-align:left"><th>Item</th><th>Price</th><th>Quantity</th><th>Total</th></tr>
+              <tr tal:repeat="line view/products">
+                <td tal:content="line/product/title">[Product Name]</td>
+                <td>$<span tal:replace="line/price">[Product Price]</span></td>
+                <td tal:content="line/quantity">[Product Quantity]</td>
+                <td>$<span tal:replace="line/total">[Product Total]</span></td>
+              </tr>
+            </table>
+
+            <span tal:condition="nothing">NOTE: This next section assumes there is only one product in the purchase and would need to be changed to handle multiple product purchases</span>
+            <div class="product-info" 
+                tal:define="item python: view.products[0]; product python:item['product']" 
+                tal:condition="python: product.location or product.date or product.notes">
+              <div tal:condition="product/location"><b>Location</b></div>
+              <div tal:condition="product/location" tal:content="product/location"></div>
+              <br />
+              <div tal:condition="product/date"><b>Date</b></div>
+              <div tal:condition="product/date" tal:content="product/date"></div>
+              <br />
+              <div tal:condition="product/notes"><b>Notes</b></div>
+              <div tal:condition="product/notes" tal:content="product/notes"></div>
+            </div>
+            </tal:if_products>
+          </div>
+          <br />
+          <div class="donor-details" style="padding: 0 20px 20px 20px" tal:condition="view/person/last_name|nothing">
+            <div><b class="donor-name" tal:content="string:${view/person/first_name} ${view/person/last_name}" /></div>
+            <div class="donor-street-address" tal:content="view/person/address" />
+            <div class="donor-city-state-zip" tal:content="string:${view/person/city}, ${view/person/state}  ${view/person/zip}" />
+            <div class="donor-country" tal:content="view/person/country" />
+            <div class="donor-email" tal:content="view/person/email" />
+            <div class="donor-phone" tal:content="view/person/phone" />
+          </div>
+        </td>
+      </tr>
+      <tr style="background-color: #eee" tal:condition="python: view.context.honorary_type and view.context.honorary_first_name">
+        <td style="background-color: white; padding: 20px">
+          <div><b>
+            <span tal:condition="python: view.context.honorary_type == 'Honorary'">In honor of</span>
+            <span tal:condition="python: view.context.honorary_type == 'Memorial'">In memory of</span>
+            <strong tal:content="string:${view/context/honorary_first_name} ${view/context/honorary_last_name}">NAME</strong>
+          </b></div>
+
+          <div tal:condition="python: view.context.honorary_notification_type in ['Email','Mail']">
+            Notification of your gift was sent to 
+            <span tal:replace="view/context/honorary_recipient_first_name">RECIPIENT</span> at 
+
+            <tal:if_email condition="python: view.context.honorary_notification_type == 'Email'">
+              <span tal:replace="view/context/honorary_email">EMAIL</span>
+              <span tal:condition="view/context/honorary_message"> with the custom message you provided</span>.  
+              You will receive a copy via email.
+            </tal:if_email>
+
+            <tal:if_mail condition="python: view.context.honorary_notification_type == 'Mail'">
+              the address shown below
+              <span tal:condition="view/context/honorary_message"> with the custom message you provided</span>.  
+            
+              <div class="address">
+                <br />
+                <div tal:content="view/context/honorary_street_address" />
+                <span tal:content="view/context/honorary_city" />
+                <span tal:content="view/context/honorary_state" />,
+                <span tal:content="view/context/honorary_zip" />
+                <div tal:content="view/context/honorary_country" />
+              </div>
+            </tal:if_mail>
+          </div>
+
+        </td>
+      </tr>
+      <tr style="background-color: #eee">
+        <td style="background-color: white; padding: 20px"><div class="donation-receipt-legal" tal:content="structure view/donation_receipt_legal" tal:condition="view/donation_receipt_legal" />
+      </tr>
+    </tbody>
+  </table>
+
+</div>

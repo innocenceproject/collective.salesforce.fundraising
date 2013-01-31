@@ -1,0 +1,74 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.salesforce.fundraising">
+<body>
+
+<metal:main fill-slot="content-title">
+  <metal:content-title define-macro="content-title">
+    <h1 class="documentFirstHeading">Thank You</h1>
+  </metal:content-title>
+</metal:main>
+
+<metal:main fill-slot="content-description">
+  <metal:content-description define-macro="content-description">
+  </metal:content-description>
+</metal:main>
+
+<metal:main fill-slot="content-core">
+  <metal:content-core define-macro="content-core">
+
+    <div class="thank-you-message" tal:content="structure context/thank_you_message/output|nothing" />
+
+    <div class="donation-receipt-wrapper" tal:content="structure view/receipt" tal:condition="view/receipt" />
+
+    <div class="next-steps">
+
+      <h2 class="next-steps-header">Increase the Impact of Your Gift</h2>
+
+      <dl class="portlet">
+        <dt class="portletHeader">Share</dt>
+        <dd class="portletItem">
+          <p>Click on the button below to let your friends and family know you donated and encourage them to donate too</p>
+          <a class="button button-share" id="share-message-thank-you" href="#">Share</a>
+          <script type="text/javascript" tal:content="structure view/render_janrain_share">
+            // Janrain share widget js code gets merged into here
+          </script>
+        </dd>
+        <dd class="portletFooter" />
+      </dl>
+
+      <dl class="portlet portletDonorQuote" tal:condition="python: getattr(view, 'donor_quote_form_html', None)">
+        <dt class="portletHeader">Testimonial</dt>
+        <dd class="portletItem">
+          <div tal:replace="structure view/donor_quote_form_html" />
+        </dd>
+        <dd class="portletFooter" />
+      </dl>
+     
+      <dl class="portlet portletEmployerMatch" tal:condition="context/show_employer_matching">
+        <dt class="portletHeader">Employer Match</dt>
+        <dd class="portletItem"></dd>
+        <dd class="portletFooter" />
+      </dl> 
+
+      <dl class="portlet portletFundraise" tal:condition="context/can_create_personal_campaign_page">
+        <dt class="portletHeader">Fundraise</dt>
+        <dd class="portletItem">
+          <p>Set-up your own fundraising page and raise money</p>
+
+          <a class="button button-create-personal" href="#" tal:attributes="href context/create_personal_campaign_page_link">Create Fundraiser</a>
+        </dd>
+        <dd class="portletFooter" />
+      </dl> 
+
+    </div>
+
+  </metal:content-core>
+</metal:main>
+
+</body>
+</html>
+

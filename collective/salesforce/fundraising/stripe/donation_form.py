@@ -18,6 +18,9 @@ from Products.statusmessages.interfaces import IStatusMessage
 
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from plone.dexterity.utils import createContentInContainer
+from plone.uuid.interfaces import IUUID
+from zope.app.intid.interfaces import IIntIds
+from z3c.relationfield import RelationValue
 
 from AccessControl.SecurityManagement import newSecurityManager
 
@@ -30,6 +33,7 @@ from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import get_standard_pricebook_id
 
+from collective.salesforce.fundraising.donation import build_secret_key
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.us_states import states_list
 
@@ -277,121 +281,56 @@ class ProcessStripeDonation(grok.View):
 
             mtool.logoutUser()
 
-        # Create the Opportunity object and Opportunity Contact Role (2 API calls)
+        # Create the Donation
+
+        intids = getUtility(IIntIds)
+        person_intid = intids.getId(person)
+        campaign_intid = intids.getId(campaign)
 
         transaction_id = None
         data = {
-            'type': 'Opportunity',
-            'AccountId': settings.sf_individual_account_id,
-            'Success_Transaction_Id__c': self.stripe_result['id'],
-            'Amount': amount,
-            'Name': '%s %s - $%i One Time Donation' % (first_name, last_name, amount),
-            'StageName': 'Posted',
-            'CloseDate': datetime.now(),
-            'CampaignId': campaign.sf_object_id,
-            'Source_Campaign__c': campaign.get_source_campaign(),
-            'Source_Url__c': campaign.get_source_url(),
+            'transaction_id': self.stripe_result['id'],
+            'secret_key': build_secret_key(),
+            'campaign': RelationValue(campaign_intid),
+            'amount': amount,
+            'title': '%s %s - $%i One Time Donation' % (first_name, last_name, amount),
+            'stage': 'Posted',
+            'products': [],
+            'campaign_sf_id': campaign.sf_object_id,
+            'source_campaign_sf_id': campaign.get_source_campaign(),
+            'source_url': campaign.get_source_url(),
         }
 
         if product_id and product is not None:
-            # FIXME: Add custom record type for Stripe Donations
-            # record product donations as a particular type, if possible
-            if settings.sf_opportunity_record_type_product:
-                data['RecordTypeID'] = settings.sf_opportunity_record_type_product
-            # Set the pricebook on the Opportunity to the standard pricebook
-            data['Pricebook2Id'] = pricebook_id
-
-            # Set amount to 0 since the amount is incremented automatically by Salesforce
-            # when an OpportunityLineItem is created against the Opportunity
-            data['Amount'] = 0
-
             # Set a custom name with the product info and quantity
-            data['Name'] = '%s %s - %s (Qty %s)' % (first_name, last_name, product.title, quantity)
+            data['title'] = '%s %s - %s (Qty %s)' % (first_name, last_name, product.title, quantity)
 
         elif products:
-            # record product donations as a particular type, if possible
-            if settings.sf_opportunity_record_type_product:
-                data['RecordTypeID'] = settings.sf_opportunity_record_type_product
-            # Set the pricebook on the Opportunity to the standard pricebook
-            data['Pricebook2Id'] = pricebook_id
-
-            # Set amount to 0 since the amount is incremented automatically by Salesforce
-            # when an OpportunityLineItem is created against the Opportunity
-            data['Amount'] = 0
-
             # Set a custom name with the product info and quantity
             parent_form = products[0]['product'].get_parent_product_form()
             title = 'Donation'
             if parent_form:
                 title = parent_form.title
-            data['Name'] = '%s %s - %s' % (first_name, last_name, title)
+            data['title'] = '%s %s - %s' % (first_name, last_name, title)
             
-        else:
-            # this is a one-time donation, record it as such if possible
-            if settings.sf_opportunity_record_type_one_time:
-                data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
-
-
-        res = sfbc.create(data)
-
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
-
-        opportunity = res[0]
-
-        role_res = sfbc.create({
-        'type': 'OpportunityContactRole',
-            'OpportunityId': opportunity['id'],
-            'ContactId': person.sf_object_id,
-            'IsPrimary': True,
-            'Role': 'Decision Maker',
-        })
-
-        if not role_res[0]['success']:
-            raise Exception(role_res[0]['errors'][0]['message'])
 
         # If there is a product, add the OpportunityLineItem (1 API Call)
         if product_id and product is not None:
-            line_item_res = sfbc.create({
-                'type': 'OpportunityLineItem',
-                'OpportunityId': opportunity['id'],
-                'PricebookEntryId': product.pricebook_entry_sf_id,
-                'UnitPrice': product.price,
-                'Quantity': quantity,
-            })
-            
-            if not line_item_res[0]['success']:
-                raise Exception(line_item_res[0]['errors'][0]['message'])
+            data['products'].append('%s|%s|%s' % product.price, quantity, IUUID(product))
 
         # If there are Products from a Product Form, create the OpportunityLineItems (1 API Call)
         if products:
-            line_items = []
             for item in products:
-                line_item = {
-                    'type': 'OpportunityLineItem',
-                    'OpportunityId': opportunity['id'],
-                    'PricebookEntryId': item['product'].pricebook_entry_sf_id,
-                    'UnitPrice': item['product'].price,
-                    'Quantity': item['quantity'],
-                }
-                line_items.append(line_item)
-            
-            line_item_res = sfbc.create(line_items)
-            
-            if not line_item_res[0]['success']:
-                raise Exception(line_item_res[0]['errors'][0]['message'])
+                data['products'].append('%s|%s|%s' % (item['product'].price, item['quantity'], IUUID(item['product'])))
 
-        # Create the Campaign Member (1 API Call).  Note, we ignore errors on this step since
-        # trying to add someone to a campaign that they're already a member of throws
-        # an error.  We want to let people donate more than once.
-        # Ignoring the error saves an API call to first check if the member exists
-        if settings.sf_create_campaign_member:
-            role_res = sfbc.create({
-                'type': 'CampaignMember',
-                'CampaignId': campaign.sf_object_id,
-                'ContactId': person.sf_object_id,
-                'Status': 'Responded',
-            })
+        people_container = getattr(getSite(), 'people')
+        donation = createContentInContainer(
+            campaign,
+            'collective.salesforce.fundraising.donation',
+            checkConstraints=False,
+            **data
+        )
+        donation.person = RelationValue(person_intid)
 
         # Record the transaction and its amount in the campaign
         campaign.add_donation(amount)
@@ -401,10 +340,10 @@ class ProcessStripeDonation(grok.View):
         #campaign.send_donation_receipt(self.request, opportunity['id'], amount)
 
         # If this is an honorary or memorial donation, redirect to the form to provide details
-        is_honorary = self.request.form.get('c_is_honorary', None)
+        is_honorary = self.request.form.get('is_honorary', None)
         if is_honorary == 'true':
-            redirect_url = '%s/honorary-memorial-donation?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
+            redirect_url = '%s/honorary-memorial-donation?key=%s' % (donation.absolute_url(), donation.secret_key)
         else:
-            redirect_url = '%s/thank-you?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
+            redirect_url = '%s?key=%s' % (donation.absolute_url(), donation.secret_key)
 
         return redirect_url

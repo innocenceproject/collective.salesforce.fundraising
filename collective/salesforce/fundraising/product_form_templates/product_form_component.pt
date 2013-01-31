@@ -6,6 +6,14 @@
   <div class="product-fieldset-contents">
     <tal:contents_loop tal:repeat="item view/context/@@folderListing">
       <span tal:define="item_obj item/getObject" tal:replace="structure item_obj/@@product_form_component" />
+      <div class="edit-links" tal:condition="view/can_edit">
+        <a href="" tal:attributes="href string:${item/getURL}/@@edit">Edit Product</a>
+      </div>
     </tal:contents_loop>
+    <div class="edit-links" tal:condition="view/can_edit">
+        <a href="" tal:attributes="href string:${view/context/absolute_url}/@@edit">Edit Fieldset</a>
+        <a href="" tal:attributes="href string:${view/context/absolute_url}/@@folder_contents">Change Order</a>
+        <a href="" tal:attributes="href string:${view/context/absolute_url}/++add++collective.salesforce.fundraising.donationproduct">Add Product</a>
+    </div>
   </div>
 </fieldset>

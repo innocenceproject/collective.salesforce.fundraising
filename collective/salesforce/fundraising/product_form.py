@@ -8,6 +8,8 @@ from Products.CMFCore.utils import getToolByName
 from Products.statusmessages.interfaces import IStatusMessage
 from plone.directives import dexterity, form
 from plone.app.textfield import RichText
+from Products.CMFCore.permissions import ModifyPortalContent
+from AccessControl import getSecurityManager
 
 from plone.namedfile.interfaces import IImageScaleTraversable
 
@@ -56,6 +58,10 @@ class ProductFormComponent(grok.View):
     grok.name('product_form_component')
     grok.template('product_form_component')
 
+    def can_edit(self):
+        sm = getSecurityManager()
+        return sm.checkPermission(ModifyPortalContent, self.context)
+
 class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
     grok.context(IProductForm)
     grok.require('zope2.View')
@@ -101,6 +107,10 @@ class AuthnetFingerprint(BaseAuthnetFingerprint):
 
 class DonationFormStripe(BaseDonationFormStripe):
     grok.context(IProductForm)
+
+    def can_edit(self):
+        sm = getSecurityManager()
+        return sm.checkPermission(ModifyPortalContent, self.context)
 
     def update_levels(self):
         """ Donation levels are not used on a product form """

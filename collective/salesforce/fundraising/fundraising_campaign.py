@@ -100,6 +100,12 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         required=False,
     )
 
+    donation_receipt_legal = schema.Text(
+        title=_(u"Donation Receipt Legal Text"),
+        description=_(u"Enter any legal text you want displayed at the bottom of html receipt.  For example, you might want to state that all donations are tax deductable and include the organization's Tax ID.  This field overrides the site-wide default receipt legal text configured in Fundraising Settings.  If no value is provided, the site default text will be used."),
+        required=False,
+    )
+
     fundraising_seals = schema.List(
         title=u"Fundraising Seals Override",
         description=u"Normally, the site default seals are shown on a campaign.  If you want to override the seals displayed only on this campaign, enter the full physical path to the seals here",

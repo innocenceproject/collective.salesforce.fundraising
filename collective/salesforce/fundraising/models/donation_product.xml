@@ -4,7 +4,7 @@
        xmlns:form="http://namespaces.plone.org/supermodel/form">
     
     <schema sf:object="Product2" sf:criteria="" sf:container="get_container">
-        <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c">
+        <field name="title" type="zope.schema.TextLine" sf:field="Name">
             <title>Title</title>
             <description>Appears as the donation form tab name and on the receipt</description>
         </field>

@@ -1,9 +1,11 @@
 <div class="donation-product" tal:define="fieldname string:donationform-field-${view/context/sf_object_id}" >
+  <span class="donation-only-product-currency" tal:condition="view/context/donation_only">$</span>
   <input class="field-product-quantity" type="text" min="0" tal:attributes="name fieldname; id fieldname;" />
   <label for="" tal:attributes="for fieldname" min="5" pattern="[0-9][0-9]*" tal:content="view/context/Title" />
-  <span class="price-wrapper">
-    (<span class="price-prefix">$</span><span class="donation-product-price" tal:content="view/context/price"></span> each)
+  <span class="price-wrapper" tal:condition="not:view/context/donation_only">
+    (<span class="price-prefix">$</span><span class="donation-product-price" tal:content="python: view.addcommas(view.context.price)"></span> each)
   </span>
+  <span class="hidden-price" style="display: none" tal:content="view/context/price" />
   <div class="product-description" tal:content="view/context/Description" />
   <ul class="edit-links" tal:condition="nothing">
     <li class="link-edit"><a href="" tal:attributes="href string:${view/context/absolute_url}/@@edit">Edit</a></li>

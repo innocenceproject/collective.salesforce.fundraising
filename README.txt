@@ -75,9 +75,6 @@ The system assumes the existence of a number of custom fields in Salesforce.  Fo
 Opportunity (Donation)
 ----------------------
 
-Honorary_Name__c
-Text(128)
-
 Honorary_City__c
 Text(128)
 
@@ -102,12 +99,11 @@ Long Text Area(32768)
 Honorary_Notification_Type__c
 Picklist
 
-Honorary_Recipient__c
-Text(128)
+Honorary_Recipient_First_Name__c
+Text(64)
 
-Honorary_Recipient_First_Name__cText(64)
-
-Honorary_Recipient_Last_Name__c Text(64)
+Honorary_Recipient_Last_Name__c
+Text(64)
 
 Honorary_State__c
 Text(128)
@@ -123,9 +119,6 @@ Text(32)
 
 Parent_Campaign__c
 Lookup(Campaign)
-
-Product__c
-Lookup(Product)
 
 Source_Campaign__c
 Lookup(Campaign)

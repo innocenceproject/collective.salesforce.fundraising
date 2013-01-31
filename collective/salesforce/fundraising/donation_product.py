@@ -1,3 +1,4 @@
+import locale
 from Acquisition import aq_base, aq_inner, aq_parent
 from five import grok
 from zope.app.container.interfaces import IObjectAddedEvent
@@ -100,6 +101,10 @@ class ProductFormComponent(grok.View):
     def update(self):
         sm = getSecurityManager()
         self.can_update = sm.checkPermission(ModifyPortalContent, self.context)
+
+    def addcommas(self, number):
+        locale.setlocale(locale.LC_ALL, '')
+        return locale.format('%d', number, 1)
 
 class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
     grok.context(IDonationProduct)

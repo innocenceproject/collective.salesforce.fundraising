@@ -1,0 +1,129 @@
+<?xml version="1.0" ?>
+<model xmlns="http://namespaces.plone.org/supermodel/schema"
+       xmlns:sf="http://namespaces.plone.org/salesforce/schema"
+       xmlns:form="http://namespaces.plone.org/supermodel/form">
+    
+    <schema sf:object="OpportunityContactRole" sf:criteria="" sf:container="get_container">
+        <field name="campaign_sf_id" type="zope.schema.TextLine" sf:field="Opportunity.CampaignId">
+            <title>Campaign Salesforce ID</title>
+            <description>The ID of the Salesforce Campaign the donation relates to</description>
+        </field>
+        <field name="contact_sf_id" type="zope.schema.TextLine" sf:field="ContactId">
+            <title>Contact Salesforce ID</title>
+            <description>The ID of the Salesforce Contact the donation relates to</description>
+        </field>
+        <field name="donation_sf_id" type="zope.schema.TextLine" sf:field="OpportunityId">
+            <title>Donation ID</title>
+            <description>The ID of the Salesforce Opportunity (Donation) the donation relates to</description>
+        </field>
+        <field name="opportunity_contact_role_sf_id" type="zope.schema.TextLine" sf:field="Id">
+            <title>Opportunity Contact Role ID</title>
+            <description>The ID of the Salesforce Opportunity Contact Role</description>
+        </field>
+        <field name="recurring_donation_sf_id" type="zope.schema.TextLine" sf:field="Id">
+            <title>Recurring Donation ID</title>
+            <description>The ID of the Salesforce Recurring Donation associated with this donation</description>
+            <required>False</required>
+        </field>
+        <field name="amount" type="zope.schema.TextLine" sf:field="Opportunity.Amount">
+            <title>Donation Amount</title>
+            <description>The amount of the donation</description>
+        </field>
+        <field name="stage" type="zope.schema.TextLine" sf:field="Opportunity.StageName">
+            <title>Stage</title>
+            <description>The donation's stage</description>
+        </field>
+        <field name="processor" type="zope.schema.TextLine" sf:field="Opportunity.Payment_Processor__c">
+            <title>Payment Processor</title>
+            <description>The donation's Payment Processor</description>
+        </field>
+        <field name="source_campaign_sf_id" type="zope.schema.TextLine" sf:field="Opportunity.Source_Campaign__c">
+            <title>Source Campaign ID</title>
+            <description>The Salesforce ID of the Source Campaign for this Donation</description>
+            <required>False</required>
+        </field>
+        <field name="source_url" type="zope.schema.TextLine" sf:field="Opportunity.Source_URL__c">
+            <title>Source URL</title>
+            <description>The referrer url which first brought the donor to the site before donating</description>
+            <required>False</required>
+        </field>
+        <field name="transaction_id" type="zope.schema.TextLine" sf:field="Opportunity.Success_Transaction_ID__c">
+            <title>Transaction ID</title>
+            <description>The ID of the successful transaction from the payment processor</description>
+        </field>
+        <field name="secret_key" type="zope.schema.TextLine" sf:field="Opportunity.Secret_Key__c">
+            <title>Secret Key</title>
+            <description>The random secret key used to authenticate views against the donation</description>
+        </field>
+        <field name="honorary_type" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Type__c">
+            <title>Honorary - Type</title>
+            <description>Is this an honorary or a memorial donation?</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_first_name" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_First_Name__c">
+            <title>Honorary - First Name</title>
+            <description>First Name of the person this donation is in honor of or memory of</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_last_name" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Last_Name__c">
+            <title>Honorary - Last Name</title>
+            <description>Last Name of the person this donation is in honor of or memory of</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_contact_sf_id" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Contact__c">
+            <title>Honorary - Contact ID</title>
+            <description>The Salesforce ID of the Contact representing the honoree</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_message" type="zope.schema.Text" sf:field="Opportunity.Honorary_Message__c">
+            <title>Honorary - Message</title>
+            <description>The message from the donor</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_notification_type" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Notification_Type__c">
+            <title>Honorary - Notification Type</title>
+            <description>How should notification of the donation be sent?</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_recipient_first_name" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Recipient_First_Name__c">
+            <title>Honorary - First Name</title>
+            <description>First Name of the person to notify of this donation</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_recipient_last_name" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Recipient_Last_Name__c">
+            <title>Honorary - Last Name</title>
+            <description>Last Name of the person to notify of this donation</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_email" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Email__c">
+            <title>Honorary - Email</title>
+            <description>Email address of the person to notify of this donation</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_street_address" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Street_Address__c">
+            <title>Honorary - Street Address</title>
+            <description>Street address of the person to notify of this donation</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_city" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_City__c">
+            <title>Honorary - City</title>
+            <description>City of the person to notify of this donation</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_state" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_State__c">
+            <title>Honorary - State</title>
+            <description>State of the person to notify of this donation</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_zip" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Zip__c">
+            <title>Honorary - Zip</title>
+            <description>Zipcode of the person to notify of this donation</description>
+            <required>False</required>
+        </field>
+        <field name="honorary_country" type="zope.schema.TextLine" sf:field="Opportunity.Honorary_Country__c">
+            <title>Honorary - Country</title>
+            <description>Country of the person to notify of this donation</description>
+            <required>False</required>
+        </field>
+    </schema>
+</model>

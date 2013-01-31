@@ -22,5 +22,8 @@
     <type type_id="collective.salesforce.fundraising.productfieldset">
       <bound-workflow workflow_id="" />
     </type>
+    <type type_id="collective.salesforce.fundraising.donation">
+      <bound-workflow workflow_id="" />
+    </type>
   </bindings>
 </object>

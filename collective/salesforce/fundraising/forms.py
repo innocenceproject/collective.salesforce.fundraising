@@ -26,6 +26,7 @@ from collective.salesforce.fundraising.personal_campaign_page import IPersonalCa
 from collective.salesforce.fundraising.personal_campaign_page import IEditPersonalCampaignPage
 from collective.salesforce.fundraising.person import IAddPerson
 from collective.salesforce.fundraising.donor_quote import IDonorQuote
+from collective.salesforce.fundraising.donation import IDonation
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
@@ -259,6 +260,57 @@ class CreateDonorQuote(form.Form):
             self.request.response.redirect(parent_campaign.absolute_url() + '/thank-you?hide=donorquote&donation_id=%s&amount=%s' % (data['donation_id'], data['amount']))
         else:
             self.request.response.redirect(parent_campaign.absolute_url() + '/thank-you?hide=donorquote')
+
+class CreateDonationDonorQuote(form.Form):
+    grok.name('create-donor-quote')
+    grok.require('zope2.View')
+    grok.context(IDonation)
+
+    @property
+    def action(self):
+        """See interfaces.IInputForm"""
+        return '%s/create-donor-quote' % self.context.absolute_url()
+
+    @property
+    def fields(self):
+        return field.Fields(IDonorQuote).select('quote','name','image','contact_sf_id', 'key', 'amount')
+
+    ignoreContext = True
+
+    label = _(u"Testimonial")
+    description = _(u"Provide a quote to inspire others to give.")
+
+    @button.buttonAndHandler(_(u'Submit'))
+    def handleOk(self, action):
+        data, errors = self.extractData()
+        if errors:
+            self.status = self.formErrorsMessage
+            return
+        donation = self.context
+
+        if data['key'] != donation.secret_key:
+            raise Unauthorized
+
+        # Add a donor quote in the current context,
+        # using the data from the form
+        parent_campaign = donation.get_fundraising_campaign()
+        quote = createContentInContainer(donation,
+            'collective.salesforce.fundraising.donorquote',
+            checkConstraints=False, **data)
+        
+        mtool = getToolByName(self.context, 'portal_membership')
+        contact_id = None
+        if not mtool.isAnonymousUser():
+            member = mtool.getAuthenticatedMember()
+            contact_id = member.getProperty('sf_object_id')
+
+        quote.parent_sf_id = parent_campaign.sf_object_id
+
+        # Send the user back to the thank you page with a note about their quote
+        # Hide the donor quote section of the thank you page
+        IStatusMessage(self.request).add(u'Your story has been successfully submitted.')
+        self.request.response.redirect('%s?hide=donorquote&key=%s' % (donation.absolute_url(), data['key']))
+
 
 class ISetPassword(form.Schema):
     email = schema.TextLine(

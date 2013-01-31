@@ -162,6 +162,7 @@ class IFundraisingSettings(Interface):
         title=_(u"Default Fundraising Seals"),
         description=_(u"Enter the full physical path (from Zope root) to the default seals to display on Fundraising Campaigns"),
         value_type=schema.TextLine(),
+        required=False,
     )
 
     sf_individual_account_id = schema.TextLine(

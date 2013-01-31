@@ -22,9 +22,11 @@ class IDonorQuote(form.Schema, IImageScaleTraversable):
         description=u"(optional) Upload a photo to show with your quote.",
         required = False,
     )
+    key = schema.TextLine(
+        title=u"Donation Secret Key",
+        description=u"The key used to authenticate to views on the Donation."
+    )
     form.model("models/donor_quote.xml")
-
-    #form.mode(contact_sf_id = 'hidden')
 alsoProvides(IDonorQuote, IContentType)
 
 
@@ -32,6 +34,7 @@ class DonorQuote(dexterity.Item):
     grok.implements(IDonorQuote)
 
     def get_container(self):
+        # FIXME: Figure out how to implement with containment in Donation object
         if not self.campaign_sf_id:
             return None
         site = getSite()

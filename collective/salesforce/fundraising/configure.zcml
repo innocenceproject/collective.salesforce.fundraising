@@ -62,6 +62,22 @@
       <role name="Manager" />
   </permission>
 
+  <permission
+      id="collective.salesforce.fundraising.ViewDonationOverview"
+      title="collective.salesforce.fundraising: View Donation Overview">
+      <role name="Site Administrator" />
+      <role name="Manager" />
+      <role name="Owner" />
+  </permission>
+
+  <permission
+      id="collective.salesforce.fundraising.ViewDonationDetails"
+      title="collective.salesforce.fundraising: View Donation Details">
+      <role name="Site Administrator" />
+      <role name="Manager" />
+      <role name="Owner" />
+  </permission>
+
   <!-- Register an extension profile to make the product installable
        in Plone -->
   <genericsetup:registerProfile

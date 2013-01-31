@@ -88,7 +88,7 @@ function updateProductFormTotal(form) {
     form.find('input.field-product-quantity').each(function () {
         var field = $(this);
         if (field.val() != null && field.val() > 0) {
-            var price = field.parent().find('.price-wrapper .donation-product-price').text();
+            var price = field.parent().find('.hidden-price').text();
             if (price != null && price > 0) {
                 var subtotal = price * field.val();
                 new_total = new_total + subtotal;
@@ -443,6 +443,7 @@ function setupProductForm() {
         showHideDonationForm(form);
         return false;
     });
+    form.find('.edit-links a').prepOverlay({subtype: 'iframe', config: {onClose: function() { location.reload(); }}});
 }
 
 function populateAuthnetDescription() {
