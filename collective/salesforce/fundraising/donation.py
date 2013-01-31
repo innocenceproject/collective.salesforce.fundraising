@@ -2,6 +2,8 @@ import random
 import string
 from five import grok
 from zope import schema
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from AccessControl import Unauthorized
 from zope.interface import alsoProvides
 from zope.component import getUtility
