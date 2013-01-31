@@ -353,6 +353,8 @@ class DonationReceipt(grok.View):
                 price, quantity, product_uuid = product.split('|', 2)
                 total = int(price) * int(quantity)
                 product = uuidToObject(product_uuid)
+                if not product:
+                    continue
                 if product.donation_only:
                     price = total
                     quantity = '-'
