@@ -336,7 +336,7 @@ class ProcessStripeDonation(grok.View):
         campaign.add_donation(amount)
 
         # Send the email receipt
-        campaign.send_donation_receipt(self.request, opportunity['id'], amount)
+        donation.send_donation_receipt(self.request, donation.secret_key)
 
         # If this is an honorary or memorial donation, redirect to the form to provide details
         is_honorary = self.request.form.get('is_honorary', None)

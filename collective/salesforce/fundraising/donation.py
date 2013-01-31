@@ -107,9 +107,9 @@ class Donation(dexterity.Container):
         return res[0].getObject()
 
 
-    def send_donation_receipt(self, key):
+    def send_donation_receipt(self, request, key):
         settings = get_settings()
-        
+
         # Construct the email bodies
         pt = getToolByName(self, 'portal_transforms')
         email_view = getMultiAdapter((self, request), name='thank-you-email')
@@ -121,10 +121,10 @@ class Donation(dexterity.Container):
         portal_url = getToolByName(self, 'portal_url')
         portal = portal_url.getPortalObject()
         mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-        if not self.context.person or not self.context.person.to_object:
+        if not self.person or not self.person.to_object:
             # Skip if we have no email to send to
             return
-        mail_to = self.context.person.to_object.email
+        mail_to = self.person.to_object.email
 
         # Construct the email message                
         msg = MIMEMultipart('alternative')

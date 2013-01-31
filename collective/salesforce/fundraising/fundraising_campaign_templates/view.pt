@@ -25,7 +25,7 @@
       <div class="donation-forms-description" 
            tal:condition="description"
            tal:content="structure description"/>
-      <ul class="tabs">
+      <ul class="tabs" tal:condition="python: len(view.donation_form_tabs) > 1">
         <li tal:repeat="tab view/donation_form_tabs">
           <span class="label-wrapper">
             <span class="selected-indicator"></span>

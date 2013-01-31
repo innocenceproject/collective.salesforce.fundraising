@@ -219,8 +219,8 @@ function stripeDonationResponseHandler(status, response) {
                     window.location = data['redirect'];
                     return false;
                 } else {
-                    $('html, body').animate({ scrollTop: form_error.prev().offset().top - $('body').offset().top});
                     var form_error = $('.donation-form-error');
+                    $('html, body').animate({ scrollTop: form_error.prev().offset().top - $('body').offset().top});
                     form_error.find('h5').text('There was an issue processing your gift');
                     form_error.find('p.error-message').text(data['message']);
                     $('.donation-form-error').slideDown();
@@ -229,8 +229,8 @@ function stripeDonationResponseHandler(status, response) {
                 }
             },
             error: function (data, textStatus) {
-                $('html, body').animate({ scrollTop: form_error.prev().offset().top - $('body').offset().top});
                 var form_error = $('.donation-form-error');
+                $('html, body').animate({ scrollTop: form_error.prev().offset().top - $('body').offset().top});
                 form_error.find('h5').text('There was an issue processing your gift');
                 form_error.find('p.error-message').text('Please try again or contact us for assistance');
                 $('.donation-form-error').slideDown();
@@ -619,6 +619,9 @@ $(document).ready(function() {
  
     // Setup donation form tabs
     $('.donation-form-wrapper ul.tabs').tabs('.donation-form-wrapper .panels > .panel');
+    // Show panels with no tabs (the template skips rendering tabs if there is only one)
+    $('.panels').not('ul.tabs ~ .panels').find('.panel').show();
+
    
     // Setup donation level buttons 
     $('.field-donation-amount .option label').click(function () {
@@ -713,7 +716,10 @@ $(document).ready(function() {
     // If there was a donation form error on the page, select the tab with an error
     $('.donation-form-error').each(function () {
         var tab_index = $(this).parents('.panel').prevAll().length; 
-        $(this).parents('.donation-form-wrapper').find('.tabs').data('tabs').click(tab_index); 
+        var tabs = $(this).parents('.donation-form-wrapper').find('.tabs');
+        if (tabs.length > 1) {
+            tabs.data('tabs').click(tab_index); 
+        }
     });
 
     // Handle tab=X on pluggable login form
