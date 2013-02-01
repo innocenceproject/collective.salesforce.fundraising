@@ -8,7 +8,6 @@ from zope.i18nmessageid import MessageFactory
 
 _ = MessageFactory('collective.salesforce.fundraising')
 
-
 class IFundraisingSettings(Interface):
     """Global settings for collective.salesforce.fundraising
     configuration registry and obtainable via plone.registry.
@@ -90,6 +89,12 @@ class IFundraisingSettings(Interface):
     email_footer = schema.Text(
         title=_(u"Email Footer HTML"),
         description=_(u"Enter any html you want to always render in the footer of outbound emails."),
+        required=False,
+    )
+
+    chimpdrill_template_thank_you = schema.TextLine(
+        title=_(u"Chimpdrill Template - Thank You Email"),
+        description=_(u"Provide the path to the chimpdrill template to use by default for thank you emails."),
         required=False,
     )
 

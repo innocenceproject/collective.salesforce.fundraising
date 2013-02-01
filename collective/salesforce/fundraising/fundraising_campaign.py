@@ -19,6 +19,7 @@ from plone.i18n.locales.countries import CountryAvailability
 from zope.interface import Interface
 from zope.interface import alsoProvides
 from zope import schema
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
 
@@ -30,6 +31,7 @@ from plone.app.layout.viewlets.interfaces import IHtmlHead
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.namedfile.field import NamedBlobImage
 from plone.memoize import instance
+from plone.uuid.interfaces import IUUID
 
 from plone.portlets.interfaces import IPortletAssignmentMapping
 from plone.portlets.interfaces import IPortletManager
@@ -51,7 +53,20 @@ from collective.oembed.interfaces import IConsumer
 from collective.stripe.interfaces import IStripeEnabledView
 from collective.stripe.interfaces import IStripeModeChooser
 
-# Interface class; used to define content-type schema.
+
+@grok.provider(schema.interfaces.IContextSourceBinder)
+def availableThankYouTemplates(context):
+    query = { "portal_type" : "collective.chimpdrill.template" }
+    terms = []
+    pc = getToolByName(context, 'portal_catalog')
+    res = pc.searchResults(**query)
+    for template in res:
+        obj = template.getObject()
+        uuid = IUUID(obj)
+        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IThankYouEmail':
+            terms.append(SimpleVocabulary.createTerm(uuid, obj.title))
+
+    return SimpleVocabulary(terms)
 
 class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
     """
@@ -98,6 +113,13 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         title=u"Description for Donation Forms",
         description=u"If provided, this value will be displayed above donation forms for this campaign.  If no value is provided, and a site-wide default is set, that default will be used.",
         required=False,
+    )
+
+    chimpdrill_template_thank_you = schema.Choice(
+        title=u"Thank You Email Template",
+        description=u"The Mailchimp/Mandrill template to use when sending thank you emails for this campaign",
+        required=False,
+        source=availableThankYouTemplates,
     )
 
     donation_receipt_legal = schema.Text(

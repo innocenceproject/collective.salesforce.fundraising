@@ -106,9 +106,45 @@ class Donation(dexterity.Container):
             return None
         return res[0].getObject()
 
+    def send_chimpdrill_receipt(self, request, template):
+        if not self.person or not self.person.to_object:
+            # Skip if we have no email to send to
+            return
+        person = self.person.to_object
+        mail_to = person.email
+
+        receipt_view = None
+        receipt = None
+        receipt_view = getMultiAdapter((self, request), name='receipt')
+        receipt_view.set_donation_key(self.secret_key)
+        receipt = receipt_view()
+
+        return template.send(
+            email = mail_to,
+            merge_vars = [
+                {'name': 'first_name', 'content': person.first_name},
+                {'name': 'last_name', 'content': person.last_name},
+                {'name': 'amount', 'content': self.amount},
+            ],
+            blocks = [
+                {'name': 'receipt', 'content': receipt},
+                # FIXME: Implement this, not needed in current template layout but should be functional for future
+                #{'name': 'campaign_thank_you', 'content': campaign},
+            ]
+        )
+        
+
 
     def send_donation_receipt(self, request, key):
         settings = get_settings()
+
+        # If configured, send a Mandrill template via collective.chimpdrill
+        # FIXME: will this work in a personal campaign?
+        campaign = self.get_fundraising_campaign()
+        uuid = getattr(campaign, 'chimpdrill_template_thank_you', None)
+        if uuid:
+            template = uuidToObject(uuid)
+            return self.send_chimpdrill_receipt(request, template)
 
         # Construct the email bodies
         pt = getToolByName(self, 'portal_transforms')
