@@ -226,7 +226,7 @@ a.button-create-personal-campaign:hover {
         margin-top: 3px;
         height: 12px;
         width: 11px;
-        background: url("radio-off-on-sprites.png") no-repeat top left; }
+        background: url("++resource++collective.salesforce.fundraising.static/radio-off-on-sprites.png") no-repeat top left; }
       .donation-form-wrapper ul.tabs li.current {
         background-color: #eeeeee;
         border-top: 1px solid #eeeeee; }
@@ -344,7 +344,7 @@ a.button-create-personal-campaign:hover {
         #content form.donation-form .field.field-donation-amount .option input {
           display: none; }
         #content form.donation-form .field.field-donation-amount .option label {
-          background: url("donation-level-button.png") no-repeat;
+          background: url("++resource++collective.salesforce.fundraising.static/donation-level-button.png") no-repeat;
           width: 90px;
           height: 30px;
           padding: 6px 8px 0 0;
@@ -357,7 +357,7 @@ a.button-create-personal-campaign:hover {
           #content form.donation-form .field.field-donation-amount .option label .currency {
             display: none; }
         #content form.donation-form .field.field-donation-amount .option.selected label {
-          background: url("donation-level-button-selected.png") no-repeat; }
+          background: url("++resource++collective.salesforce.fundraising.static/donation-level-button-selected.png") no-repeat; }
       #content form.donation-form .field.field-donation-amount .field-amount {
         float: right;
         width: 33%; }
@@ -385,7 +385,7 @@ a.button-create-personal-campaign:hover {
             margin-right: 5%;
             padding-top: 11px; }
         #content form.donation-form .field.field-donation-amount .field-amount input {
-          background: url("amount-field-background.png") repeat-x top left;
+          background: url("++resource++collective.salesforce.fundraising.static/amount-field-background.png") repeat-x top left;
           color: #555555;
           font-size: 30px;
           font-weight: bold;
@@ -536,10 +536,10 @@ a.button-create-personal-campaign:hover {
     margin-top: 50px;
     width: 80px; }
   #content form.donation-form.donation-form-product .field.field-donation-amount .option label {
-    background: url("product-level-button.png") no-repeat;
+    background: url("++resource++collective.salesforce.fundraising.static/product-level-button.png") no-repeat;
     text-align: center; }
   #content form.donation-form.donation-form-product .field.field-donation-amount .option.selected label {
-    background: url("product-level-button-selected.png") no-repeat; }
+    background: url("++resource++collective.salesforce.fundraising.static/product-level-button-selected.png") no-repeat; }
   #content form.donation-form.donation-form-product .field.field-donation-amount .field-amount .field-quantity input {
     margin-left: 15px;
     border-bottom: 0; }
@@ -616,7 +616,7 @@ a.button-create-personal-campaign:hover {
       text-align: left;
       position: absolute;
       display: block;
-      background: url("section-header-background.png") left 40px no-repeat;
+      background: url("++resource++collective.salesforce.fundraising.static/section-header-background.png") left 40px no-repeat;
       color: #993300;
       font-weight: normal;
       font-size: 21px !important;
