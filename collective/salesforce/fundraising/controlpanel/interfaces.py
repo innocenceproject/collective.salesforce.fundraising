@@ -40,6 +40,12 @@ class IFundraisingSettings(Interface):
         required=True,
     )
 
+    default_header_image_url = schema.TextLine(
+        title=_(u"Default Header Image URL"),
+        description=u"If provided, the specified image will be rendered as the header image for fundraising campaigns unless the campaign uses its header_image field to override the default setting.",
+        required=False,
+    )
+
     donation_form_header = schema.TextLine(
         title=_(u"Default Header for Donation Forms"),
         description=_(u"The text entered here will appear as a header above donation forms.  If left empty, the default value 'Make A Donation' will be used.  This value may be overridden by providing a value on a specific fundraising campaign."),

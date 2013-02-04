@@ -8,7 +8,11 @@
 <body>
 <metal:main fill-slot="content-title">
   <metal:content-title define-macro="content-title">
-    <h1 class="documentFirstHeading" tal:content="view/context/title"></h1>
+    <h1 class="documentFirstHeading" tal:content="view/context/title"
+        tal:define="hide_title view/context/hide_title_and_description|nothing"
+        tal:attributes="style python:'' if not hide_title else 'display:none';
+                        class python:'documentFirstHeading' if not hide_title else 'documentFirstHeading hidden';">
+    </h1>
   </metal:content-title>
 </metal:main>
 

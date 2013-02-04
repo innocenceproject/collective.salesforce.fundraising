@@ -48,6 +48,11 @@ class IPersonalCampaignPage(form.Schema, IImageScaleTraversable):
         title=u"Thank You Message",
         description=u"This message will be shown to your donors after they donate.  You can use the default text or personalize your thank you message",
     )    
+
+    image = namedfile.field.NamedBlobImage(
+        title=_(u"Image"),
+        description=_(u"Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks."),
+    )
     form.model("models/personal_campaign_page.xml")
 
 

@@ -9,7 +9,7 @@
 
           <div class="donation-details" style="padding: 0 20px">
             <div class="donation-amount"><b>Gift Amount: $<span tal:replace="python: int(view.context.amount)" /></b></div>
-            <div class="donation-date" tal:content="string:Date: ${view/context/created}" />
+            <div class="donation-date" tal:content="python:'Date: %s' % view.context.get_friendly_date()" />
             <tal:if_recurring condition="view/context/is_recurring">
             <br />
             <div class="donation-recurring"><b>Repeats Monthly</b></div>

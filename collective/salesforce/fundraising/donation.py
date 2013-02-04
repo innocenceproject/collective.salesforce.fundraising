@@ -106,6 +106,9 @@ class Donation(dexterity.Container):
             return None
         return res[0].getObject()
 
+    def get_friendly_date(self):
+        return self.created().strftime('%B %d, %Y %I:%S%p %Z')
+
     def send_chimpdrill_receipt(self, request, template):
         if not self.person or not self.person.to_object:
             # Skip if we have no email to send to
@@ -119,17 +122,35 @@ class Donation(dexterity.Container):
         receipt_view.set_donation_key(self.secret_key)
         receipt = receipt_view()
 
+        campaign = self.get_fundraising_campaign()
+        campaign_image_url = None
+
+        if campaign.image and campaign.image.filename:
+            campaign_image_url = '%s/@@images/image' % campaign.absolute_url()
+
+        campaign_header_image_url = campaign.get_header_image_url()
+
+        if campaign.header_image and campaign.image.filename:
+            campaign_image_url = '%s/@@images/image' % campaign.absolute_url()
+
+        campaign_thank_you = None
+        if campaign.thank_you_message:
+            campaign_thank_you = campaign.thank_you_message.output
+
         return template.send(
             email = mail_to,
             merge_vars = [
                 {'name': 'first_name', 'content': person.first_name},
                 {'name': 'last_name', 'content': person.last_name},
                 {'name': 'amount', 'content': self.amount},
+                {'name': 'campaign_name', 'content': campaign.title},
+                {'name': 'campaign_url', 'content': campaign.absolute_url()},
+                {'name': 'campaign_image_url', 'content': campaign_image_url},
+                {'name': 'campaign_header_image_url', 'content': campaign_header_image_url},
             ],
             blocks = [
                 {'name': 'receipt', 'content': receipt},
-                # FIXME: Implement this, not needed in current template layout but should be functional for future
-                #{'name': 'campaign_thank_you', 'content': campaign},
+                {'name': 'campaign_thank_you', 'content': campaign_thank_you},
             ]
         )
         

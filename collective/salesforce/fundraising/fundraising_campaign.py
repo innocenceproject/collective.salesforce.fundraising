@@ -28,6 +28,7 @@ from plone.z3cform.interfaces import IWrappedForm
 from plone.app.textfield import RichText
 from plone.app.textfield.value import RichTextValue
 from plone.app.layout.viewlets.interfaces import IHtmlHead
+from plone.app.layout.viewlets.interfaces import IPortalTop
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.namedfile.field import NamedBlobImage
 from plone.memoize import instance
@@ -65,7 +66,32 @@ def availableThankYouTemplates(context):
         uuid = IUUID(obj)
         if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IThankYouEmail':
             terms.append(SimpleVocabulary.createTerm(uuid, obj.title))
+    return SimpleVocabulary(terms)
 
+@grok.provider(schema.interfaces.IContextSourceBinder)
+def availableHonoraryTemplates(context):
+    query = { "portal_type" : "collective.chimpdrill.template" }
+    terms = []
+    pc = getToolByName(context, 'portal_catalog')
+    res = pc.searchResults(**query)
+    for template in res:
+        obj = template.getObject()
+        uuid = IUUID(obj)
+        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IHonoraryEmail':
+            terms.append(SimpleVocabulary.createTerm(uuid, obj.title))
+    return SimpleVocabulary(terms)
+
+@grok.provider(schema.interfaces.IContextSourceBinder)
+def availableMemorialTemplates(context):
+    query = { "portal_type" : "collective.chimpdrill.template" }
+    terms = []
+    pc = getToolByName(context, 'portal_catalog')
+    res = pc.searchResults(**query)
+    for template in res:
+        obj = template.getObject()
+        uuid = IUUID(obj)
+        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IMemorialEmail':
+            terms.append(SimpleVocabulary.createTerm(uuid, obj.title))
     return SimpleVocabulary(terms)
 
 class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
@@ -80,6 +106,17 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
     image = NamedBlobImage(
         title=u"Image",
         description=u"The main promotional image for this campaign.  This image will be shown big and small so pick an image that looks good at all sizes.",
+    )
+
+    header_image = NamedBlobImage(
+        title=u"Header Image",
+        description=u"If provided, this image will be used as the header graphic for the campaign instead of the site default.",
+        required=False,
+    )
+
+    hide_title_and_description = schema.Bool(
+        title=u"Hide Title and Description?",
+        description=u"If checked, the campaign's title and description will be rendered on the page but hidden from view.  This is useful if you are using a custom header image that already contains the title and description content.",
     )
 
     thank_you_message = RichText(
@@ -120,6 +157,20 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         description=u"The Mailchimp/Mandrill template to use when sending thank you emails for this campaign",
         required=False,
         source=availableThankYouTemplates,
+    )
+
+    chimpdrill_template_honorary = schema.Choice(
+        title=u"Honorary Email Template",
+        description=u"The Mailchimp/Mandrill template to use when sending honorary emails for this campaign",
+        required=False,
+        source=availableHonoraryTemplates,
+    )
+
+    chimpdrill_template_memorial = schema.Choice(
+        title=u"Memorial Email Template",
+        description=u"The Mailchimp/Mandrill template to use when sending memorial emails for this campaign",
+        required=False,
+        source=availableMemorialTemplates,
     )
 
     donation_receipt_legal = schema.Text(
@@ -380,6 +431,15 @@ class FundraisingCampaignPage(object):
                           'notes': prod.notes,
                           'quantity': qty})
         return lines
+
+    def get_header_image_url(self):
+        local_image = getattr(self, 'header_image', None)
+        if local_image and local_image.filename:
+            return '%s/@@images/header_image' % self.absolute_url()
+
+        settings = get_settings()
+        return getattr(settings, 'default_header_image_url', None)
+
 
     def get_display_goal_pct(self):
         settings = get_settings()
@@ -1061,3 +1121,21 @@ class FacebookMetaViewlet(grok.Viewlet):
             'description': self.context.description,
             'url': self.context.absolute_url(),
         }
+
+class HeaderImageViewlet(grok.Viewlet):
+    grok.name('collective.salesforce.fundraising.HeaderImageViewlet')
+    grok.require('zope2.View')
+    grok.context(Interface)
+    grok.viewletmanager(IPortalTop)
+
+    def render(self):
+        campaign = getattr(self.context, 'get_fundraising_campaign', None)
+        if not campaign:
+            return ''
+        campaign = campaign()
+        image_url = campaign.get_header_image_url()
+        if not image_url:
+            return ''
+        return '<div id="fundraising-campaign-header-image"><a href="%s"><img src="%s/campaign_header" alt="%s" /></a></div>' % (
+            self.context.absolute_url(), image_url, self.context.title)
+

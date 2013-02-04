@@ -23,6 +23,7 @@
     <element value="collective.salesforce.fundraising.donorquote" />
     <element value="collective.salesforce.fundraising.sharemessage" />
     <element value="collective.salesforce.fundraising.donation" />
+    <element value="collective.chimpdrill.template" />
   </property>
   <property name="allow_discussion">False</property>
 
