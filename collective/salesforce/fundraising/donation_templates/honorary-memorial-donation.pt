@@ -153,16 +153,16 @@
         <legend>Message Preview</legend>
         <ul class="preview-links">
           <li><a class="honorary-preview-with-amount" href="" 
-                 tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true&amount=${view/context/amount}&show_amount=Yes">Honorary Message Preview</a>
+                 tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true&amount=${view/context/amount}&show_amount=Yes&key=${view/context/secret_key}">Honorary Message Preview</a>
           </li>
           <li><a class="honorary-preview-without-amount" href="" 
                  tal:attributes="href string:${view/context/absolute_url}/honorary-email?show_template=true&key=${view/context/secret_key}">Honorary Message Preview without Amount</a>
           </li>
           <li><a class="memorial-preview-with-amount" href="" 
-                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true&amount=${view/context/amount}&show_amount=Yes">Memorial Message Preview</a>
+                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true&amount=${view/context/amount}&show_amount=Yes&key=${view/context/secret_key}">Memorial Message Preview</a>
           </li>
           <li><a class="memorial-preview-without-amount" href="" 
-                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true">Memorial Message Preview without Amount</a>
+                 tal:attributes="href string:${view/context/absolute_url}/memorial-email?show_template=true&key=${view/context/secret_key}">Memorial Message Preview without Amount</a>
           </li>
         </ul>
         <div class="field field-preview"></div>

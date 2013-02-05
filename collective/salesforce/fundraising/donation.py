@@ -109,12 +109,28 @@ class Donation(dexterity.Container):
     def get_friendly_date(self):
         return self.created().strftime('%B %d, %Y %I:%S%p %Z')
 
-    def send_chimpdrill_receipt(self, request, template):
+    def get_chimpdrill_campaign_data(self):
+        campaign = self.get_fundraising_campaign()
+        campaign_image_url = None
+
+        if campaign.image and campaign.image.filename:
+            campaign_image_url = '%s/@@images/image' % campaign.absolute_url()
+
+        return {
+            'merge_vars': [
+                {'name': 'campaign_name', 'content': campaign.title},
+                {'name': 'campaign_url', 'content': campaign.absolute_url()},
+                {'name': 'campaign_image_url', 'content': campaign_image_url},
+                {'name': 'campaign_header_image_url', 'content': campaign.get_header_image_url()},
+            ],
+            'blocks': [],
+        }
+
+    def get_chimpdrill_thank_you_data(self, request):
         if not self.person or not self.person.to_object:
             # Skip if we have no email to send to
             return
         person = self.person.to_object
-        mail_to = person.email
 
         receipt_view = None
         receipt = None
@@ -123,37 +139,112 @@ class Donation(dexterity.Container):
         receipt = receipt_view()
 
         campaign = self.get_fundraising_campaign()
-        campaign_image_url = None
-
-        if campaign.image and campaign.image.filename:
-            campaign_image_url = '%s/@@images/image' % campaign.absolute_url()
-
-        campaign_header_image_url = campaign.get_header_image_url()
-
-        if campaign.header_image and campaign.image.filename:
-            campaign_image_url = '%s/@@images/image' % campaign.absolute_url()
-
         campaign_thank_you = None
         if campaign.thank_you_message:
             campaign_thank_you = campaign.thank_you_message.output
 
-        return template.send(
-            email = mail_to,
-            merge_vars = [
+        data = {
+            'merge_vars': [
                 {'name': 'first_name', 'content': person.first_name},
                 {'name': 'last_name', 'content': person.last_name},
                 {'name': 'amount', 'content': self.amount},
-                {'name': 'campaign_name', 'content': campaign.title},
-                {'name': 'campaign_url', 'content': campaign.absolute_url()},
-                {'name': 'campaign_image_url', 'content': campaign_image_url},
-                {'name': 'campaign_header_image_url', 'content': campaign_header_image_url},
             ],
-            blocks = [
+            'blocks': [
                 {'name': 'receipt', 'content': receipt},
                 {'name': 'campaign_thank_you', 'content': campaign_thank_you},
-            ]
+            ],
+        }
+
+        campaign_data = self.get_chimpdrill_campaign_data()
+        data['merge_vars'].extend(campaign_data['merge_vars'])
+        data['blocks'].extend(campaign_data['blocks'])
+
+        return data
+
+    def get_chimpdrill_honorary_data(self):
+        person = self.person.to_object
+        data = {
+            'merge_vars': [
+                {'name': 'donor_first_name', 'content': person.first_name},
+                {'name': 'donor_last_name', 'content': person.last_name},
+                {'name': 'honorary_first_name', 'content': self.honorary_first_name},
+                {'name': 'honorary_last_name', 'content': self.honorary_last_name},
+                {'name': 'honorary_recipient_first_name', 'content': self.honorary_recipient_first_name},
+                {'name': 'honorary_recipient_last_name', 'content': self.honorary_recipient_last_name},
+                {'name': 'honorary_email', 'content': self.honorary_email},
+                {'name': 'honorary_message', 'content': self.honorary_message},
+            ],
+            'blocks': [],
+        }
+
+        campaign_data = self.get_chimpdrill_campaign_data()
+        data['merge_vars'].extend(campaign_data['merge_vars'])
+        data['blocks'].extend(campaign_data['blocks'])
+
+        return data
+
+    def send_chimpdrill_thank_you(self, request, template):
+        if not self.person or not self.person.to_object:
+            # Skip if we have no email to send to
+            return
+
+        mail_to = self.person.to_object.email
+        data = self.get_chimpdrill_thank_you_data(request)
+
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+    def render_chimpdrill_thank_you(self, template):
+        data = self.get_chimpdrill_thank_you_data()
+
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+    def send_chimpdrill_honorary(self, template):
+        if not self.person or not self.person.to_object:
+            # Skip if we have no email to send to
+            return
+
+        mail_to = self.person.to_object.email
+        data = self.get_chimpdrill_honorary_data()
+
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
         )
         
+    def render_chimpdrill_honorary(self, template):
+        data = self.get_chimpdrill_honorary_data()
+
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+    def send_chimpdrill_memorial(self, template):
+        if not self.person or not self.person.to_object:
+            # Skip if we have no email to send to
+            return
+
+        mail_to = self.person.to_object.email
+        data = self.get_chimpdrill_honorary_data()
+
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+        
+    def render_chimpdrill_memorial(self, template):
+        data = self.get_chimpdrill_honorary_data()
+
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
 
 
     def send_donation_receipt(self, request, key):
@@ -165,7 +256,7 @@ class Donation(dexterity.Container):
         uuid = getattr(campaign, 'chimpdrill_template_thank_you', None)
         if uuid:
             template = uuidToObject(uuid)
-            return self.send_chimpdrill_receipt(request, template)
+            return self.send_chimpdrill_thank_you(request, template)
 
         # Construct the email bodies
         pt = getToolByName(self, 'portal_transforms')
@@ -280,6 +371,79 @@ class HonoraryMemorialView(grok.View):
 
     form_template = ViewPageTemplateFile('donation_templates/honorary-memorial-donation.pt')
 
+    def send_email(self):
+
+        # If a chimpdrill template is configured for this campaign, use it to send the email
+        campaign = self.context.get_fundraising_campaign()
+        if self.context.honorary_type == 'memorial':
+            template_uid = getattr(campaign, 'chimpdrill_template_memorial')
+            if template_uid:
+                template = uuidToObject(template_uid)
+                if template:
+                    return self.context.send_chimpdrill_memorial(template)
+        else:
+            template_uid = getattr(campaign, 'chimpdrill_template_honorary')
+            if template_uid:
+                template = uuidToObject(template_uid)
+                if template:
+                    return self.context.send_chimpdrill_honorary(template)
+
+        
+        settings = get_settings() 
+
+        # Construct the email bodies
+        pt = getToolByName(self.context, 'portal_transforms')
+        if self.context.honorary_type == u'Honorary':
+            email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
+        else:
+            email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
+
+        person = self.context.person
+        if person:
+            person = person.to_object
+
+        email_body = email_view()
+
+        txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
+
+        # Construct the email message                
+        portal_url = getToolByName(self.context, 'portal_url')
+        portal = portal_url.getPortalObject()
+
+        mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
+        mail_cc = None
+        if self.context.person and self.context.person.to_object:
+            mail_cc = self.context.person.to_object.email
+
+        msg = MIMEMultipart('alternative')
+        subject_vars = {'first_name': self.context.honorary_first_name, 'last_name': self.context.honorary_last_name}
+        if self.context.honorary_type == 'Memorial': 
+                msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % subject_vars
+        else:
+            msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % subject_vars
+        msg['From'] = mail_from
+        msg['To'] = self.context.honorary_email
+        if mail_cc:
+            msg['Cc'] = mail_cc
+
+        part1 = MIMEText(txt_body, 'plain')
+        part2 = MIMEText(email_body, 'html')
+
+        msg.attach(part1)
+        msg.attach(part2)
+
+        # Attempt to send it
+        try:
+
+            # Send the notification email
+            host = getToolByName(self, 'MailHost')
+            host.send(msg, immediate=True)
+
+        except smtplib.SMTPRecipientsRefused:
+            # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
+            pass
+
+
     def render(self):
         key = self.request.form.get('key', None)
 
@@ -309,60 +473,7 @@ class HonoraryMemorialView(grok.View):
 
             # If there was an email passed and we're supposed to send an email, send the email
             if self.context.honorary_notification_type == 'Email' and self.context.honorary_email:
-
-                settings = get_settings() 
-
-                # Construct the email bodies
-                pt = getToolByName(self.context, 'portal_transforms')
-                if self.context.honorary_type == u'Honorary':
-                    email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
-                else:
-                    email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
-
-                person = self.context.person
-                if person:
-                    person = person.to_object
-
-                email_body = email_view()
-        
-                txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
-
-                # Construct the email message                
-                portal_url = getToolByName(self.context, 'portal_url')
-                portal = portal_url.getPortalObject()
-
-                mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-                mail_cc = None
-                if self.context.person and self.context.person.to_object:
-                    mail_cc = self.context.person.to_object.email
-
-                msg = MIMEMultipart('alternative')
-                subject_vars = {'first_name': self.context.honorary_first_name, 'last_name': self.context.honorary_last_name}
-                if self.context.honorary_type == 'Memorial': 
-                        msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % subject_vars
-                else:
-                    msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % subject_vars
-                msg['From'] = mail_from
-                msg['To'] = self.context.honorary_email
-                if mail_cc:
-                    msg['Cc'] = mail_cc
-    
-                part1 = MIMEText(txt_body, 'plain')
-                part2 = MIMEText(email_body, 'html')
-
-                msg.attach(part1)
-                msg.attach(part2)
-
-                # Attempt to send it
-                try:
-
-                    # Send the notification email
-                    host = getToolByName(self, 'MailHost')
-                    host.send(msg, immediate=True)
-
-                except smtplib.SMTPRecipientsRefused:
-                    # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
-                    pass
+                self.send_email()
 
             # Redirect on to the thank you page
             self.request.response.redirect('%s?key=%s' % (self.context.absolute_url(), self.context.secret_key))
@@ -431,7 +542,19 @@ class ThankYouEmail(grok.View):
     grok.require('zope2.View')
     
     grok.name('thank-you-email')
-    grok.template('thank-you-email')
+    email_template = ViewPageTemplateFile('donation_templates/thank-you-email.pt')
+    
+    def render(self):
+        # If the fundraising campaign has a chimpdrill_template_thank_you configured,
+        # render the template rather than using the built in view
+        campaign = self.context.get_fundraising_campaign()
+        template_uid = getattr(campaign, 'chimpdrill_template_thank_you')
+        if template_uid:
+            template = uuidToObject(template_uid)
+            if template:
+                return self.context.render_chimpdrill_thank_you(template)
+
+        return self.email_template()
     
     def update(self):
         
@@ -464,7 +587,19 @@ class HonoraryEmail(grok.View):
     grok.require('zope2.View')
     
     grok.name('honorary-email')
-    grok.template('honorary-email')
+    email_template = ViewPageTemplateFile('donation_templates/honorary-email.pt')
+
+    def render(self):
+        # If the fundraising campaign has a chimpdrill_template_honorary configured,
+        # render the template rather than using the built in view
+        campaign = self.context.get_fundraising_campaign()
+        template_uid = getattr(campaign, 'chimpdrill_template_honorary')
+        if template_uid:
+            template = uuidToObject(template_uid)
+            if template:
+                return self.context.render_chimpdrill_honorary(template)
+
+        return self.email_template()
     
     def update(self):
         key = getattr(self, 'key', None)
@@ -530,8 +665,20 @@ class MemorialEmail(grok.View):
     grok.require('zope2.View')
     
     grok.name('memorial-email')
-    grok.template('memorial-email')
+    email_template = ViewPageTemplateFile('donation_templates/memorial-email.pt')
 
+    def render(self):
+        # If the fundraising campaign has a chimpdrill_template_memorial configured,
+        # render the template rather than using the built in view
+        campaign = self.context.get_fundraising_campaign()
+        template_uid = getattr(campaign, 'chimpdrill_template_memorial')
+        if template_uid:
+            template = uuidToObject(template_uid)
+            if template:
+                return self.context.render_chimpdrill_memorial(template)
+
+        return self.email_template()
+    
     def update(self):
         key = getattr(self, 'key', None)
         if not key:
