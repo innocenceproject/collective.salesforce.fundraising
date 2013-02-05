@@ -8,7 +8,6 @@
 <body>
 <metal:main fill-slot="content-title">
   <metal:content-title define-macro="content-title">
-    <h1 class="documentFirstHeading"><a href="" tal:define="campaign view/context/get_fundraising_campaign" tal:attributes="href campaign/absolute_url" tal:content="campaign/title"></a></h1>
     <h1 class="documentFirstHeading" tal:define="campaign view/context/get_fundraising_campaign; hide_title campaign/hide_title_and_description|nothing"
         tal:attributes="style python:'' if not hide_title else 'display:none';
                         class python:'documentFirstHeading' if not hide_title else 'documentFirstHeading hidden';">
