@@ -1,0 +1,6 @@
+<div id="personal-fundraising-login" tal:condition="viewlet/enabled">
+  <h5 tal:condition="viewlet/is_anon">Personal Fundraising Login</h5>
+  <h5 tal:condition="viewlet/person">Welcome back <span tal:replace="viewlet/person/first_name" /></h5>
+  <a href="login" tal:condition="viewlet/is_anon">Login</a>
+  <a href="logout" tal:condition="not:viewlet/is_anon">Logout</a>
+</div>
