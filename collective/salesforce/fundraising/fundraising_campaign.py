@@ -42,6 +42,8 @@ from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from Products.ATContentTypes.interfaces import IATDocument
 
+from dexterity.membrane.membrane_helpers import get_membrane_user
+
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import sanitize_soql
@@ -373,6 +375,12 @@ class FundraisingCampaignPage(object):
                 parent = self.get_fundraising_campaign()
 
                 if parent.sf_object_id == self.parent_sf_id:
+                    parent_total = 0
+                    if parent.donations_total:
+                        parent_total = int(parent.donations_total)
+                    parent_count = 0
+                    if parent.donations_count:
+                        parent_count = int(parent.donations_count)
                     parent.donations_total = parent.donations_total + amount
                     parent.donations_count = parent.donations_count + 1
 
@@ -548,8 +556,8 @@ class CampaignView(grok.View):
     grok.template('view')
 
     def addcommas(self, number):
-        locale.setlocale(locale.LC_ALL, '')
-        return locale.format('%d', number, 1)
+        locale.setlocale(locale.LC_ALL, 'en_US')
+        return locale.format('%d', number, grouping=True)
 
     def update(self):
         # Set a cookie with referrer as source_url if no cookie has yet been set for the session
@@ -1139,3 +1147,17 @@ class HeaderImageViewlet(grok.Viewlet):
         return '<div id="fundraising-campaign-header-image"><a href="%s"><img src="%s/campaign_header" alt="%s" /></a></div>' % (
             self.context.absolute_url(), image_url, self.context.title)
 
+class PersonalLoginViewlet(grok.Viewlet):
+    grok.name('collective.salesforce.fundraising.PersonalLoginViewlet')
+    grok.require('zope2.View')
+    grok.context(IFundraisingCampaignPage)
+    grok.template('personal-login')
+    grok.viewletmanager(IPortalTop)
+
+    def update(self):
+        self.enabled = self.context.get_fundraising_campaign().can_create_personal_campaign_page()
+        if not self.enabled:
+            return
+        pm = getToolByName(self.context, 'portal_membership')
+        self.is_anon = pm.isAnonymousUser()
+        self.person = get_membrane_user(self.context, pm.getAuthenticatedMember().getId(), member_type='collective.salesforce.fundraising.person')

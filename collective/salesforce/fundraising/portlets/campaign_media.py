@@ -76,8 +76,8 @@ class Renderer(base.Renderer):
             return self.context.aq_inner.aq_parent
 
     def addcommas(self, num):
-        locale.setlocale(locale.LC_ALL, '')
-        return locale.format('%d', num, 1)
+        locale.setlocale(locale.LC_ALL, 'en_US')
+        return locale.format('%d', number, grouping=True)
 
 
 # NOTE: If this portlet does not have any configurable parameters, you can

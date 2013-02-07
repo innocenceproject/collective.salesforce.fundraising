@@ -103,8 +103,8 @@ class ProductFormComponent(grok.View):
         self.can_update = sm.checkPermission(ModifyPortalContent, self.context)
 
     def addcommas(self, number):
-        locale.setlocale(locale.LC_ALL, '')
-        return locale.format('%d', number, 1)
+        locale.setlocale(locale.LC_ALL, 'en_US')
+        return locale.format('%d', number, grouping=True)
 
 class DonationFormAuthnetDPM(BaseDonationFormAuthnetDPM):
     grok.context(IDonationProduct)

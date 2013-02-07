@@ -313,17 +313,13 @@ class ProcessStripeDonation(grok.View):
                 title = parent_form.title
             data['title'] = '%s %s - %s' % (first_name, last_name, title)
             
-
-        # If there is a product, add the OpportunityLineItem (1 API Call)
         if product_id and product is not None:
             data['products'].append('%s|%s|%s' % product.price, quantity, IUUID(product))
 
-        # If there are Products from a Product Form, create the OpportunityLineItems (1 API Call)
         if products:
             for item in products:
                 data['products'].append('%s|%s|%s' % (item['product'].price, item['quantity'], IUUID(item['product'])))
 
-        people_container = getattr(getSite(), 'people')
         donation = createContentInContainer(
             campaign,
             'collective.salesforce.fundraising.donation',

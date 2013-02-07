@@ -205,11 +205,11 @@ class Donation(dexterity.Container):
         )
 
     def send_chimpdrill_honorary(self, template):
-        if not self.person or not self.person.to_object:
+        if not self.honorary_email:
             # Skip if we have no email to send to
             return
 
-        mail_to = self.person.to_object.email
+        mail_to = self.honorary_email
         data = self.get_chimpdrill_honorary_data()
 
         return template.send(email = mail_to,
@@ -226,11 +226,11 @@ class Donation(dexterity.Container):
         )
 
     def send_chimpdrill_memorial(self, template):
-        if not self.person or not self.person.to_object:
+        if not self.honorary_email:
             # Skip if we have no email to send to
             return
 
-        mail_to = self.person.to_object.email
+        mail_to = self.honorary_email
         data = self.get_chimpdrill_honorary_data()
 
         return template.send(email = mail_to,
@@ -734,158 +734,101 @@ class MemorialEmail(grok.View):
         self.key = self.request.form.get('key', key)
 
 
-def post_process_donation(donation):
+class SalesforceSync(grok.View):
+    grok.context(IDonation)
+    grok.name('sync_to_salesforce')
+    grok.require('zope2.View')
 
-    # Lookup the Campaign
-    pc = getToolByName(donation.context, 'portal_catalog')
-    res = pc.searchResults(
-        sf_object_id = donation.campaign_sf_id,
-        portal_type = ['collective.salesforce.fundraising.fundraisingcampaign','collective.salesforce.fundraising.personalcampaignpage'],
-    )
+    def render(self):
+        key = getattr(self, 'key', None)
+        if not key:
+            self.set_donation_key()
+            key = getattr(self, 'key', None)
 
-    campaign = res[0].getObject()
-    # FIXME: What happens if lookup fails?
+        if not key or key != self.context.secret_key:
+            raise Unauthorized
 
-    sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+        # Check if the sync has already been run, raise exception if so
+        if self.context.sf_object_id:
+            raise Exception('This donation has already been created in Salesforce')
+      
+        self.person = self.context.person
+        if self.person:
+            self.person = self.person.to_object
+        self.sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+        self.campaign = self.get_fundraising_campaign()
+        self.pricebook_id = None
+        self.settings = get_settings()
 
-    # Handle Donation Product forms
-    product = None
-    product_id = self.request.form.get('c_product_id', None)
-    c_products = self.request.form.get('c_products', None)
-    quantity = self.request.form.get('c_quantity', None)
-    pricebook_id = None
-    if product_id:
-        res = pc.searchResults(sf_object_id=product_id, portal_type='collective.salesforce.fundraising.donationproduct')
-        if not res:
-            return 'ERROR: Product with ID %s not found' % product_id
-        product = res[0].getObject()
+        self.get_products()
+        self.sync_person()
+        self.create_opportunity()
+        self.create_products()
+        self.create_opportunity_contact_role()
+        self.create_campaign_member()
 
-        if product_id or c_products:
-            pricebook_id = get_standard_pricebook_id(sfbc)
+    def set_donation_key(self, key=None):
+        # Do nothing if already set
+        if getattr(self, 'key', None):
+            return
 
-        # Handle Product Forms with multiple products, each with their own quantity
-        products = []
-        if c_products:
-            for item in c_products.split(','):
-                item_id, item_quantity = item.split(':')
-                product_res = pc.searchResults(sf_object_id = item_id, portal_type='collective.salesforce.fundraising.donationproduct')
-                if not product_res:
-                    return 'ERROR: Product with ID %s not found' % product_id
-                products.append({'id': item_id, 'quantity': item_quantity, 'product': product_res[0].getObject()})
+        self.key = self.request.form.get('key', key)
 
-        settings = get_settings()
+    def get_products(self):
+        self.products = []
 
-        # Look for an existing Plone user
-        mt = getToolByName(self.context, 'portal_membership')
-        first_name = self.request.form.get('first_name', None)
-        last_name = self.request.form.get('last_name', None)
+        if not self.context.products:
+            return
 
-        # lowercase all email addresses to avoid lookup errors if typed with different caps
-        email = self.request.form.get('email', None)
-        if email:
-            email = email.lower()
+        for line_item in self.context.products:
+            price, quantity, product_uuid = line_item.split('|', 2)
+            product = uuidToObject(product_uuid)
+            self.products.append({
+                'type': 'OpportunityLineItem',
+                'PricebookEntryId': product.pricebook_entry_sf_id,
+                'UnitPrice': price,
+                'Quantity': quantity,
+            })
 
-        email_opt_in = self.request.form.get('email_signup', None) == 'YES'
-        phone = self.request.form.get('phone', None)
-        address = self.request.form.get('address', None)
-        city = self.request.form.get('city', None)
-        state = self.request.form.get('state', None)
-        zipcode = self.request.form.get('zip', None)
-        country = self.request.form.get('country', None)
-        amount = int(float(self.request.form.get('x_amount', None)))
+    def sync_contact(self):
+        # Nothing to do here since the person should already be synced
+        if self.context.person and self.context.person.to_object:
+            self.contact_sf_id = self.person.to_object.sf_object_id
 
-        res = get_brains_for_email(self.context, email, self.request)
-        # If no existing user, create one which creates the contact in SF (1 API call)
-        if not res:
-            data = {
-                'first_name': first_name,
-                'last_name': last_name,
-                'email': email,
-                'address': address,
-                'city': city,
-                'state': state,
-                'zip': zipcode,
-                'country': country,
-                'phone': phone,
-            }
-
-            # Treat the email_opt_in field as a ratchet.  Once toggled on, it stays on even if unchecked
-            # on a subsequent donation.  Unsubscribing is the way to prevent emails.
-            if email_opt_in:
-                data['email_opt_in'] = email_opt_in
-
-            # Create the user
-            people_container = getattr(getSite(), 'people')
-            person = createContentInContainer(
-                people_container,
-                'collective.salesforce.fundraising.person',
-                checkConstraints=False,
-                **data
-            )
-
-        # If existing user, fill with updated data from subscription profile (1 API call, Person update handler)
-        else:
-            # Authenticate the user temporarily to fetch their person object with some level of permissions applied
-            mtool = getToolByName(self.context, 'portal_membership')
-            acl = getToolByName(self.context, 'acl_users')
-            newSecurityManager(None, acl.getUser(email))
-            mtool.loginUser()
-
-            # See if any values are modified and if so, update the Person and upsert the changes to SF
-            person = res[0].getObject()
-            old_data = [person.address, person.city, person.state, person.zip, person.country, person.phone]
-            new_data = [address, city, state, zipcode, country, phone]
-
-            if new_data != old_data:
-                person.address = address
-                person.city = city
-                person.state = state
-                person.zip = zipcode
-                person.country = country
-                person.phone = phone
-                person.reindexObject()
-
-                person.upsertToSalesforce()
-
-            mtool.logoutUser()
-
-        
-
+    def create_opportunity(self):
         # Create the Opportunity object and Opportunity Contact Role (2 API calls)
-
-        transaction_id = None
         data = {
             'type': 'Opportunity',
-            'AccountId': settings.sf_individual_account_id,
-            'Success_Transaction_Id__c': self.stripe_result['id'],
-            'Amount': amount,
-            'Name': '%s %s - $%i One Time Donation' % (first_name, last_name, amount),
+            'AccountId': self.settings.sf_individual_account_id,
+            'Success_Transaction_Id__c': self.context.transaction_id,
+            'Amount': self.context.amount,
+            'Name': '%s %s - $%i One Time Donation' % (self.person.first_name, self.person.last_name, self.context.amount),
             'StageName': 'Posted',
             'CloseDate': datetime.now(),
-            'CampaignId': campaign.sf_object_id,
-            'Source_Campaign__c': campaign.get_source_campaign(),
-            'Source_Url__c': campaign.get_source_url(),
+            'CampaignId': self.campaign.sf_object_id,
+            'Source_Campaign__c': self.campaign.get_source_campaign(),
+            'Source_Url__c': self.campaign.get_source_url(),
         }
 
         if product_id and product is not None:
             # FIXME: Add custom record type for Stripe Donations
             # record product donations as a particular type, if possible
-            if settings.sf_opportunity_record_type_product:
-                data['RecordTypeID'] = settings.sf_opportunity_record_type_product
+            if self.settings.sf_opportunity_record_type_product:
+                data['RecordTypeID'] = self.settings.sf_opportunity_record_type_product
             # Set the pricebook on the Opportunity to the standard pricebook
-            data['Pricebook2Id'] = pricebook_id
+            data['Pricebook2Id'] = self.pricebook_id
 
             # Set amount to 0 since the amount is incremented automatically by Salesforce
             # when an OpportunityLineItem is created against the Opportunity
             data['Amount'] = 0
 
             # Set a custom name with the product info and quantity
-            data['Name'] = '%s %s - %s (Qty %s)' % (first_name, last_name, product.title, quantity)
+            data['Name'] = '%s %s - %s (Qty %s)' % (self.person.first_name, self.person.last_name, product.title, quantity)
 
         elif products:
             # record product donations as a particular type, if possible
-            if settings.sf_opportunity_record_type_product:
-                data['RecordTypeID'] = settings.sf_opportunity_record_type_product
+            if self.settings.sf_opportunity_record_type_product:
+                data['RecordTypeID'] = self.settings.sf_opportunity_record_type_product
             # Set the pricebook on the Opportunity to the standard pricebook
             data['Pricebook2Id'] = pricebook_id
 
@@ -902,8 +845,8 @@ def post_process_donation(donation):
             
         else:
             # this is a one-time donation, record it as such if possible
-            if settings.sf_opportunity_record_type_one_time:
-                data['RecordTypeID'] = settings.sf_opportunity_record_type_one_time
+            if self.settings.sf_opportunity_record_type_one_time:
+                data['RecordTypeID'] = self.settings.sf_opportunity_record_type_one_time
 
 
         res = sfbc.create(data)
@@ -911,12 +854,23 @@ def post_process_donation(donation):
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
 
-        opportunity = res[0]
+        self.opportunity = res
 
-        role_res = sfbc.create({
-        'type': 'OpportunityContactRole',
-            'OpportunityId': opportunity['id'],
-            'ContactId': person.sf_object_id,
+    def create_products(self):
+        if not self.products:
+            return
+        products = []
+        for product in self.products:
+            product['OpportunityId'] = self.opportunity['id']
+        res = sfbc.create(products)
+
+        if not role_res[0]['success']:
+            raise Exception(role_res[0]['errors'][0]['message'])
+
+    def create_opportunity_contact_role(self):
+        role_res = sfbc.create({ 'type': 'OpportunityContactRole',
+            'OpportunityId': self.opportunity['id'],
+            'ContactId': self.person.sf_object_id,
             'IsPrimary': True,
             'Role': 'Decision Maker',
         })
@@ -924,64 +878,15 @@ def post_process_donation(donation):
         if not role_res[0]['success']:
             raise Exception(role_res[0]['errors'][0]['message'])
 
-        # If there is a product, add the OpportunityLineItem (1 API Call)
-        if product_id and product is not None:
-            line_item_res = sfbc.create({
-                'type': 'OpportunityLineItem',
-                'OpportunityId': opportunity['id'],
-                'PricebookEntryId': product.pricebook_entry_sf_id,
-                'UnitPrice': product.price,
-                'Quantity': quantity,
-            })
-            
-            if not line_item_res[0]['success']:
-                raise Exception(line_item_res[0]['errors'][0]['message'])
-
-        # If there are Products from a Product Form, create the OpportunityLineItems (1 API Call)
-        if products:
-            line_items = []
-            for item in products:
-                line_item = {
-                    'type': 'OpportunityLineItem',
-                    'OpportunityId': opportunity['id'],
-                    'PricebookEntryId': item['product'].pricebook_entry_sf_id,
-                    'UnitPrice': item['product'].price,
-                    'Quantity': item['quantity'],
-                }
-                line_items.append(line_item)
-            
-            line_item_res = sfbc.create(line_items)
-            
-            if not line_item_res[0]['success']:
-                raise Exception(line_item_res[0]['errors'][0]['message'])
-
+    def create_campaign_member(self):
         # Create the Campaign Member (1 API Call).  Note, we ignore errors on this step since
         # trying to add someone to a campaign that they're already a member of throws
         # an error.  We want to let people donate more than once.
         # Ignoring the error saves an API call to first check if the member exists
-        if settings.sf_create_campaign_member:
+        if self.settings.sf_create_campaign_member:
             role_res = sfbc.create({
                 'type': 'CampaignMember',
                 'CampaignId': campaign.sf_object_id,
                 'ContactId': person.sf_object_id,
                 'Status': 'Responded',
             })
-
-        # Record the transaction and its amount in the campaign
-        campaign.add_donation(amount)
-
-        # Send the email receipt
-        # FIXME: Disabled for testing
-        #campaign.send_donation_receipt(self.request, opportunity['id'], amount)
-
-        # If this is an honorary or memorial donation, redirect to the form to provide details
-        is_honorary = self.request.form.get('is_honorary', None)
-        if is_honorary == 'true':
-            redirect_url = '%s/honorary-memorial-donation?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
-        else:
-            redirect_url = '%s?donation_id=%s&amount=%s' % (campaign.absolute_url(), opportunity['id'], amount)
-
-        return redirect_url
-
-
-
