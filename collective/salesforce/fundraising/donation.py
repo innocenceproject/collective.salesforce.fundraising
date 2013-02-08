@@ -163,14 +163,32 @@ class Donation(dexterity.Container):
 
     def get_chimpdrill_honorary_data(self):
         person = self.person.to_object
+
+        # Use default values if none provided, useful for preview rendering
+        honorary_first_name = self.honorary_first_name
+        if not honorary_first_name:
+            honorary_first_name = "FIRST_NAME"
+
+        honorary_last_name = self.honorary_last_name
+        if not honorary_last_name:
+            honorary_last_name = "LAST_NAME"
+
+        honorary_first_name = self.honorary_first_name
+        if not honorary_recipient_first_name:
+            honorary_recipient_first_name = "FIRST_NAME"
+
+        honorary_recipient_last_name = self.honorary_recipient_last_name
+        if not honorary_recipient_last_name:
+            honorary_recipient_last_name = "LAST_NAME"
+        
         data = {
             'merge_vars': [
                 {'name': 'donor_first_name', 'content': person.first_name},
                 {'name': 'donor_last_name', 'content': person.last_name},
-                {'name': 'honorary_first_name', 'content': self.honorary_first_name},
-                {'name': 'honorary_last_name', 'content': self.honorary_last_name},
-                {'name': 'honorary_recipient_first_name', 'content': self.honorary_recipient_first_name},
-                {'name': 'honorary_recipient_last_name', 'content': self.honorary_recipient_last_name},
+                {'name': 'honorary_first_name', 'content': honorary_first_name},
+                {'name': 'honorary_last_name', 'content': honorary_last_name},
+                {'name': 'honorary_recipient_first_name', 'content': honorary_recipient_first_name},
+                {'name': 'honorary_recipient_last_name', 'content': honorary_recipient_last_name},
                 {'name': 'honorary_email', 'content': self.honorary_email},
                 {'name': 'honorary_message', 'content': self.honorary_message},
             ],
@@ -197,7 +215,7 @@ class Donation(dexterity.Container):
         )
 
     def render_chimpdrill_thank_you(self, template):
-        data = self.get_chimpdrill_thank_you_data()
+        data = self.get_chimpdrill_thank_you_data(request)
 
         return template.render(
             merge_vars = data['merge_vars'],

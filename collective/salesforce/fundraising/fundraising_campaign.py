@@ -1086,6 +1086,13 @@ class MemorialEmail(grok.View):
                 self.honorary['message'] = honorary['message']
 
 
+class PostDonationErrorView(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.name('post_donation_error')
+    grok.require('zope2.View')
+    grok.template('post_donation_error')
+
+
 # Pages added inside the campaign need to display the same portlets as the
 # campaign.
 @grok.subscribe(IATDocument, IObjectAddedEvent)

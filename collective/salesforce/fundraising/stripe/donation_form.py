@@ -149,7 +149,10 @@ class ProcessStripeDonation(grok.View):
             response['message'] = 'There was an error with your payment.  Please try again later or contact us to report the issue'
 
         if response['success']:
-            response['redirect'] = self.post_process_donation()
+            try:
+                response['redirect'] = self.post_process_donation()
+            except:
+                response['redirect'] = self.context.absolute_url() + '/@@post_donation_error'
             
             # For some reason, the logoutUser in post_process_donation causes the request to become a 302, fix that manually here
             # I think this has something to do with collective.pluggable login but not sure
@@ -161,22 +164,10 @@ class ProcessStripeDonation(grok.View):
 
 
     def post_process_donation(self):
-        campaign_id = self.request.form.get('campaign_id')
+        campaign = self.context
         source_campaign_id = self.request.form.get('source_campaign_id')
         source_url = self.request.form.get('source_url')
         form_name = self.request.form.get('form_name')
-
-        # FIXME: This should really live somewhere else and just be called here
-        pc = getToolByName(self.context, 'portal_catalog')
-        res = pc.searchResults(
-            sf_object_id = campaign_id,
-            portal_type = ['collective.salesforce.fundraising.fundraisingcampaign','collective.salesforce.fundraising.personalcampaignpage'],
-        )
-        if not res:
-            # FIXME: Throw a custom exception instead
-            return self.request.response.redirect('%s/@@donation_error' % self.context.absolute_url())
-
-        campaign = res[0].getObject()
 
         sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
 

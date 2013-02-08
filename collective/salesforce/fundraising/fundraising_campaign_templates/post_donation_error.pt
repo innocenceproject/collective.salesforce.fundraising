@@ -1,0 +1,32 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.salesforce.fundraising">
+<body>
+<metal:main fill-slot="content-title">
+  <metal:content-title define-macro="content-title">
+    <h1 class="documentFirstHeading" tal:content="view/context/title"
+        tal:define="hide_title view/context/hide_title_and_description|nothing"
+        tal:attributes="style python:'' if not hide_title else 'display:none';
+                        class python:'documentFirstHeading' if not hide_title else 'documentFirstHeading hidden';">
+    </h1>
+  </metal:content-title>
+</metal:main>
+
+<metal:main fill-slot="content-core">
+  <metal:content-core define-macro="content-core">
+
+    <div class="post-donation-error">
+      <h5>We noticed an error and will be in touch soon</h5>
+      <p>Your donation was processed successfully and will show up on your credit card statement.  However, we encountered a problem trying to record the donation details to our database.  We will get the problem resolved and contact you soon to let you know everything worked.</p>
+      <p>Please note that the problem may have prevented your email receipt from coming through.  If so, we'll make sure you get sent one soon.</p>
+    </div>
+
+  </metal:content-core>
+</metal:main>
+</body>
+</html>
+
