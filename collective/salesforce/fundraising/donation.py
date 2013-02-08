@@ -173,7 +173,7 @@ class Donation(dexterity.Container):
         if not honorary_last_name:
             honorary_last_name = "LAST_NAME"
 
-        honorary_first_name = self.honorary_first_name
+        honorary_recipient_first_name = self.honorary_recipient_first_name
         if not honorary_recipient_first_name:
             honorary_recipient_first_name = "FIRST_NAME"
 
