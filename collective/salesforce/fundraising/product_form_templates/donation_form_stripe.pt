@@ -30,11 +30,6 @@
 
       </fieldset>
 
-      <div class="donation-form-error" style="display: none">
-        <h5></h5>
-        <p class="error-message" tal:content="view/error">ERROR MESSAGE HERE</p>
-      </div>
- 
       <fieldset class="fieldset-contact-info after-amount">
         <legend>Contact Info</legend>
         <div class="field field-name">
@@ -173,4 +168,9 @@
         <span class="button-loading-indicator" />
       </div>
 
+      <div class="donation-form-error" style="display: none">
+        <h5></h5>
+        <p class="error-message" tal:content="view/error">ERROR MESSAGE HERE</p>
+      </div>
+ 
     </form>

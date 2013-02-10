@@ -187,55 +187,71 @@ function setupAuthnetDpmForm() {
     });
 }
 
+function hideDonationErrorOnChange(form) {
+    form.find('input, select').change(function () {
+        $('.field-error-message').slideUp(function () {$(this).remove()});
+        form.find('.donation-form-error').slideUp();
+    });
+}
+
 function stripeDonationResponseHandler(status, response) {
     // FIXME: This handler will currently only work with a single Stripe donation form on the page
     //        Need to determine how to determine the originating form somehow (perhaps class on form before token generation?)
     if (response.error) {
+        var form = $('.donation-form-stripe').eq(0);
         // Show the errors on the form
-        var form_error = $('.donation-form-error');
+        var form_error = form.find('.donation-form-error');
         if (response.error.message.length > 0) {
             form_error.find('h5').text('There was an issue processing your gift');
             form_error.find('p.error-message').text(response.error.message);
-            $('.donation-form-error').slideDown();
+            form_error.slideDown();
+            hideDonationErrorOnChange(form);
         }
-        $('.form-buttons input').removeClass('submitted');
-        $('.form-buttons input').removeClass('submitting');
+        form.find('.form-buttons .button-loading-indicator').hide();
+        form.find('.form-buttons input').removeClass('submitted');
+        form.find('.form-buttons input').removeClass('submitting');
 
         // FIXME: this didn't work for some reason, possibly jquery version issues?
         //$('.form-buttons input').prop('disabled', false);
     } else {
-        var $form = $('.donation-form-stripe');
+        var form = $('.donation-form-stripe');
         // token contains id, last4, and card type
         var token = response.id;
         // Insert the token into the form so it gets submitted to the server
-        $form.append($('<input type="hidden" name="stripeToken" />').val(token));
+        form.append($('<input type="hidden" name="stripeToken" />').val(token));
 
         $.ajax({
-            url: $form.attr('action'), 
-            data: $form.serializeArray(), 
+            url: form.attr('action'), 
+            data: form.serializeArray(), 
             type: 'POST',
             success: function (data, textStatus) {
                 if (data['success'] == true) {
                     window.location = data['redirect'];
                     return false;
                 } else {
-                    var form_error = $('.donation-form-error');
+                    var form = $('.donation-form-stripe').eq(0);
+                    var form_error = form.find('.donation-form-error');
                     $('html, body').animate({ scrollTop: form_error.prev().offset().top - $('body').offset().top});
                     form_error.find('h5').text('There was an issue processing your gift');
                     form_error.find('p.error-message').text(data['message']);
-                    $('.donation-form-error').slideDown();
-                    $('.form-buttons input').removeClass('submitted');
-                    $('.form-buttons input').removeClass('submitting');
+                    form_error.slideDown();
+                    hideDonationErrorOnChange(form);
+                    form.find('.form-buttons .button-loading-indicator').hide();
+                    form.find('.form-buttons input').removeClass('submitted');
+                    form.find('.form-buttons input').removeClass('submitting');
                 }
             },
             error: function (data, textStatus) {
-                var form_error = $('.donation-form-error');
+                var form = $('.donation-form-stripe').eq(0);
+                var form_error = form.find('.donation-form-error');
                 $('html, body').animate({ scrollTop: form_error.prev().offset().top - $('body').offset().top});
                 form_error.find('h5').text('There was an issue processing your gift');
                 form_error.find('p.error-message').text('Please try again or contact us for assistance');
-                $('.donation-form-error').slideDown();
-                $('.form-buttons input').removeClass('submitted');
-                $('.form-buttons input').removeClass('submitting');
+                form_error.slideDown();
+                hideDonationErrorOnChange(form);
+                form.find('.form-buttons .button-loading-indicator').hide();
+                form.find('.form-buttons input').removeClass('submitted');
+                form.find('.form-buttons input').removeClass('submitting');
             },
             dataType: 'json'
         });

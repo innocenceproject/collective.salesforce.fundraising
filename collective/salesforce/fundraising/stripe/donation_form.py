@@ -116,6 +116,7 @@ class ProcessStripeDonation(grok.View):
                 token=self.request.form.get('stripeToken'),
                 amount=amount,
                 description='test donation',
+                context=self.context,
             )
 
             response['success'] = True
@@ -152,7 +153,7 @@ class ProcessStripeDonation(grok.View):
             try:
                 response['redirect'] = self.post_process_donation()
             except:
-                response['redirect'] = self.context.absolute_url() + '/@@post_donation_error'
+                response['redirect'] = self.context.get_fundraising_campaign().absolute_url() + '/@@post_donation_error'
             
             # For some reason, the logoutUser in post_process_donation causes the request to become a 302, fix that manually here
             # I think this has something to do with collective.pluggable login but not sure
@@ -164,12 +165,13 @@ class ProcessStripeDonation(grok.View):
 
 
     def post_process_donation(self):
-        campaign = self.context
+        campaign = self.context.get_fundraising_campaign()
         source_campaign_id = self.request.form.get('source_campaign_id')
         source_url = self.request.form.get('source_url')
         form_name = self.request.form.get('form_name')
 
         sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+        pc = getToolByName(self.context, 'portal_catalog')
 
         # Handle Donation Product forms
         product = None

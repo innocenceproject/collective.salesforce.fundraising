@@ -93,7 +93,9 @@ window.onload = function() {
 SHARE_JS_TEMPLATE = """
   (function ($) {
     $(document).ready(function () {
-      $('#%(link_id)s').click(function () {
+      $('#%(link_id)s').click(function (e) {
+        e.preventDefault();
+        e.stopPropagation();
         janrain.engage.share.reset();
         janrain.engage.share.setUrl('%(url)s');
         janrain.engage.share.setTitle('%(title)s');

@@ -53,6 +53,7 @@ from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 
 from collective.oembed.interfaces import IConsumer
 
+from collective.stripe.controlpanel import MODE_VOCABULARY
 from collective.stripe.interfaces import IStripeEnabledView
 from collective.stripe.interfaces import IStripeModeChooser
 
@@ -140,6 +141,13 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         title=u"Donation Form Tabs",
         description=u"Enter the view names for each tab you wish to display with this form.  You can provide a friendly name for the tab by using the format VIEWNAME|LABEL",
         value_type=schema.TextLine(),
+    )
+
+    stripe_mode = schema.Choice(
+        title=u"Stripe Payment Processing Mode",
+        description=u"Stripe can either run in test or live mode.  Test mode allows you to successfully process donations using a dummy card number.  Real cards will fail in test mode.  Live mode is the full production mode which only accepts valid cards",
+        vocabulary=MODE_VOCABULARY,
+        default=u"test",
     )
 
     donation_form_header = schema.TextLine(
@@ -264,8 +272,7 @@ class FundraisingCampaignPage(object):
     grok.implements(IStripeModeChooser)
 
     def get_stripe_mode(self):
-        # FIXME: This should be based on a permission controlled by workflow and perhaps a request variable switch?
-        return 'test'
+        return getattr(self.get_fundraising_campaign(), 'stripe_mode', 'test')
 
     def get_percent_goal(self):
         if self.goal and self.donations_total:

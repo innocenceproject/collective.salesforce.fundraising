@@ -150,7 +150,7 @@
         <span class="button-loading-indicator" />
       </div>
 
-      <fieldset class="fieldset-preview">
+      <fieldset class="fieldset-preview" tal:condition="nothing">
         <legend>Message Preview</legend>
         <ul class="preview-links">
           <li><a class="honorary-preview-with-amount" href="" 

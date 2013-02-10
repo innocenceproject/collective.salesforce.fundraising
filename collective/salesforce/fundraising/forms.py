@@ -213,6 +213,12 @@ class CreateDonorQuote(form.Form):
     label = _(u"Testimonial")
     description = _(u"Provide a quote to inspire others to give.")
 
+    def updateWidgets(self):
+        super(CreateDonorQuote, self).updateWidgets()
+        self.widgets['contact_sf_id'].mode = 'hidden'
+        self.widgets['donation_id'].mode = 'hidden'
+        self.widgets['amount'].mode = 'hidden'
+
     @button.buttonAndHandler(_(u'Submit'))
     def handleOk(self, action):
         data, errors = self.extractData()

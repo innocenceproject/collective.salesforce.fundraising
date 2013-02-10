@@ -13,6 +13,7 @@ from AccessControl import getSecurityManager
 
 from plone.namedfile.interfaces import IImageScaleTraversable
 
+from collective.stripe.interfaces import IStripeModeChooser
 from collective.salesforce.fundraising.utils import get_standard_pricebook_id
 from collective.salesforce.fundraising.authnet.dpm import DonationFormAuthnetDPM as BaseDonationFormAuthnetDPM
 from collective.salesforce.fundraising.authnet.dpm import AuthnetFingerprint as BaseAuthnetFingerprint
@@ -44,10 +45,14 @@ class IProductFieldset(form.Schema):
 alsoProvides(IProductFieldset, IContentType)
 
 class ProductForm(dexterity.Container):
-    grok.implements(IProductForm)
+    grok.implements(IProductForm, IStripeModeChooser)
+    grok.provides(IStripeModeChooser)
 
     def get_product_form(self):
         return self
+
+    def get_stripe_mode(self):
+        return self.get_fundraising_campaign().get_stripe_mode()
 
 class ProductFieldset(dexterity.Container):
     grok.implements(IProductFieldset)
