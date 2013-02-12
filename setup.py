@@ -42,6 +42,7 @@ setup(name='collective.salesforce.fundraising',
           'dexterity.membrane',
           'z3c.relationfield',
           'plone.directives.dexterity',
+          'plone.app.async',
           # -*- Extra requirements: -*-
       ],
       extras_require={

@@ -40,7 +40,7 @@
             <description>The ID of the Salesforce Campaign where the Product can be purchased</description>
             <readonly>True</readonly>
         </field>
-        <field name="pricebook_entry_sf_id" type="zope.schema.TextLine" sf:field="Campaign__c">
+        <field name="pricebook_entry_sf_id" type="zope.schema.TextLine">
             <title>Pricebook Entry Salesforce ID</title>
             <description>The ID of the PricebookEntry object for the Product in the Standard Price Book of Salesforce</description>
             <readonly>True</readonly>

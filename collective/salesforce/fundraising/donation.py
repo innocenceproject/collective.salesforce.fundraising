@@ -1,17 +1,22 @@
 import random
 import string
+from datetime import datetime
 from five import grok
 from zope import schema
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from AccessControl import Unauthorized
+from Acquisition import aq_base
 from zope.interface import alsoProvides
+from zope.interface import Interface
 from zope.component import getUtility
 from zope.component import getMultiAdapter
 from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
+from zope.app.container.interfaces import IObjectAddedEvent
 from plone.uuid.interfaces import IUUID
 from plone.app.uuid.utils import uuidToObject
+from plone.app.async.interfaces import IAsyncService
 from plone.namedfile.field import NamedImage
 from Products.CMFCore.utils import getToolByName
 from plone.i18n.locales.countries import CountryAvailability
@@ -88,6 +93,20 @@ class IDonation(form.Schema, IImageScaleTraversable):
 
     form.model("models/donation.xml")
 alsoProvides(IDonation, IContentType)
+
+class ISalesforceDonationSync(Interface):
+    def sync_to_salesforce():
+        """ main method to sync donation to Salesforce.  Returns the salesforce ID for the opportunity """
+    def get_products():
+        """ get the products from the donation and convert to SF object structure """
+    def create_opportunity():
+        """ create the opportunity object for this donation in SF """
+    def create_products():
+        """ create opportunity products if needed """
+    def create_opportunity_contact_role():
+        """ create the opportunity contact role linking the contact with the opportunity """
+    def create_campaign_member():
+        """ create a campaign member object linking the contact to the campaign """
 
 
 class Donation(dexterity.Container):
@@ -214,7 +233,7 @@ class Donation(dexterity.Container):
             blocks = data['blocks'],
         )
 
-    def render_chimpdrill_thank_you(self, template):
+    def render_chimpdrill_thank_you(self, request, template):
         data = self.get_chimpdrill_thank_you_data(request)
 
         return template.render(
@@ -570,7 +589,7 @@ class ThankYouEmail(grok.View):
         if template_uid:
             template = uuidToObject(template_uid)
             if template:
-                return self.context.render_chimpdrill_thank_you(template)
+                return self.context.render_chimpdrill_thank_you(self.request, template)
 
         return self.email_template()
     
@@ -752,12 +771,19 @@ class MemorialEmail(grok.View):
         self.key = self.request.form.get('key', key)
 
 
-class SalesforceSync(grok.View):
+
+class SalesforceSyncView(grok.View):
     grok.context(IDonation)
-    grok.name('sync_to_salesforce')
     grok.require('zope2.View')
+    grok.name('sync_to_salesforce')
 
     def render(self):
+        async = getUtility(IAsyncService)
+        async.queueJob(async_salesforce_sync, self.context)
+        async_salesforce_sync(self.context)
+        return 'OK: Queued for sync'
+
+    def update(self):
         key = getattr(self, 'key', None)
         if not key:
             self.set_donation_key()
@@ -766,25 +792,6 @@ class SalesforceSync(grok.View):
         if not key or key != self.context.secret_key:
             raise Unauthorized
 
-        # Check if the sync has already been run, raise exception if so
-        if self.context.sf_object_id:
-            raise Exception('This donation has already been created in Salesforce')
-      
-        self.person = self.context.person
-        if self.person:
-            self.person = self.person.to_object
-        self.sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-        self.campaign = self.get_fundraising_campaign()
-        self.pricebook_id = None
-        self.settings = get_settings()
-
-        self.get_products()
-        self.sync_person()
-        self.create_opportunity()
-        self.create_products()
-        self.create_opportunity_contact_role()
-        self.create_campaign_member()
-
     def set_donation_key(self, key=None):
         # Do nothing if already set
         if getattr(self, 'key', None):
@@ -792,8 +799,36 @@ class SalesforceSync(grok.View):
 
         self.key = self.request.form.get('key', key)
 
+class SalesforceDonationSync(grok.Adapter):
+    grok.provides(ISalesforceDonationSync)
+    grok.context(IDonation)
+
+    def sync_to_salesforce(self):
+        # Check if the sync has already been run, return object id if so
+        sf_object_id = getattr(aq_base(self.context), 'sf_object_id', None)
+        if sf_object_id:
+            return sf_object_id
+      
+        self.person = self.context.person
+        if self.person:
+            self.person = self.person.to_object
+
+        self.sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+        self.campaign = self.context.get_fundraising_campaign()
+        self.pricebook_id = None
+        self.settings = get_settings()
+
+        self.get_products()
+        self.create_opportunity()
+        self.create_products()
+        self.create_opportunity_contact_role()
+        self.create_campaign_member()
+        
+        return self.context.sf_object_id
+
     def get_products(self):
         self.products = []
+        self.product_objs = {}
 
         if not self.context.products:
             return
@@ -807,11 +842,7 @@ class SalesforceSync(grok.View):
                 'UnitPrice': price,
                 'Quantity': quantity,
             })
-
-    def sync_contact(self):
-        # Nothing to do here since the person should already be synced
-        if self.context.person and self.context.person.to_object:
-            self.contact_sf_id = self.person.to_object.sf_object_id
+            self.product_objs[product.pricebook_entry_sf_id] = product
 
     def create_opportunity(self):
         # Create the Opportunity object and Opportunity Contact Role (2 API calls)
@@ -824,55 +855,48 @@ class SalesforceSync(grok.View):
             'StageName': 'Posted',
             'CloseDate': datetime.now(),
             'CampaignId': self.campaign.sf_object_id,
-            'Source_Campaign__c': self.campaign.get_source_campaign(),
-            'Source_Url__c': self.campaign.get_source_url(),
+            'Source_Campaign__c': self.context.source_campaign_sf_id,
+            'Source_Url__c': self.context.source_url,
         }
 
-        if product_id and product is not None:
-            # FIXME: Add custom record type for Stripe Donations
-            # record product donations as a particular type, if possible
-            if self.settings.sf_opportunity_record_type_product:
-                data['RecordTypeID'] = self.settings.sf_opportunity_record_type_product
-            # Set the pricebook on the Opportunity to the standard pricebook
-            data['Pricebook2Id'] = self.pricebook_id
+        if self.products:
+       
+            products_configured = False 
+            for product in self.products:
+                product_obj = self.product_objs.get(product['PricebookEntryId'])
+                parent_form = product_obj.get_parent_product_form()
+                if not products_configured:
+                    if parent_form:
+                        data['Name'] = '%s %s - %s' % (self.person.first_name, self.person.last_name, parent_form.title)
+                    else:
+                        product_obj = self.product_objs.get(product['PricebookEntryId'])
+                        data['Name'] = '%s %s - %s (Qty %s)' % (self.person.first_name, self.person.last_name, product_obj.title, product['Quantity'])
 
-            # Set amount to 0 since the amount is incremented automatically by Salesforce
-            # when an OpportunityLineItem is created against the Opportunity
-            data['Amount'] = 0
+                    if self.settings.sf_opportunity_record_type_product:
+                        data['RecordTypeID'] = self.settings.sf_opportunity_record_type_product
 
-            # Set a custom name with the product info and quantity
-            data['Name'] = '%s %s - %s (Qty %s)' % (self.person.first_name, self.person.last_name, product.title, quantity)
+                    # Set the pricebook on the Opportunity to the standard pricebook
+                    data['Pricebook2Id'] = self.pricebook_id
+        
+                    # Set amount to 0 since the amount is incremented automatically by Salesforce
+                    # when an OpportunityLineItem is created against the Opportunity
+                    data['Amount'] = 0
+        
+                    products_configured = True
 
-        elif products:
-            # record product donations as a particular type, if possible
-            if self.settings.sf_opportunity_record_type_product:
-                data['RecordTypeID'] = self.settings.sf_opportunity_record_type_product
-            # Set the pricebook on the Opportunity to the standard pricebook
-            data['Pricebook2Id'] = pricebook_id
-
-            # Set amount to 0 since the amount is incremented automatically by Salesforce
-            # when an OpportunityLineItem is created against the Opportunity
-            data['Amount'] = 0
-
-            # Set a custom name with the product info and quantity
-            parent_form = products[0]['product'].get_parent_product_form()
-            title = 'Donation'
-            if parent_form:
-                title = parent_form.title
-            data['Name'] = '%s %s - %s' % (first_name, last_name, title)
-            
         else:
             # this is a one-time donation, record it as such if possible
             if self.settings.sf_opportunity_record_type_one_time:
                 data['RecordTypeID'] = self.settings.sf_opportunity_record_type_one_time
 
-
-        res = sfbc.create(data)
+        res = self.sfbc.create(data)
 
         if not res[0]['success']:
             raise Exception(res[0]['errors'][0]['message'])
 
-        self.opportunity = res
+        self.opportunity = res[0]
+        self.context.sf_object_id = self.opportunity['id']
+        self.context.reindexObject()
 
     def create_products(self):
         if not self.products:
@@ -880,21 +904,22 @@ class SalesforceSync(grok.View):
         products = []
         for product in self.products:
             product['OpportunityId'] = self.opportunity['id']
-        res = sfbc.create(products)
+            products.append(product)
+        res = self.sfbc.create(products)
 
-        if not role_res[0]['success']:
-            raise Exception(role_res[0]['errors'][0]['message'])
+        if not res[0]['success']:
+            raise Exception(res[0]['errors'][0]['message'])
 
     def create_opportunity_contact_role(self):
-        role_res = sfbc.create({ 'type': 'OpportunityContactRole',
+        res = self.sfbc.create({ 'type': 'OpportunityContactRole',
             'OpportunityId': self.opportunity['id'],
             'ContactId': self.person.sf_object_id,
             'IsPrimary': True,
             'Role': 'Decision Maker',
         })
 
-        if not role_res[0]['success']:
-            raise Exception(role_res[0]['errors'][0]['message'])
+        if not res[0]['success']:
+            raise Exception(res[0]['errors'][0]['message'])
 
     def create_campaign_member(self):
         # Create the Campaign Member (1 API Call).  Note, we ignore errors on this step since
@@ -902,9 +927,17 @@ class SalesforceSync(grok.View):
         # an error.  We want to let people donate more than once.
         # Ignoring the error saves an API call to first check if the member exists
         if self.settings.sf_create_campaign_member:
-            role_res = sfbc.create({
+            res = self.sfbc.create({
                 'type': 'CampaignMember',
-                'CampaignId': campaign.sf_object_id,
-                'ContactId': person.sf_object_id,
+                'CampaignId': self.campaign.sf_object_id,
+                'ContactId': self.person.sf_object_id,
                 'Status': 'Responded',
             })
+
+def async_salesforce_sync(donation):
+    return ISalesforceDonationSync(donation).sync_to_salesforce()
+
+@grok.subscribe(IDonation, IObjectAddedEvent)
+def queueSalesforceSync(donation, event):
+    async = getUtility(IAsyncService)
+    async.queueJob(async_salesforce_sync, donation)

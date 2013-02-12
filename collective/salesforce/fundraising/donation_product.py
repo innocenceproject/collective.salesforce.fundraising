@@ -84,7 +84,9 @@ class DonationProduct(dexterity.Item):
         return None
 
     def get_parent_product_form(self):
-        return self.get_product_form()
+        method = getattr(self, 'get_product_form', None)
+        if method:
+            return method()
 
 #class DonationProductView(grok.View):
 #    grok.context(IDonationProduct)
