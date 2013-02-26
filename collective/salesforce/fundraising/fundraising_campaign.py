@@ -153,6 +153,13 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         default=u"test",
     )
 
+    stripe_recurring_plan = schema.Choice(
+        title=u"Stripe Recurring Plan",
+        description=u"If selected, recurring donations will be enabled on the Stripe form for this campaign and will subscribe donors who opt for recurring to the selected plan in Stripe",
+        vocabulary=u'collective.stripe.plans',
+        required=False,
+    )
+
     donation_form_header = schema.TextLine(
         title=u"Header for Donation Forms",
         description=u"This header will be displayed above donation forms for this campaign.  If no value is supplied, the default site-wide header will be used.",
