@@ -268,7 +268,6 @@ class RpxPostLogin(grok.View):
 
         # merge in with standard plone login process.  
         login_next = self.context.restrictedTraverse('login_next')
-        login_next()
 
 #class RpxXdCommView(grok.View):
 #    """ Implement the rpx_xdcomm.html cross domain file """

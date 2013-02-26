@@ -22,6 +22,9 @@ from plone.uuid.interfaces import IUUID
 from zope.app.intid.interfaces import IIntIds
 from z3c.relationfield import RelationValue
 
+from zope.event import notify
+from zope.lifecycleevent import ObjectModifiedEvent
+
 from AccessControl.SecurityManagement import newSecurityManager
 
 from Acquisition import aq_inner
@@ -153,7 +156,7 @@ class ProcessStripeDonation(grok.View):
             try:
                 response['redirect'] = self.post_process_donation()
             except:
-                response['redirect'] = self.context.get_fundraising_campaign().absolute_url() + '/@@post_donation_error'
+                response['redirect'] = self.context.get_fundraising_campaign_page().absolute_url() + '/@@post_donation_error'
             
             # For some reason, the logoutUser in post_process_donation causes the request to become a 302, fix that manually here
             # I think this has something to do with collective.pluggable login but not sure
@@ -165,7 +168,7 @@ class ProcessStripeDonation(grok.View):
 
 
     def post_process_donation(self):
-        campaign = self.context.get_fundraising_campaign()
+        campaign = self.context.get_fundraising_campaign_page()
         source_campaign_id = self.request.form.get('source_campaign_id')
         source_url = self.request.form.get('source_url')
         form_name = self.request.form.get('form_name')
@@ -320,6 +323,8 @@ class ProcessStripeDonation(grok.View):
             **data
         )
         donation.person = RelationValue(person_intid)
+        event = ObjectModifiedEvent(donation)
+        notify(event)
 
         # Record the transaction and its amount in the campaign
         campaign.add_donation(amount)

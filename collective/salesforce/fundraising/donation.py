@@ -14,6 +14,7 @@ from zope.component import getMultiAdapter
 from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 from plone.uuid.interfaces import IUUID
 from plone.app.uuid.utils import uuidToObject
 from plone.app.async.interfaces import IAsyncService
@@ -28,6 +29,7 @@ from z3c.relationfield import RelationList
 from z3c.relationfield import RelationValue
 from z3c.relationfield.schema import RelationChoice
 from plone.namedfile.interfaces import IImageScaleTraversable
+from collective.chimpdrill.utils import IMailsnakeConnection
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
@@ -129,7 +131,7 @@ class Donation(dexterity.Container):
         return self.created().strftime('%B %d, %Y %I:%S%p %Z')
 
     def get_chimpdrill_campaign_data(self):
-        campaign = self.get_fundraising_campaign()
+        campaign = self.get_fundraising_campaign_page()
         campaign_image_url = None
 
         if campaign.image and campaign.image.filename:
@@ -157,7 +159,7 @@ class Donation(dexterity.Container):
         receipt_view.set_donation_key(self.secret_key)
         receipt = receipt_view()
 
-        campaign = self.get_fundraising_campaign()
+        campaign = self.get_fundraising_campaign_page()
         campaign_thank_you = None
         if campaign.thank_you_message:
             campaign_thank_you = campaign.thank_you_message.output
@@ -288,7 +290,6 @@ class Donation(dexterity.Container):
         settings = get_settings()
 
         # If configured, send a Mandrill template via collective.chimpdrill
-        # FIXME: will this work in a personal campaign?
         campaign = self.get_fundraising_campaign()
         uuid = getattr(campaign, 'chimpdrill_template_thank_you', None)
         if uuid:
@@ -334,9 +335,9 @@ class Donation(dexterity.Container):
             # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
             pass
 
-    def get_fundraising_campaign(self):
-        if self.campaign and self.campaign.to_object:
-            return self.campaign.to_object
+    #def get_fundraising_campaign(self):
+    #    if self.campaign and self.campaign.to_object:
+    #        return self.campaign.to_object
 
 
 class ThankYouView(grok.View):
@@ -387,7 +388,7 @@ class ThankYouView(grok.View):
         amount_str = u' $%s' % self.context.amount
         comment = comment.replace('{{ amount }}', str(self.context.amount))
 
-        campaign = self.context.get_fundraising_campaign()
+        campaign = self.context.get_fundraising_campaign_page()
         if not campaign:
             return ''
         
@@ -814,7 +815,7 @@ class SalesforceDonationSync(grok.Adapter):
             self.person = self.person.to_object
 
         self.sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-        self.campaign = self.context.get_fundraising_campaign()
+        self.campaign = self.context.get_fundraising_campaign_page()
         self.pricebook_id = None
         self.settings = get_settings()
 
@@ -941,3 +942,37 @@ def async_salesforce_sync(donation):
 def queueSalesforceSync(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(async_salesforce_sync, donation)
+
+@grok.subscribe(IDonation, IObjectModifiedEvent)
+def mailchimpSubscribeDonor(donation, event):
+    if not donation.person or not donation.person.to_object:
+        # Skip if we have no email to send to
+        return
+    campaign = donation.get_fundraising_campaign()
+    if not campaign.chimpdrill_list_donors:
+        return
+
+    person = donation.person.to_object
+    if not person.email_opt_in:
+        return
+
+    merge_vars = {
+        'FNAME': person.first_name,
+        'LNAME': person.last_name,
+        'L_AMOUNT': donation.amount,
+        'L_DATE': donation.get_friendly_date(),
+        'L_RECEIPT': '%s?key=%s' % (donation.absolute_url(), donation.secret_key),
+    }
+    mc = getUtility(IMailsnakeConnection).get_mailchimp()
+    mc.listSubscribe(
+        id = campaign.chimpdrill_list_donors,
+        email_address = person.email,
+        merge_vars = merge_vars,
+        update_existing = True,
+        double_optin = False,
+        send_welcome = False,
+    )
+
+@grok.subscribe(IDonation, IObjectAddedEvent)
+def mailchimpUpdateFundraiserVars(donation, event):
+    campaign = donation

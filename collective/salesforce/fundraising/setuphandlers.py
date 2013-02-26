@@ -16,6 +16,7 @@ def addCatalogIndexes(context):
     
     wanted = (
         ('sf_object_id', 'FieldIndex', None),
+        ('contact_sf_id', 'FieldIndex', None),
         ('donations_total', 'FieldIndex', None),
         ('donations_count', 'FieldIndex', None),
         ('goal', 'FieldIndex', None),

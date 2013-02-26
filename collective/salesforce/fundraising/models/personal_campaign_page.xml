@@ -57,6 +57,11 @@
             <title>Thank You Message</title>
             <description>Provide a personalized thank you message after someone donates to your campaign.  You can use the prewritten text or edit it to make it your own</description>
         </field>
+        <field name="contact_sf_id" type="zope.schema.TextLine" sf:field="Personal_Campaign_Contact__c">
+            <title>Contact Salesforce ID?</title>
+            <description>The Salesforce OID of the Contact who created this campaign</description>
+            <required>False</required>
+        </field>
         <field name="parent_sf_id" type="zope.schema.TextLine" sf:field="ParentId">
             <title>Parent Salesforce ID</title>
             <description>The Salesforce ID of the parent Campaign</description>

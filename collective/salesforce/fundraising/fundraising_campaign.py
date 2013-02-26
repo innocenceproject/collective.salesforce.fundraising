@@ -22,6 +22,7 @@ from zope import schema
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 
 from plone.z3cform.interfaces import IWrappedForm
 
@@ -56,6 +57,8 @@ from collective.oembed.interfaces import IConsumer
 from collective.stripe.controlpanel import MODE_VOCABULARY
 from collective.stripe.interfaces import IStripeEnabledView
 from collective.stripe.interfaces import IStripeModeChooser
+
+from collective.chimpdrill.utils import IMailsnakeConnection
 
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
@@ -181,6 +184,20 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         description=u"The Mailchimp/Mandrill template to use when sending memorial emails for this campaign",
         required=False,
         source=availableMemorialTemplates,
+    )
+
+    chimpdrill_list_donors = schema.Choice(
+        title=u"Mailchimp List - Donors",
+        description=u"If selected, donors to this campaign will automatically be added to the selected list",
+        required=False,
+        vocabulary=u"collective.chimpdrill.lists",
+    )
+        
+    chimpdrill_list_fundraisers = schema.Choice(
+        title=u"Mailchimp List - Personal Fundraisers",
+        description=u"If selected, personal fundraisers in this campaign will automatically be added to the selected list.",
+        required=False,
+        vocabulary=u"collective.chimpdrill.lists",
     )
 
     donation_receipt_legal = schema.Text(
@@ -516,7 +533,6 @@ class FundraisingCampaignPage(object):
             pass
 
 
-
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
 
@@ -525,6 +541,10 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
 
     def get_fundraising_campaign(self):
         """ Returns the fundraising campaign object.  Useful for subobjects to easily lookup the parent campaign """
+        return self
+
+    def get_fundraising_campaign_page(self):
+        """ Returns the fundraising campaign page instance, either a Fundraising Campaign or a Personal Campaign Page """
         return self
 
     def personal_fundraisers_count(self):
@@ -553,6 +573,117 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
         )
         if res:
             return res[0].getURL()
+
+    def get_mailchimp_connection(self):
+        return getUtility(IMailsnakeConnection).get_mailchimp()
+
+    def setup_mailchimp_list_donors(self, mc=None):
+        list_id = self.chimpdrill_list_donors
+        if not list_id:
+            return
+
+        if not mc:
+            mc = self.get_mailchimp_connection()
+
+        merge_vars = [
+            {
+                'tag': 'L_AMOUNT', 
+                'name': 'Last Donation Amount', 
+                'options': {'field_type': 'number'},
+            },
+            {
+                'tag': 'L_DATE', 
+                'name': 'Last Donation Date', 
+                'options': {'field_type': 'date'},
+            },
+            {
+                'tag': 'L_RECEIPT', 
+                'name': 'Last Donation Receipt URL', 
+                'options': {'field_type': 'url'},
+            },
+            {
+                'tag': 'REC_START', 
+                'name': 'Recurring Start Date', 
+                'options': {'field_type': 'date'},
+            },
+            {
+                'tag': 'REC_LAST', 
+                'name': 'Recurring Last Donation Date', 
+                'options': {'field_type': 'date'},
+            },
+            {
+                'tag': 'REC_AMOUNT', 
+                'name': 'Recurring Amount', 
+                'options': {'field_type': 'number'},
+            },
+        ]
+       
+        existing = {} 
+        for var in mc.listMergeVars(id=list_id):
+            existing[var['tag']] = var
+
+        # Create any merge vars in the list that need to be created
+        for var in merge_vars:
+            if not existing.has_key(var['tag']):
+                mc.listMergeVarAdd(id=list_id, tag=var['tag'], name=var['name'], options=var['options'])
+
+
+    def setup_mailchimp_list_fundraisers(self, mc=None):
+        list_id = self.chimpdrill_list_fundraisers
+        if not list_id:
+            return
+
+        if not mc:
+            mc = self.get_mailchimp_connection()
+       
+        merge_vars = [
+            {
+                'tag': 'PF_GOAL', 
+                'name': 'Personal Fundraising Goal', 
+                'options': {'field_type': 'number'},
+            },
+            {
+                'tag': 'PF_COUNT', 
+                'name': 'Personal Fundraising - Number of Donations', 
+                'options': {'field_type': 'number'},
+            },
+            {
+                'tag': 'PF_RAISED', 
+                'name': 'Personal Fundraising - Total Raised', 
+                'options': {'field_type': 'number'},
+            },
+            {
+                'tag': 'PF_PERCENT', 
+                'name': 'Personal Fundraising - Percent of Goal Raised', 
+                'options': {'field_type': 'number'},
+            },
+            {
+                'tag': 'PF_REMAIN', 
+                'name': 'Personal Fundraising - Percent of Goal Remaining', 
+                'options': {'field_type': 'number'},
+            },
+            {
+                'tag': 'PF_URL', 
+                'name': 'Personal Fundraising - Page URL', 
+                'options': {'field_type': 'url'},
+            },
+        ]
+
+        existing = {} 
+        for var in mc.listMergeVars(id=list_id):
+            existing[var['tag']] = var
+
+        # Create any merge vars in the list that need to be created
+        for var in merge_vars:
+            if not existing.has_key(var['tag']):
+                mc.listMergeVarAdd(id=list_id, tag=var['tag'], name=var['name'], options=var['options'])
+
+        
+@grok.subscribe(IFundraisingCampaign, IObjectModifiedEvent)
+def setupMailchimpLists(campaign, event):
+    campaign.setup_mailchimp_list_donors()
+    campaign.setup_mailchimp_list_fundraisers()
+
 
 class CampaignView(grok.View):
     grok.context(IFundraisingCampaignPage)

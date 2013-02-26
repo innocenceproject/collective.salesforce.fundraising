@@ -8,6 +8,7 @@ from zope.interface import alsoProvides
 from zope.interface import Interface
 from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
+from zope.app.container.interfaces import IObjectAddedEvent
 
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
@@ -20,6 +21,7 @@ from plone.memoize import instance
 from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IUUIDAware
 from dexterity.membrane.membrane_helpers import get_brains_for_email
+from collective.chimpdrill.utils import IMailsnakeConnection
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import FundraisingCampaignPage
@@ -98,7 +100,6 @@ def titleDefaultValue(data):
         person = res[0].getObject()
         return "%s %s's Fundraising Page" % (person.first_name, person.last_name)
     
-
 @form.default_value(field=IPersonalCampaignPage['personal_appeal'])
 def personalAppealDefaultValue(data):
     return data.context.get_fundraising_campaign().default_personal_appeal.output
@@ -181,6 +182,11 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         self._memojito_.clear()
         if self._memojito_.has_key(key):
             del self._memojito_[key]
+
+    def get_fundraiser(self):
+        pc = getToolByName(self, 'portal_catalog')
+        res = pc.searchResults(portal_type="collective.salesforce.fundraising.person", sf_object_id=self.contact_sf_id)
+        return res[0]
 
 class PersonalCampaignPageView(CampaignView):
     grok.context(IPersonalCampaignPage)
@@ -340,3 +346,31 @@ class PageConfirmationEmailView(grok.View):
 
     def set_page_values(self, data):
         self.data = data
+
+@grok.subscribe(IPersonalCampaignPage, IObjectAddedEvent)
+def mailchimpSubscribeFundraiser(page, event):
+    campaign = page.get_fundraising_campaign()
+    if not campaign.chimpdrill_list_fundraisers:
+        return
+
+    person = campaign.get_fundraiser()
+    if not person:
+        return
+    person = person.getObject()
+
+    merge_vars = {
+        'FNAME': person.first_name,
+        'LNAME': person.last_name,
+        'L_AMOUNT': donation.amount,
+        'L_DATE': donation.get_friendly_date(),
+        'L_RECEIPT': donation.absolute_url() + '?key=' + donation.secret_key,
+    }
+    mc = getUtility(IMailsnakeConnection).get_mailchimp()
+    mc.listSubscribe(
+        id = campaign.chimpdrill_list_donors,
+        email_address = person.email,
+        merge_vars = merge_vars,
+        update_existing = True,
+        double_optin = False,
+        send_welcome = False,
+    )

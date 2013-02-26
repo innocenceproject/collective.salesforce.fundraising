@@ -80,3 +80,9 @@ def send_confirmation_email(context, subject, mail_to, email_body):
             # fail silently so errors here don't freak out the donor about their transaction which was successful
             pass
 
+def get_person_brains_by_sf_id(context, sf_id):
+    pc = getToolByName(self, 'portal_catalog')
+    res = pc.searchResults(portal_type='collective.salesforce.fundraising', sf_object_id=sf_id)
+    if res:
+        return res[0]
+    

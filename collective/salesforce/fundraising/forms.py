@@ -61,6 +61,10 @@ class CreatePersonalCampaignPageForm(form.Form):
 
         return fields
 
+    def updateWidgets(self):
+        super(CreatePersonalCampaignPage, self).updateWidgets()
+        self.widgets['contact_sf_id'].mode = 'hidden'
+
     ignoreContext = True
 
     label = _(u"Create My Fundraising Page")
@@ -123,7 +127,8 @@ class CreatePersonalCampaignPageForm(form.Form):
         # Save the Id of the new campaign so it can be updated later.
         campaign.parent_sf_id = parent_campaign.sf_object_id
         campaign.sf_object_id = res[0]['id']
-        campaign.reindexObject(idxs=['sf_object_id'])
+        campaign.contact_sf_id = contact_id
+        campaign.reindexObject()
 
         # Send email confirmation and links.
         data['parent'] = parent_campaign
@@ -137,7 +142,7 @@ class CreatePersonalCampaignPageForm(form.Form):
         send_confirmation_email(campaign, subject, email_to, email_body)
 
         # Send the user to their new campaign.
-        IStatusMessage(self.request).add(u'Welcome to your personal campaign page!')
+        IStatusMessage(self.request).add(u'Welcome to your fundraising page!')
         self.request.response.redirect(campaign.absolute_url())
 
     @button.buttonAndHandler(_(u"Cancel"))

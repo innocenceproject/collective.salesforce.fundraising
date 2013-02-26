@@ -8,7 +8,7 @@
             <title>Title</title>
             <description>Campaign Title - Comes from Public Name on Campaign in Salesforce</description>
         </field>
-        <field name="description" title="Description" type="zope.schema.Text" sf:field="Description">
+        <field name="description" type="zope.schema.Text" sf:field="Description">
             <title>Description</title>
             <description>A brief description of this campaign (from Description field on Campaign in Salesforce)</description>
         </field>
@@ -23,50 +23,50 @@
             <required>False</required>
             <default>True</default>
         </field>
-        <field name="status" title="Status" type="zope.schema.TextLine" sf:field="Status">
+        <field name="status" type="zope.schema.TextLine" sf:field="Status">
             <title>Status</title>
             <description>The current status of the campaign (From Status field on Campaign in Salesforce)</description>
             <default>In Progress</default>
         </field>
-        <field name="goal" title="Goal" type="zope.schema.Int" sf:field="ExpectedRevenue">
+        <field name="goal" type="zope.schema.Int" sf:field="ExpectedRevenue">
             <title>Goal</title>
             <description>The dollar amount goal for this campaign (from Expected Revenue field on Campaign in Salesforce)</description>
             <required>False</required>
         </field>
-        <field name="donations_total" title="Total Raised" type="zope.schema.Int" sf:field="HierarchyAmountWonOpportunities">
+        <field name="donations_total" type="zope.schema.Int" sf:field="HierarchyAmountWonOpportunities">
             <title>Total Raised</title>
             <description>The total dollar amount raised thus far (from Amount Won Opportunities on Campaign in Salesforce)</description>
             <default>0</default>
             <required>False</required>
         </field>
-        <field name="donations_count" title="Total Donations" type="zope.schema.Int" sf:field="HierarchyNumberOfWonOpportunities">
+        <field name="donations_count" type="zope.schema.Int" sf:field="HierarchyNumberOfWonOpportunities">
             <title>Number of Donations</title>
             <description>Total count of donations</description>
             <required>False</required>
         </field>
-        <field name="direct_donations_total" title="Total Raised Directly" type="zope.schema.Int" sf:field="AmountWonOpportunities">
+        <field name="direct_donations_total" type="zope.schema.Int" sf:field="AmountWonOpportunities">
             <title>Direct Total Raised</title>
             <description>The total dollar amount raised thus far donated directly to this campaign</description>
             <default>0</default>
             <required>False</required>
         </field>
-        <field name="direct_donations_count" title="Total Direct Donations" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
+        <field name="direct_donations_count" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
             <title>Number of Direct Donations</title>
             <description>Total count of donations made directly to this campaign</description>
             <default>0</default>
             <required>False</required>
         </field>
-        <field name="allow_personal" title="Allow Personal Fundraising?" type="zope.schema.Bool" sf:field="Allow_Personal__c">
+        <field name="allow_personal" type="zope.schema.Bool" sf:field="Allow_Personal__c">
             <title>Allow Personal?</title>
             <description>If checked, allow the creation of personal campaign pages for this campaign</description>
             <required>False</required>
         </field>
-        <field name="date_start" title="Start Date" type="zope.schema.Date" sf:field="StartDate">
+        <field name="date_start" type="zope.schema.Date" sf:field="StartDate">
             <title>Start Date</title>
             <description>The start date of the campaign</description>
             <required>False</required>
         </field>
-        <field name="date_end" title="End Date" type="zope.schema.Date" sf:field="EndDate">
+        <field name="date_end" type="zope.schema.Date" sf:field="EndDate">
             <title>End Date</title>
             <description>The end date of the campaign</description>
             <required>False</required>
