@@ -1,6 +1,7 @@
 import os, random, string
-import urllib2
 import simplejson
+import urllib2
+from urllib import quote
 from zope.interface import Interface
 from zope.event import notify
 from five import grok
@@ -29,12 +30,7 @@ js_template = """<script type="text/javascript">
 
     function isReady() {
         janrain.ready = true;
-
-        if (janrain.events != null) {        
-            janrain.events.onAuthWidgetLoad.addHandler(function () {
-                janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
-            });
-        }
+        janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
     };
     if (document.addEventListener) {
       document.addEventListener("DOMContentLoaded", isReady, false);
@@ -54,7 +50,6 @@ js_template = """<script type="text/javascript">
 
     var s = document.getElementsByTagName('script')[0];
     s.parentNode.insertBefore(e, s);
-
 
 })();
 </script>
@@ -268,6 +263,7 @@ class RpxPostLogin(grok.View):
 
         # merge in with standard plone login process.  
         login_next = self.context.restrictedTraverse('login_next')
+        login_next()
 
 #class RpxXdCommView(grok.View):
 #    """ Implement the rpx_xdcomm.html cross domain file """
