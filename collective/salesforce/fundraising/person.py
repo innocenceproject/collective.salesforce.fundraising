@@ -104,6 +104,8 @@ class Person(dexterity.Item):
             data['MailingCountry'] = self.country
         if self.gender:
             data['Gender__c'] = self.gender
+        if self.stripe_customer_id:
+            data['Stripe_Customer_ID__c'] = self.stripe_customer_id
 
         res = sfbc.upsert('Email', data)
 
@@ -118,6 +120,12 @@ class Person(dexterity.Item):
 
         return res
 
+class PersonView(grok.View):
+    grok.context(IPerson)
+    grok.name('view')
+    
+    def render(self):
+        return 'Person objects cannot be viewed directly'
 
 @grok.subscribe(IPerson, IObjectAddedEvent)
 def setOwnerRole(person, event):
