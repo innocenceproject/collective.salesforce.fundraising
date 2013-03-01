@@ -455,11 +455,20 @@ function setupProductForm() {
     });
 
     // Wire up the checkout button
-    form.find('a.button-checkout').click(function () {
+    form.find('a.button-checkout').click(function (e) {
         showHideDonationForm(form);
+        e.preventDefault();
         return false;
     });
     form.find('.edit-links a').prepOverlay({subtype: 'iframe', config: {onClose: function() { location.reload(); }}});
+
+    // Handle collapsed fieldsets
+    form.find('.product-fieldset.collapsed .expand-link a').click(function () {
+        var fieldset = $(this).closest('.product-fieldset.collapsed');
+        $(this).slideUp();
+        fieldset.find('.product-fieldset-contents').slideDown(function () {fieldset.removeClass('collapsed')});
+        return false;
+    });
 }
 
 function populateAuthnetDescription() {
