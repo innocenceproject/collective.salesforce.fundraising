@@ -71,11 +71,11 @@ class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
     )
     description = schema.Text(
         title=_(u"Description"),
-        description=_(u"Provide a 1-3 sentence pitch for your campaign"),
+        description=_(u"Provide a 1-3 sentence pitch for your campaign.  This will be shown above the donation form on your page and as the description of your page when it is shared on social networks such as Facebook."),
     )
     image = namedfile.field.NamedBlobImage(
         title=_(u"Image"),
-        description=_(u"Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks."),
+        description=_(u"Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks.  Accepted format are jpg, gif, and png"),
     )
     goal = schema.Int(
         title=_(u"Goal"),
@@ -138,6 +138,9 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
     def donation_form_tabs(self):
         return self.get_fundraising_campaign().donation_form_tabs
 
+    def is_personal(self):
+        return True
+
     def get_container(self):
         if not self.parent_sf_id:
             return None
@@ -184,9 +187,9 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
             del self._memojito_[key]
 
     def get_fundraiser(self):
-        pc = getToolByName(self, 'portal_catalog')
-        res = pc.searchResults(portal_type="collective.salesforce.fundraising.person", sf_object_id=self.contact_sf_id)
-        return res[0]
+        res = get_brains_for_email(self, self.Creator())
+        if res:
+            return res[0]
 
 class PersonalCampaignPageView(CampaignView):
     grok.context(IPersonalCampaignPage)
@@ -353,21 +356,28 @@ def mailchimpSubscribeFundraiser(page, event):
     if not campaign.chimpdrill_list_fundraisers:
         return
 
-    person = campaign.get_fundraiser()
+    person = page.get_fundraiser()
     if not person:
         return
     person = person.getObject()
 
+    percent = page.get_percent_goal()
+    if not percent:
+        percent = 0
+
     merge_vars = {
         'FNAME': person.first_name,
         'LNAME': person.last_name,
-        'L_AMOUNT': donation.amount,
-        'L_DATE': donation.get_friendly_date(),
-        'L_RECEIPT': donation.absolute_url() + '?key=' + donation.secret_key,
+        'PF_GOAL': page.goal,
+        'PF_TOTAL': page.donations_total,
+        'PF_COUNT': page.donations_count,
+        'PF_PERCENT': percent,
+        'PF_REMAIN': 100 - percent,
+        'PF_URL': page.absolute_url(),
     }
     mc = getUtility(IMailsnakeConnection).get_mailchimp()
     mc.listSubscribe(
-        id = campaign.chimpdrill_list_donors,
+        id = campaign.chimpdrill_list_fundraisers,
         email_address = person.email,
         merge_vars = merge_vars,
         update_existing = True,
