@@ -8,9 +8,12 @@
         <td width="100%" valign="top">
 
           <div class="donation-details" style="padding: 0 20px">
+            <div class="donation-campaign"><b>Campaign: <span tal:replace="view/campaign/title" /></b></div>
+            <div class="donation-campaign-page" tal:condition="view/is_personal"><b>Page: <span tal:replace="view/page/title" /></b></div>
+            <br />
             <div class="donation-amount"><b>Gift Amount: $<span tal:replace="python: int(view.context.amount)" /></b></div>
             <div class="donation-date" tal:content="python:'Date: %s' % view.context.get_friendly_date()" />
-            <tal:if_recurring condition="view/context/is_recurring">
+            <tal:if_recurring condition="view/context/stripe_plan_id">
             <br />
             <div class="donation-recurring"><b>Repeats Monthly</b></div>
             <div>We will deduct $<span tal:replace="python: int(view.context.amount)" /> from your account each month going forward</div>

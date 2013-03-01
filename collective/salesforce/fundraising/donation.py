@@ -33,6 +33,7 @@ from collective.chimpdrill.utils import IMailsnakeConnection
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
+from collective.salesforce.fundraising.personal_campaign_page import IPersonalCampaignPage
 
 def build_secret_key():
     return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(32))
@@ -570,6 +571,12 @@ class DonationReceipt(grok.View):
                     'product': product,
                     'total': total,
                 })
+
+        self.campaign = self.context.get_fundraising_campaign()
+        self.page = self.context.get_fundraising_campaign_page()
+        self.is_personal = False
+        if IPersonalCampaignPage.providedBy(self.page):
+            self.is_personal = True
 
     def set_donation_key(self, key=None):
         self.key = self.request.form.get('key', key)
