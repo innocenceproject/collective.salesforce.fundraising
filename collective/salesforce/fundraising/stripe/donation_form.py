@@ -44,7 +44,7 @@ from collective.stripe.utils import get_settings as get_stripe_settings
 from collective.stripe.utils import IStripeUtility
 
 class DonationFormStripe(grok.View):
-    """ Renders a donation form setup to submit through Authorize.net's Direct Post Method (DPM) """
+    """ Renders a donation form setup to submit through Stripe """
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
 
@@ -64,6 +64,16 @@ class DonationFormStripe(grok.View):
         self.error = None
         self.update_countries()
         self.update_states()
+
+        self.recurring = False
+        self.recurring_id = None
+        self.recurring_title = None
+        campaign = self.context.get_fundraising_campaign()
+        if campaign.stripe_recurring_plan:
+            self.recurring = True
+            self.recurring_id = campaign.stripe_recurring_plan
+            # FIXME: Lookup the title from the vocabulary and cache it for a bit
+            self.recurring_title = 'Monthly recurring gift'
 
     def update_levels(self):
         level_id = self.request.form.get('levels', self.settings.default_donation_ask_one_time)
@@ -112,16 +122,45 @@ class ProcessStripeDonation(grok.View):
             return json.dumps(response)
 
         # Stripe takes cents
-        amount = amount * 100
+        stripe_amount = amount * 100
+
+        # Is this a recurring donation?
+        self.recurring_plan_id = self.request.form.get('recurring_plan', None)
+        self.customer_id = None
 
         try:
-            self.stripe_result = stripe_util.charge_card(
-                token=self.request.form.get('stripeToken'),
-                amount=amount,
-                description='test donation',
-                context=self.context,
-            )
-
+            if not self.recurring_plan_id:
+                self.stripe_result = stripe_util.charge_card(
+                    token=self.request.form.get('stripeToken'),
+                    amount=stripe_amount,
+                    description='test donation',
+                    context=self.context,
+                )
+            else:
+                self.customer_id = None
+                # FIXME: This will create a new customer each time a recurring donation is submitted
+                # need to figure out a secure way to lookup and use existing customer id to allow
+                # multiple recurring donations for a person
+                #res = self.get_existing_person()
+                #if res:
+                    #person = res[0].getObject()
+                    #customer_id = person.stripe_customer_id
+                   
+                if not self.customer_id: 
+                    customer_result = stripe_util.create_customer(
+                        token = self.request.form.get('stripeToken'),
+                        description = self.request.form.get('email').lower(),
+                        context = self.context,
+                    )
+                    self.customer_id = customer_result['id']
+                    
+                self.stripe_result = stripe_util.subscribe_customer(
+                    customer_id = self.customer_id,
+                    plan = self.recurring_plan_id,
+                    quantity = amount,
+                    context = self.context,
+                )
+                
             response['success'] = True
             #response['redirect'] = '%s/post_process_stripe_donation?id=%s' % (
             #    self.context.absolute_url(),
@@ -222,7 +261,7 @@ class ProcessStripeDonation(grok.View):
         country = self.request.form.get('country', None)
         amount = int(float(self.request.form.get('x_amount', None)))
 
-        res = get_brains_for_email(self.context, email, self.request)
+        res = self.get_existing_person()
         # If no existing user, create one which creates the contact in SF (1 API call)
         if not res:
             data = {
@@ -278,24 +317,29 @@ class ProcessStripeDonation(grok.View):
             mtool.logoutUser()
 
         # Create the Donation
-
         intids = getUtility(IIntIds)
         person_intid = intids.getId(person)
         campaign_intid = intids.getId(campaign)
 
-        transaction_id = None
+
         data = {
-            'transaction_id': self.stripe_result['id'],
             'secret_key': build_secret_key(),
             'campaign': RelationValue(campaign_intid),
             'amount': amount,
-            'title': '%s %s - $%i One Time Donation' % (first_name, last_name, amount),
             'stage': 'Posted',
             'products': [],
             'campaign_sf_id': campaign.sf_object_id,
             'source_campaign_sf_id': campaign.get_source_campaign(),
             'source_url': campaign.get_source_url(),
         }
+       
+        if self.recurring_plan_id:
+            data['stripe_plan_id'] = self.recurring_plan_id 
+            # FIXME: Get plan title from collective.stripe.plans vocabulary term
+            data['title'] = '%s %s - $%i Monthly Recurring Donation' % (first_name, last_name, amount)
+        else:
+            data['transaction_id'] = self.stripe_result['id']
+            data['title'] = '%s %s - $%i One Time Donation' % (first_name, last_name, amount)
 
         if product_id and product is not None:
             # Set a custom name with the product info and quantity
@@ -340,3 +384,11 @@ class ProcessStripeDonation(grok.View):
             redirect_url = '%s?key=%s' % (donation.absolute_url(), donation.secret_key)
 
         return redirect_url
+
+    def get_existing_person(self):
+        # lowercase all email addresses to avoid lookup errors if typed with different caps
+        email = self.request.form.get('email', None)
+        if email:
+            email = email.lower()
+
+        return get_brains_for_email(self.context, email, self.request)

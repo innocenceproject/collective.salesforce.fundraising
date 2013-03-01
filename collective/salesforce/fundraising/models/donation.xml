@@ -20,12 +20,17 @@
             <title>Opportunity Contact Role ID</title>
             <description>The ID of the Salesforce Opportunity Contact Role</description>
         </field>
-        <field name="recurring_donation_sf_id" type="zope.schema.TextLine" sf:field="Id">
+        <field name="recurring_donation_sf_id" type="zope.schema.TextLine" sf:field="npe03__Recurring_Donation__c">
             <title>Recurring Donation ID</title>
             <description>The ID of the Salesforce Recurring Donation associated with this donation</description>
             <required>False</required>
         </field>
-        <field name="amount" type="zope.schema.TextLine" sf:field="Opportunity.Amount">
+        <field name="stripe_plan_id" type="zope.schema.TextLine" sf:field="npe03__Recurring_Donation__r.Stripe_Plan_ID__c">
+            <title>Stripe Recurring Plan ID</title>
+            <description>The ID of the Stripe recurring plan associated with this donation</description>
+            <required>False</required>
+        </field>
+        <field name="admount" type="zope.schema.TextLine" sf:field="Opportunity.Amount">
             <title>Donation Amount</title>
             <description>The amount of the donation</description>
         </field>
