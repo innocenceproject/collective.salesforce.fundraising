@@ -61,10 +61,6 @@ class CreatePersonalCampaignPageForm(form.Form):
 
         return fields
 
-    def updateWidgets(self):
-        super(CreatePersonalCampaignPage, self).updateWidgets()
-        self.widgets['contact_sf_id'].mode = 'hidden'
-
     ignoreContext = True
 
     label = _(u"Create My Fundraising Page")
