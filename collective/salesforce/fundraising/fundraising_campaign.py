@@ -295,6 +295,9 @@ def handleFundraisingCampaignCreated(campaign, event):
 class FundraisingCampaignPage(object):
     grok.implements(IStripeModeChooser)
 
+    def is_personal(self):
+        return False
+
     def get_stripe_mode(self):
         return getattr(self.get_fundraising_campaign(), 'stripe_mode', 'test')
 
@@ -539,6 +542,10 @@ class FundraisingCampaignPage(object):
             # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
             pass
 
+    def get_fundraising_campaign_page(self):
+        """ Returns the fundraising campaign page instance, either a Fundraising Campaign or a Personal Campaign Page """
+        return self
+
 
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
@@ -548,10 +555,6 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
 
     def get_fundraising_campaign(self):
         """ Returns the fundraising campaign object.  Useful for subobjects to easily lookup the parent campaign """
-        return self
-
-    def get_fundraising_campaign_page(self):
-        """ Returns the fundraising campaign page instance, either a Fundraising Campaign or a Personal Campaign Page """
         return self
 
     def personal_fundraisers_count(self):
@@ -1237,6 +1240,13 @@ class PostDonationErrorView(grok.View):
     grok.require('zope2.View')
     grok.template('post_donation_error')
 
+class ClearCache(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.require('cmf.ModifyPortalContent')
+    grok.name('clear-cache')
+    
+    def render(self):
+        self.request.response.redirect(self.context.absolute_url())
 
 # Pages added inside the campaign need to display the same portlets as the
 # campaign.
@@ -1307,9 +1317,29 @@ class PersonalLoginViewlet(grok.Viewlet):
     grok.viewletmanager(IPortalTop)
 
     def update(self):
-        self.enabled = self.context.get_fundraising_campaign().can_create_personal_campaign_page()
+        pm = getToolByName(self.context, 'portal_membership')
+        self.person = None
+        self.is_anon = pm.isAnonymousUser()
+        self.is_personal_page = False
+
+        from collective.salesforce.fundraising.personal_campaign_page import IPersonalCampaignPage
+        if IPersonalCampaignPage.providedBy(self.context):
+            self.is_personal_page = True
+
+        if not self.is_anon:
+            self.enabled = True
+        else:
+            self.enabled = self.context.get_fundraising_campaign().allow_personal
+    
+        if self.is_personal_page:
+            self.enabled = True
+
         if not self.enabled:
             return
-        pm = getToolByName(self.context, 'portal_membership')
-        self.is_anon = pm.isAnonymousUser()
-        self.person = get_membrane_user(self.context, pm.getAuthenticatedMember().getId(), member_type='collective.salesforce.fundraising.person')
+
+        mt = getToolByName(self.context, 'membrane_tool')
+        if not self.is_anon:
+            res = mt.searchResults(getUserName = pm.getAuthenticatedMember().getId())
+            if res:
+                self.person = res[0].getObject()
+
