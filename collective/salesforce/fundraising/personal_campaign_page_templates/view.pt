@@ -11,7 +11,7 @@
     <h1 class="documentFirstHeading" tal:define="campaign view/context/get_fundraising_campaign; hide_title campaign/hide_title_and_description|nothing"
         tal:attributes="style python:'' if not hide_title else 'display:none';
                         class python:'documentFirstHeading' if not hide_title else 'documentFirstHeading hidden';">
-      <a href="" tal:attributes="href campaign/absolute_url" tal:content="campaign/title" />
+      <a href="" tal:attributes="href campaign/absolute_url" tal:content="campaign/title"></a>
     </h1>
   </metal:content-title>
 </metal:main>
@@ -40,7 +40,8 @@
       <div class="donation-forms-description" 
            tal:condition="description"
            tal:content="structure description"/>
-      <ul class="tabs">
+
+      <ul class="tabs" tal:condition="python: len(view.donation_form_tabs) > 1">
         <li tal:repeat="tab view/donation_form_tabs">
           <span class="label-wrapper">
             <span class="selected-indicator"></span>
