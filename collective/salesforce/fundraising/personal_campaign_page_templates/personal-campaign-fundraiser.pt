@@ -1,0 +1,4 @@
+    <div id="personal-campaign-fundraiser" tal:condition="python: viewlet.person is not None">
+      <h3><a href="" tal:attributes="href viewlet/context/absolute_url"><span tal:replace="viewlet/person/first_name" /> <span tal:replace="viewlet/person/last_name" />'s Fundraising Page</a></h3>
+      <div class="visualClear"></div>
+    </div>

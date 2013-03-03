@@ -14,7 +14,8 @@ from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
 
 from plone.app.textfield import RichText
-from plone.app.layout.viewlets.interfaces import IAboveContent
+from plone.app.layout.viewlets.interfaces import IPortalHeader
+from plone.app.layout.viewlets.interfaces import IAboveContentBody
 from plone import namedfile
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
@@ -210,7 +211,7 @@ class PersonalCampaignPageToolbarViewlet(grok.Viewlet):
     grok.require('zope2.View')
     grok.context(IPersonalCampaignPage)
     grok.template('personal-campaign-toolbar')
-    grok.viewletmanager(IAboveContent)
+    grok.viewletmanager(IPortalHeader)
 
     def update(self):
         # FIXME - I tried for hours to get checkPermission from the security manager to work to no avail... falling back to old school method
@@ -218,6 +219,19 @@ class PersonalCampaignPageToolbarViewlet(grok.Viewlet):
         self.can_edit = pm.checkPermission('collective.salesforce.fundraising: Edit Personal Campaign', self.context)
         self.can_view_donors = pm.checkPermission('collective.salesforce.fundraising: View Personal Campaign Donors', self.context)
         self.can_promote = pm.checkPermission('collective.salesforce.fundraising: Promote Personal Campaign', self.context)
+
+class PersonalCampaignPageFundraiserViewlet(grok.Viewlet):
+    grok.name('collective.salesforce.fundraising.PersonalCampaignPageFundraiser')
+    grok.require('zope2.View')
+    grok.context(IPersonalCampaignPage)
+    grok.template('personal-campaign-fundraiser')
+    grok.viewletmanager(IAboveContentBody)
+
+    def update(self):
+        self.person = None
+        b_person = self.context.get_fundraiser()
+        if b_person:
+            self.person = b_person.getObject()
 
 class MyPersonalCampaignPagesList(grok.View):
     """This view is accessible from anywhere in the site, do not write 
