@@ -8,8 +8,8 @@
         <td width="100%" valign="top">
 
           <div class="donation-details" style="padding: 0 20px">
-            <div class="donation-campaign"><b>Campaign: <span tal:replace="view/campaign/title" /></b></div>
-            <div class="donation-campaign-page" tal:condition="view/is_personal"><b>Page: <span tal:replace="view/page/title" /></b></div>
+            <div class="donation-campaign"><b>Campaign:</b> <span tal:replace="view/campaign/title" /></div>
+            <div class="donation-campaign-page" tal:condition="view/is_personal"><b>Page:</b> <span tal:replace="view/page/title" /></div>
             <br />
             <div class="donation-amount"><b>Gift Amount: $<span tal:replace="python: int(view.context.amount)" /></b></div>
             <div class="donation-date" tal:content="python:'Date: %s' % view.context.get_friendly_date()" />
