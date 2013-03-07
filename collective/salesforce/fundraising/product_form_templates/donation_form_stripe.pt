@@ -20,7 +20,7 @@
             <div class="field-total">
               <label for="x_amount" class="currency">Total: $</label>
               <input name="x_amount" type="text" required="required" readonly="true" min="5" pattern="[0-9][0-9]*" tal:attributes="value view/amount" />
-              <a href="#" class="button button-checkout">Proceed to Payment</a>
+              <a href="#" class="button button-checkout">Continue</a>
             </div>
             <div class="visualClear"></div>
           </div>
