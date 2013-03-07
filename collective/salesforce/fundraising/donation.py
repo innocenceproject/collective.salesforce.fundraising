@@ -132,21 +132,8 @@ class Donation(dexterity.Container):
         return self.created().strftime('%B %d, %Y %I:%S%p %Z')
 
     def get_chimpdrill_campaign_data(self):
-        campaign = self.get_fundraising_campaign_page()
-        campaign_image_url = None
-
-        if campaign.image and campaign.image.filename:
-            campaign_image_url = '%s/@@images/image' % campaign.absolute_url()
-
-        return {
-            'merge_vars': [
-                {'name': 'campaign_name', 'content': campaign.title},
-                {'name': 'campaign_url', 'content': campaign.absolute_url()},
-                {'name': 'campaign_image_url', 'content': campaign_image_url},
-                {'name': 'campaign_header_image_url', 'content': campaign.get_header_image_url()},
-            ],
-            'blocks': [],
-        }
+        page = self.get_fundraising_campaign_page()
+        return page.get_chimpdrill_campaign_data()
 
     def get_chimpdrill_thank_you_data(self, request):
         if not self.person or not self.person.to_object:
@@ -223,6 +210,25 @@ class Donation(dexterity.Container):
 
         return data
 
+    def get_chimpdrill_personal_page_donation_data(self):
+        person = self.person.to_object
+
+        data = {
+            'merge_vars': [
+                {'name': 'amount', 'content': self.amount},
+                {'name': 'donor_first_name', 'content': person.first_name},
+                {'name': 'donor_last_name', 'content': person.last_name},
+                {'name': 'donor_email', 'content': person.email},
+            ],
+            'blocks': [],
+        }
+        
+        campaign_data = self.get_chimpdrill_campaign_data()
+        data['merge_vars'].extend(campaign_data['merge_vars'])
+        data['blocks'].extend(campaign_data['blocks'])
+
+        return data
+
     def send_chimpdrill_thank_you(self, request, template):
         if not self.person or not self.person.to_object:
             # Skip if we have no email to send to
@@ -252,10 +258,20 @@ class Donation(dexterity.Container):
         mail_to = self.honorary_email
         data = self.get_chimpdrill_honorary_data()
 
-        return template.send(email = mail_to,
+        template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
+
+        donor = self.person
+        if donor is not None:
+            donor = donor.to_object
+        if donor is not None:
+            template.send(email = donor.email,
+                merge_vars = data['merge_vars'],
+                blocks = data['blocks'],
+            )
+            
         
     def render_chimpdrill_honorary(self, template):
         data = self.get_chimpdrill_honorary_data()
@@ -265,6 +281,7 @@ class Donation(dexterity.Container):
             blocks = data['blocks'],
         )
 
+
     def send_chimpdrill_memorial(self, template):
         if not self.honorary_email:
             # Skip if we have no email to send to
@@ -273,10 +290,20 @@ class Donation(dexterity.Container):
         mail_to = self.honorary_email
         data = self.get_chimpdrill_honorary_data()
 
-        return template.send(email = mail_to,
+        template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
+
+        donor = self.person
+        if donor is not None:
+            donor = donor.to_object
+        if donor is not None:
+            template.send(email = donor.email,
+                merge_vars = data['merge_vars'],
+                blocks = data['blocks'],
+            )
+
         
     def render_chimpdrill_memorial(self, template):
         data = self.get_chimpdrill_honorary_data()
@@ -286,6 +313,37 @@ class Donation(dexterity.Container):
             blocks = data['blocks'],
         )
 
+    def render_chimpdrill_personal_page_donation(self, template):
+        data = self.get_chimpdrill_personal_page_donation_data()
+
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+    def send_chimpdrill_personal_page_donation(self, template):
+        if not self.person or not self.person.to_object:
+            # Skip if we have no email to send to
+            return
+
+        page = self.get_fundraising_campaign_page()
+        if not page.is_personal():
+            # Skip if the donation was not to a personal campaign page
+            return
+
+        person = page.get_fundraiser()
+        if not person:
+            return
+        if not person.email:
+            return
+
+        mail_to = person.email
+        data = self.get_chimpdrill_personal_page_donation_data()
+
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
 
     def send_donation_receipt(self, request, key):
         settings = get_settings()
@@ -336,9 +394,7 @@ class Donation(dexterity.Container):
             # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
             pass
 
-    #def get_fundraising_campaign(self):
-    #    if self.campaign and self.campaign.to_object:
-    #        return self.campaign.to_object
+
 
 
 class ThankYouView(grok.View):
@@ -982,4 +1038,20 @@ def mailchimpSubscribeDonor(donation, event):
 
 @grok.subscribe(IDonation, IObjectAddedEvent)
 def mailchimpUpdateFundraiserVars(donation, event):
-    campaign = donation
+    return
+
+@grok.subscribe(IDonation, IObjectModifiedEvent)
+def mailchimpSendPersonalCampaignDonation(donation, event):
+    if not donation.person or not donation.person.to_object:
+        # Skip if we have no email to send to
+        return
+    page = donation.get_fundraising_campaign_page()
+    if not page.is_personal():
+        # Skip if not a personal page
+        return
+
+    campaign = donation.get_fundraising_campaign()
+    uuid = getattr(campaign, 'chimpdrill_template_personal_page_donation', None)
+    if uuid:
+        template = uuidToObject(uuid)
+        return donation.send_chimpdrill_personal_page_donation(template)

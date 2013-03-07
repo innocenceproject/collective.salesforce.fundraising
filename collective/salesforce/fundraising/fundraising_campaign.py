@@ -71,7 +71,7 @@ def availableThankYouTemplates(context):
         obj = template.getObject()
         uuid = IUUID(obj)
         if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IThankYouEmail':
-            terms.append(SimpleVocabulary.createTerm(uuid, obj.title))
+            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
     return SimpleVocabulary(terms)
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
@@ -84,7 +84,7 @@ def availableHonoraryTemplates(context):
         obj = template.getObject()
         uuid = IUUID(obj)
         if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IHonoraryEmail':
-            terms.append(SimpleVocabulary.createTerm(uuid, obj.title))
+            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
     return SimpleVocabulary(terms)
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
@@ -97,7 +97,33 @@ def availableMemorialTemplates(context):
         obj = template.getObject()
         uuid = IUUID(obj)
         if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IMemorialEmail':
-            terms.append(SimpleVocabulary.createTerm(uuid, obj.title))
+            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
+    return SimpleVocabulary(terms)
+
+@grok.provider(schema.interfaces.IContextSourceBinder)
+def availablePersonalPageCreatedTemplates(context):
+    query = { "portal_type" : "collective.chimpdrill.template" }
+    terms = []
+    pc = getToolByName(context, 'portal_catalog')
+    res = pc.searchResults(**query)
+    for template in res:
+        obj = template.getObject()
+        uuid = IUUID(obj)
+        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IPersonalPageCreated':
+            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
+    return SimpleVocabulary(terms)
+
+@grok.provider(schema.interfaces.IContextSourceBinder)
+def availablePersonalPageDonationTemplates(context):
+    query = { "portal_type" : "collective.chimpdrill.template" }
+    terms = []
+    pc = getToolByName(context, 'portal_catalog')
+    res = pc.searchResults(**query)
+    for template in res:
+        obj = template.getObject()
+        uuid = IUUID(obj)
+        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IPersonalPageDonation':
+            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
     return SimpleVocabulary(terms)
 
 class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
@@ -191,6 +217,20 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         description=u"The Mailchimp/Mandrill template to use when sending memorial emails for this campaign",
         required=False,
         source=availableMemorialTemplates,
+    )
+
+    chimpdrill_template_personal_page_created = schema.Choice(
+        title=u"Personal Page Created Template",
+        description=u"The Mailchimp/Mandrill template to use when sending email to new fundraisers immediately after they create their page",
+        required=False,
+        source=availablePersonalPageCreatedTemplates,
+    )
+
+    chimpdrill_template_personal_page_donation = schema.Choice(
+        title=u"Personal Page Donation Template",
+        description=u"The Mailchimp/Mandrill template to use when sending email to notify fundraisers of a donation to their page",
+        required=False,
+        source=availablePersonalPageDonationTemplates,
     )
 
     chimpdrill_list_donors = schema.Choice(
@@ -546,6 +586,44 @@ class FundraisingCampaignPage(object):
         """ Returns the fundraising campaign page instance, either a Fundraising Campaign or a Personal Campaign Page """
         return self
 
+    def get_chimpdrill_campaign_data(self):
+        campaign = self.get_fundraising_campaign()
+
+        campaign_image_url = None
+        if campaign.image and campaign.image.filename:
+            campaign_image_url = '%s/@@images/image' % campaign.absolute_url()
+
+        merge_vars = [
+            {'name': 'campaign_name', 'content': campaign.title},
+            {'name': 'campaign_url', 'content': campaign.absolute_url()},
+            {'name': 'campaign_image_url', 'content': campaign_image_url},
+            {'name': 'campaign_header_image_url', 'content': campaign.get_header_image_url()},
+            {'name': 'campaign_goal', 'content': campaign.goal},
+            {'name': 'campaign_raised', 'content': campaign.donations_total},
+            {'name': 'campaign_percent', 'content': campaign.get_percent_goal()},
+        ]
+
+        if self.is_personal():
+            page_merge_vars = [
+                {'name': 'page_name', 'content': self.title},
+                {'name': 'page_url', 'content': self.absolute_url()},
+                {'name': 'page_image_url', 'content': '%s/@@images/image' % self.absolute_url()},
+                {'name': 'page_goal', 'content': self.goal},
+                {'name': 'page_raised', 'content': self.donations_total},
+                {'name': 'page_percent', 'content': self.get_percent_goal()},
+            ]
+
+            person = self.get_fundraiser()
+            if person is not None:
+                page_merge_vars.append({'name': 'page_fundraiser_first', 'content': person.first_name})
+                page_merge_vars.append({'name': 'page_fundraiser_last', 'content': person.last_name})
+
+            merge_vars.extend(page_merge_vars)
+
+        return {
+            'merge_vars': merge_vars,
+            'blocks': [],
+        }
 
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)

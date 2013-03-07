@@ -9,6 +9,7 @@ from zope.interface import Interface
 from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
+from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 
 from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
@@ -21,8 +22,14 @@ from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.memoize import instance
 from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IUUIDAware
+from plone.app.uuid.utils import uuidToObject
+from plone.formwidget.contenttree.source import ObjPathSourceBinder
+from z3c.relationfield.schema import RelationChoice
+from z3c.relationfield import RelationValue
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from collective.chimpdrill.utils import IMailsnakeConnection
+from collective.stripe.interfaces import IStripeEnabledView
+from collective.stripe.interfaces import IStripeModeChooser
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from collective.salesforce.fundraising.fundraising_campaign import FundraisingCampaignPage
@@ -32,6 +39,12 @@ from collective.salesforce.fundraising.fundraising_campaign import ShareView
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising import MessageFactory as _
 
+@grok.provider(schema.interfaces.IContextSourceBinder)
+def availablePeople(context):
+    query = {
+        "portal_type": "collective.salesforce.fundraising.person",
+    }
+    return ObjPathSourceBinder(**query).__call__(context)
 
 _marker = object()
 
@@ -55,6 +68,12 @@ class IPersonalCampaignPage(form.Schema, IImageScaleTraversable):
     image = namedfile.field.NamedBlobImage(
         title=_(u"Image"),
         description=_(u"Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks."),
+    )
+    person = RelationChoice(
+        title=u"Fundraiser",
+        description=u"The user account of the fundraiser who created this page",
+        required=False,
+        source=availablePeople,
     )
     form.model("models/personal_campaign_page.xml")
 
@@ -172,10 +191,15 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         settings = get_settings()
         return settings.personal_campaign_status_completion_threshold
 
-    @instance.memoize
     def get_donations(self):
-        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
-        return sfbc.query(DONATIONS_SOQL % (self.sf_object_id))
+        pc = getToolByName(self, 'portal_catalog')
+        res = pc.searchResults(
+            portal_type = 'collective.salesforce.fundraising.donation', 
+            path='/'.join(self.getPhysicalPath()), 
+            sort_on='created', 
+            sort_order='reverse'
+        ) 
+        return res
 
     def clear_donations_from_cache(self):
         """ Clears the donations cache.  This should be called anytime a new donation comes in 
@@ -188,12 +212,36 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
             del self._memojito_[key]
 
     def get_fundraiser(self):
-        res = get_brains_for_email(self, self.Creator())
-        if res:
-            return res[0]
+        person = getattr(self, 'person', None)
+        if person is not None:
+            return person.to_object
+
+    def send_chimpdrill_personal_page_created(self):
+        campaign = self.get_fundraising_campaign()
+        uuid = getattr(campaign, 'chimpdrill_template_personal_page_created', None)
+        if uuid is None:
+            return
+
+        template = uuidToObject(uuid)
+
+        person = self.get_fundraiser()
+        if person is None:
+            return
+   
+        if not person.email:
+            # Skip if we have no email to send to
+            return
+ 
+        data = self.get_chimpdrill_campaign_data()
+
+        return template.send(email = person.email,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
 
 class PersonalCampaignPageView(CampaignView):
     grok.context(IPersonalCampaignPage)
+    grok.implements(IStripeEnabledView)
     grok.require('zope2.View')
 
     grok.name('view')
@@ -228,10 +276,7 @@ class PersonalCampaignPageFundraiserViewlet(grok.Viewlet):
     grok.viewletmanager(IAboveContentBody)
 
     def update(self):
-        self.person = None
-        b_person = self.context.get_fundraiser()
-        if b_person:
-            self.person = b_person.getObject()
+        self.person = self.context.get_fundraiser()
 
 class MyPersonalCampaignPagesList(grok.View):
     """This view is accessible from anywhere in the site, do not write 
@@ -305,15 +350,23 @@ class MyDonorsView(grok.View):
         if thanked_donations == None:
             thanked_donations = []
 
-        for donation in self.context.get_donations():
-            is_thanked = donation['OpportunityId'] in thanked_donations
+        for b_donation in self.context.get_donations():
+            donation = b_donation.getObject()
+            is_thanked = b_donation.UID in thanked_donations
+            person = donation.person
+            if person:
+                person = donation.person.to_object
+
+            if not person:
+                continue
+
             self.donations.append({
-                'name': '%s %s' % (donation['Contact']['FirstName'], donation['Contact']['LastName']),
-                'email': donation['Contact']['Email'],
-                'phone': donation['Contact']['Phone'],
-                'amount': donation['Opportunity']['Amount'],
-                'date': donation['Opportunity']['CloseDate'],
-                'id': donation['OpportunityId'],
+                'name': '%s %s' % (person.first_name, person.last_name),
+                'email': person.email,
+                'phone': person.phone,
+                'amount': donation.amount,
+                'date': donation.get_friendly_date(),
+                'id': b_donation.UID,
                 'thanked': is_thanked,
             })
             self.count_donations += 1
@@ -364,7 +417,7 @@ class PageConfirmationEmailView(grok.View):
     def set_page_values(self, data):
         self.data = data
 
-@grok.subscribe(IPersonalCampaignPage, IObjectAddedEvent)
+@grok.subscribe(IPersonalCampaignPage, IObjectModifiedEvent)
 def mailchimpSubscribeFundraiser(page, event):
     campaign = page.get_fundraising_campaign()
     if not campaign.chimpdrill_list_fundraisers:
@@ -372,8 +425,9 @@ def mailchimpSubscribeFundraiser(page, event):
 
     person = page.get_fundraiser()
     if not person:
+        # Skip if no person.  This happens can happen after initial save since the 
+        # person field is set after the first save of the person
         return
-    person = person.getObject()
 
     percent = page.get_percent_goal()
     if not percent:
