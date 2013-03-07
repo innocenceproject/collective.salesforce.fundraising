@@ -1,7 +1,7 @@
     <div id="personal-campaign-toolbar" 
          tal:condition="python: viewlet.can_edit or viewlet.can_view_donors or viewlet.can_promote" 
          tal:define="campaign_url python: viewlet.context.absolute_url()">
-      <h3><a href="" tal:attributes="href campaign_url">Manage My Fundraising Page</a></h3>
+      <h3><a href="" tal:attributes="href campaign_url">View My Page</a></h3>
       <ul class="toolbar">
         <li class="tool-promote" tal:condition="viewlet/can_promote"><a href="promote" tal:attributes="href string:${campaign_url}/promote">Promote My Page</a></li>
         <li class="tool-donors" tal:condition="viewlet/can_view_donors"><a href="donors" tal:attributes="href string:${campaign_url}/donors">My Donors</a></li>
