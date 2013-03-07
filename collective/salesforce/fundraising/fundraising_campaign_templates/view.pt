@@ -21,7 +21,8 @@
 
     <div class="donation-form-wrapper"
          tal:define="header view/donation_form_header|nothing;
-                     description view/donation_form_description|nothing">
+                     description view/donation_form_description|nothing"
+         tal:condition="not: view/context/personal_only|nothing">
       <h2 class="page-section-header">
         <tal:custom tal:condition="header" tal:replace="header">[custom header]</tal:custom>
         <tal:default tal:condition="not:header">Make a donation</tal:default>
