@@ -56,7 +56,8 @@
     <script type="text/javascript">
       // When the checkboxes are changed, record the result in the background using the save_thanked_status view
       $('input.checkbox-thanked').change(function () {
-        var target_url = $('#link-personal-campaign-home').attr('href');
+        var target_url = $('#personal-campaign-fundraiser a').attr('href');
+        alert(target_url);
         target_url += '/save_thanked_status?'
         var parent_tr = $(this).closest('tr');
         if ($(this).is(":checked")) {
