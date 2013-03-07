@@ -12,7 +12,10 @@ from AccessControl.SecurityManagement import newSecurityManager
 
 from five import grok
 from plone.directives import form
+from zope.component import getUtility
+from zope.app.intid.interfaces import IIntIds
 from z3c.form import button, field
+from z3c.relationfield import RelationValue
 from plone.directives import dexterity
 from plone.dexterity.utils import createContentInContainer
 from Products.statusmessages.interfaces import IStatusMessage
@@ -92,10 +95,16 @@ class CreatePersonalCampaignPageForm(form.Form):
         mtool = getToolByName(self.context, 'portal_membership')
         member = mtool.getAuthenticatedMember()
         person_res = get_brains_for_email(self.context, member.getProperty('email'))
+        person = None
         if not person_res:
             contact_id = None
         else: 
-            contact_id = person_res[0].getObject().sf_object_id
+            person = person_res[0].getObject()
+            contact_id = person.sf_object_id
+        
+        if person:
+            intids = getUtility(IIntIds)
+            person_intid = intids.getId(person)
 
         settings = get_settings()
 
@@ -124,18 +133,27 @@ class CreatePersonalCampaignPageForm(form.Form):
         campaign.parent_sf_id = parent_campaign.sf_object_id
         campaign.sf_object_id = res[0]['id']
         campaign.contact_sf_id = contact_id
+        if person is not None:
+            campaign.person = RelationValue(person_intid)
+            
         campaign.reindexObject()
 
         # Send email confirmation and links.
-        data['parent'] = parent_campaign
-        data['campaign'] = campaign
-        data['FirstName'] = member.getProperty('fullname', 'friend')
-        email_view = getMultiAdapter((campaign, self.request), name='page-confirmation-email')
-        email_view.set_page_values(data)
-        email_body = email_view()
-        email_to = member.getProperty('email')
-        subject = 'New Personal Campaign Page Created'
-        send_confirmation_email(campaign, subject, email_to, email_body)
+        # If the campaign is configured to use a chimpdrill template for this, use it instead
+        template_uuid = getattr(campaign, 'chimpdrill_template_personal_page_created', None)
+        if template_uuid is not None:
+            campaign.send_chimpdrill_personal_page_created()
+
+        else:
+            data['parent'] = parent_campaign
+            data['campaign'] = campaign
+            data['FirstName'] = member.getProperty('fullname', 'friend')
+            email_view = getMultiAdapter((campaign, self.request), name='page-confirmation-email')
+            email_view.set_page_values(data)
+            email_body = email_view()
+            email_to = member.getProperty('email')
+            subject = 'New Personal Campaign Page Created'
+            send_confirmation_email(campaign, subject, email_to, email_body)
 
         # Send the user to their new campaign.
         IStatusMessage(self.request).add(u'Welcome to your fundraising page!')
