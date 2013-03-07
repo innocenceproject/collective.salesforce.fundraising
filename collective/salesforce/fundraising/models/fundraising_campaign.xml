@@ -61,6 +61,11 @@
             <description>If checked, allow the creation of personal campaign pages for this campaign</description>
             <required>False</required>
         </field>
+        <field name="personal_only" type="zope.schema.Bool">
+            <title>Personal Fundraising Only?</title>
+            <description>If checked, do not show a donation form on the main fundraising page</description>
+            <required>False</required>
+        </field>
         <field name="date_start" type="zope.schema.Date" sf:field="StartDate">
             <title>Start Date</title>
             <description>The start date of the campaign</description>
