@@ -104,8 +104,9 @@ class Person(dexterity.Item):
             data['MailingCountry'] = self.country
         if self.gender:
             data['Gender__c'] = self.gender
-        if self.stripe_customer_id:
-            data['Stripe_Customer_ID__c'] = self.stripe_customer_id
+        customer_id = getattr(self, 'stripe_customer_id', None)
+        if customer_id:
+            data['Stripe_Customer_ID__c'] = customer_id
 
         res = sfbc.upsert('Email', data)
 
