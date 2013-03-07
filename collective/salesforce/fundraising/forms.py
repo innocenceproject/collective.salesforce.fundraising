@@ -451,7 +451,7 @@ class AddPersonForm(form.SchemaForm):
         if errors:
             self.status = self.formErrorsMessage
             return
-    
+
         data = {
             'first_name': data['first_name'],
             'last_name': data['last_name'],
@@ -460,15 +460,26 @@ class AddPersonForm(form.SchemaForm):
             'password': pw_encrypt(data['password']),
             'registered': True,
         }
+
+        data_enc = {}
+        for key, value in data.items():
+            if key == 'email':
+                data_enc[key] = value.encode('ascii')
+                continue
+            if isinstance(value, unicode):
+                data_enc[key] = value.encode('utf8')
+            else:
+                data_enc[key] = value
+
    
         # Create the login user
         reg = getToolByName(self.context, 'portal_registration')
         props = {
-            'fullname': u'%s %s' % (data['first_name'], data['last_name']),
-            'username': data['email'],
-            'email': data['email'],
+            'fullname': '%s %s' % (data_enc['first_name'], data_enc['last_name']),
+            'username': data_enc['email'],
+            'email': data_enc['email'],
         }
-        reg.addMember(data['email'], data['password'], properties=props) 
+        reg.addMember(data_enc['email'], data_enc['password'], properties=props) 
 
         # Create the user object
         people_container = getattr(getSite(), 'people')
@@ -482,7 +493,7 @@ class AddPersonForm(form.SchemaForm):
         # Authenticate the user
         mtool = getToolByName(self.context, 'portal_membership')
         acl = getToolByName(self.context, 'acl_users')
-        newSecurityManager(None, acl.getUser(data['email']))
+        newSecurityManager(None, acl.getUser(data_enc['email']))
         mtool.loginUser()
 
         # See if came_from was passed
