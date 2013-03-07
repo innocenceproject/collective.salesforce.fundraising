@@ -197,12 +197,6 @@ class ProcessStripeDonation(grok.View):
             except:
                 response['redirect'] = self.context.get_fundraising_campaign_page().absolute_url() + '/@@post_donation_error'
             
-            # For some reason, the logoutUser in post_process_donation causes the request to become a 302, fix that manually here
-            # I think this has something to do with collective.pluggable login but not sure
-            if self.request.response.status == 302:
-                self.request.response.setStatus(200)
-                self.request.response.setHeader('location', None)
-
         return json.dumps(response)
 
 
@@ -315,6 +309,12 @@ class ProcessStripeDonation(grok.View):
                 person.upsertToSalesforce()
 
             mtool.logoutUser()
+
+            # For some reason, the logoutUser in post_process_donation causes the request to become a 302, fix that manually here
+            # I think this has something to do with collective.pluggable login but not sure
+            if self.request.response.status == 302:
+                self.request.response.setStatus(200)
+                self.request.response.setHeader('location', None)
 
         # Create the Donation
         intids = getUtility(IIntIds)
