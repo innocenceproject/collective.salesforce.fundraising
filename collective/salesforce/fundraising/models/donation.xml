@@ -7,18 +7,22 @@
         <field name="campaign_sf_id" type="zope.schema.TextLine" sf:field="Opportunity.CampaignId">
             <title>Campaign Salesforce ID</title>
             <description>The ID of the Salesforce Campaign the donation relates to</description>
+            <required>False</required>
         </field>
         <field name="contact_sf_id" type="zope.schema.TextLine" sf:field="ContactId">
             <title>Contact Salesforce ID</title>
             <description>The ID of the Salesforce Contact the donation relates to</description>
+            <required>False</required>
         </field>
         <field name="donation_sf_id" type="zope.schema.TextLine" sf:field="OpportunityId">
             <title>Donation ID</title>
             <description>The ID of the Salesforce Opportunity (Donation) the donation relates to</description>
+            <required>False</required>
         </field>
         <field name="opportunity_contact_role_sf_id" type="zope.schema.TextLine" sf:field="Id">
             <title>Opportunity Contact Role ID</title>
             <description>The ID of the Salesforce Opportunity Contact Role</description>
+            <required>False</required>
         </field>
         <field name="recurring_donation_sf_id" type="zope.schema.TextLine" sf:field="npe03__Recurring_Donation__c">
             <title>Recurring Donation ID</title>
@@ -55,6 +59,7 @@
         <field name="transaction_id" type="zope.schema.TextLine" sf:field="Opportunity.Success_Transaction_ID__c">
             <title>Transaction ID</title>
             <description>The ID of the successful transaction from the payment processor</description>
+            <required>False</required>
         </field>
         <field name="secret_key" type="zope.schema.TextLine" sf:field="Opportunity.Secret_Key__c">
             <title>Secret Key</title>
