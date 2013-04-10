@@ -3,6 +3,7 @@ from zope import schema
 from five import grok
 from plone.directives import dexterity, form
 
+from Acquisition import aq_base
 from zope.component import getUtility
 from zope.interface import alsoProvides
 from zope.interface import Interface
@@ -38,6 +39,9 @@ from collective.salesforce.fundraising.fundraising_campaign import ShareView
 
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising import MessageFactory as _
+
+import logging
+logger = logging.getLogger("Plone")
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
 def availablePeople(context):
@@ -153,6 +157,16 @@ where
 
 class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IEditPersonalCampaignPage, IPersonalCampaignPage, IFundraisingCampaignPage)
+
+    def absolute_url(self):
+        """ Fallback to cached value if no REQUEST available """
+        url = super(PersonalCampaignPage, self).absolute_url()
+        cached = getattr(aq_base(self), '_absolute_url', None)
+        if url.startswith('http'):
+            if cached is None or cached is not url:
+                self._absolute_url = url
+
+        return getattr(aq_base(self), '_absolute_url', url)
 
     @property
     def donation_form_tabs(self):
@@ -423,10 +437,13 @@ def mailchimpSubscribeFundraiser(page, event):
     if not campaign.chimpdrill_list_fundraisers:
         return
 
+    logger.info("Mailchimp Subscribe: for Page %s" % page.title)
+
     person = page.get_fundraiser()
     if not person:
-        # Skip if no person.  This happens can happen after initial save since the 
+        # Skip if no person.  This can happen after initial save since the 
         # person field is set after the first save of the person
+        logger.info("collective.salesforce.fundraising: Mailchimp Subscribe: skipping, no person yet")
         return
 
     percent = page.get_percent_goal()
@@ -443,8 +460,9 @@ def mailchimpSubscribeFundraiser(page, event):
         'PF_REMAIN': 100 - percent,
         'PF_URL': page.absolute_url(),
     }
+    logger.debug("collective.salesforce.fundraising: Mailchimp Subscribe: merge_vars = %s" % merge_vars)
     mc = getUtility(IMailsnakeConnection).get_mailchimp()
-    mc.listSubscribe(
+    res = mc.listSubscribe(
         id = campaign.chimpdrill_list_fundraisers,
         email_address = person.email,
         merge_vars = merge_vars,
@@ -452,3 +470,4 @@ def mailchimpSubscribeFundraiser(page, event):
         double_optin = False,
         send_welcome = False,
     )
+    logger.info("collective.salesforce.fundraising: Mailchimp Subscribe: result = %s" % res)
