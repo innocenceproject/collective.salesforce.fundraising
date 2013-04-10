@@ -5,12 +5,10 @@
     
     <schema sf:object="Campaign" sf:criteria="Type = 'Personal Fundraising'" sf:container="get_container">
         <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c">
-            <title>Title</title>
-            <description>Provide a brief title for your campaign</description>
+            <title>Provide a brief title for your campaign</title>
         </field>
         <field name="description" type="zope.schema.Text" sf:field="Description">
-            <title>Description</title>
-            <description>Provide a 1-3 sentence pitch for your campaign</description>
+            <title>Provide a 1-3 sentence pitch for your campaign</title>
         </field>
         <field name="external_media_url" type="zope.schema.TextLine">
             <title>External Media URL</title>
