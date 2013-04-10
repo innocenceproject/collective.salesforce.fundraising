@@ -7,7 +7,7 @@
 
   <div class="product-fieldset-contents">
     <tal:contents_loop tal:repeat="item view/context/@@folderListing">
-      <span tal:define="item_obj item/getObject" tal:replace="structure item_obj/@@product_form_component" />
+      <span tal:define="item_obj item/getObject" tal:condition="not: item_obj/hide|nothing" tal:replace="structure item_obj/@@product_form_component" />
       <div class="edit-links" tal:condition="view/can_edit">
         <a href="" tal:attributes="href string:${item/getURL}/@@edit">Edit Product</a>
       </div>

@@ -16,6 +16,10 @@
             <title>Donation Only?</title>
             <description>If checked, treat purchases of this product as donations.  This is useful, for example, to create a form with multiple donation line items to different target funds allowing the user to allocate individual amounts to each line item.  IMPORTANT: If you check this, set the price to 1</description>
         </field>
+        <field name="hide" type="zope.schema.Bool">
+            <title>Hide</title>
+            <description>Hide this item on the form.  This is useful if inventory is gone or for ending early bird registration prices.</description>
+        </field>
         <field name="price" type="zope.schema.Int">
             <title>Price</title>
             <description>The per unit price</description>

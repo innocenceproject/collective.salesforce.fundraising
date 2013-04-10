@@ -153,7 +153,7 @@ class DonationFormStripe(BaseDonationFormStripe):
         """
         acquired_parent = aq_parent(self.context)
         return acquired_parent.sf_object_id
-        
+
 class ProcessStripeDonation(BaseProcessStripeDonation):
     grok.context(IProductForm)
     grok.name('process_stripe_donation')
