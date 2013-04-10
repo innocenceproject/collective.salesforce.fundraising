@@ -1,6 +1,6 @@
     <form method="post" tal:attributes="action string:${view/context/absolute_url}/process_stripe_donation" id="donation-form-single" class="donation-form donation-form-stripe product-form">
       <input type="hidden" name="description" value="Donation" />
-      <input type="hidden" name="campaign_id" value="" tal:attributes="value view/context/sf_object_id" />
+      <input type="hidden" name="campaign_id" value="" tal:attributes="value view/campaign_sf_id" />
       <input type="hidden" name="source_campaign" value="" tal:attributes="value view/context/get_source_campaign" />
       <input type="hidden" name="source_url" value="" tal:attributes="value view/context/get_source_url" />
       <input type="hidden" name="c_products" value="" />
