@@ -115,7 +115,6 @@
               <div class="subfield subfield-expiration-year">
                 <select class="card-expiration-year" required="required">
                   <option value="">---</option>
-                  <option value="12">2012</option>
                   <option value="13">2013</option>
                   <option value="14">2014</option>
                   <option value="15">2015</option>
@@ -124,6 +123,9 @@
                   <option value="18">2018</option>
                   <option value="19">2019</option>
                   <option value="20">2020</option>
+                  <option value="20">2021</option>
+                  <option value="21">2022</option>
+                  <option value="22">2023</option>
                 </select>
               </div>
             </div>

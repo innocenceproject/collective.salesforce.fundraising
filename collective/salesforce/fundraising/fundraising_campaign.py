@@ -628,6 +628,16 @@ class FundraisingCampaignPage(object):
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
 
+    def absolute_url(self):
+        """ Fallback to cached value if no REQUEST available """
+        url = super(FundraisingCampaign, self).absolute_url()
+        cached = getattr(aq_base(self), '_absolute_url', None)
+        if url.startswith('http'):
+            if cached is None or cached is not url:
+                self._absolute_url = url
+            
+        return getattr(aq_base(self), '_absolute_url', url)
+
     def get_parent_sfid(self):
         return self.sf_object_id
 
@@ -1377,15 +1387,15 @@ class HeaderImageViewlet(grok.Viewlet):
     grok.viewletmanager(IPortalTop)
 
     def render(self):
-        campaign = getattr(self.context, 'get_fundraising_campaign', None)
-        if not campaign:
+        page = getattr(self.context, 'get_fundraising_campaign_page', None)
+        if not page:
             return ''
-        campaign = campaign()
-        image_url = campaign.get_header_image_url()
+        page = page()
+        image_url = page.get_header_image_url()
         if not image_url:
             return ''
         return '<div id="fundraising-campaign-header-image"><a href="%s"><img src="%s/campaign_header" alt="%s" /></a></div>' % (
-            self.context.absolute_url(), image_url, self.context.title)
+            page.absolute_url(), image_url, self.context.title)
 
 class PersonalLoginViewlet(grok.Viewlet):
     grok.name('collective.salesforce.fundraising.PersonalLoginViewlet')

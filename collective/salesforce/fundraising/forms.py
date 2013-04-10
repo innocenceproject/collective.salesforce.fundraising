@@ -298,7 +298,7 @@ class CreateDonationDonorQuote(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IDonorQuote).select('quote','name','image','contact_sf_id', 'key', 'amount')
+        return field.Fields(IDonorQuote).select('quote','name','image','key', 'amount')
 
     ignoreContext = True
 
@@ -307,7 +307,6 @@ class CreateDonationDonorQuote(form.Form):
 
     def updateWidgets(self):
         super(CreateDonationDonorQuote, self).updateWidgets()
-        self.widgets['contact_sf_id'].mode = 'hidden'
         self.widgets['key'].mode = 'hidden'
         self.widgets['amount'].mode = 'hidden'
 
@@ -336,6 +335,8 @@ class CreateDonationDonorQuote(form.Form):
             contact_id = member.getProperty('sf_object_id')
 
         quote.parent_sf_id = parent_campaign.sf_object_id
+
+        # FIXME: This is not saving to Salesforce yet
 
         # Send the user back to the thank you page with a note about their quote
         # Hide the donor quote section of the thank you page

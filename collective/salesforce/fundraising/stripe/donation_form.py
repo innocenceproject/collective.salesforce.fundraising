@@ -19,6 +19,8 @@ from Products.statusmessages.interfaces import IStatusMessage
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from plone.dexterity.utils import createContentInContainer
 from plone.uuid.interfaces import IUUID
+from plone.app.uuid.utils import uuidToObject
+from plone.app.async.interfaces import IAsyncService
 from zope.app.intid.interfaces import IIntIds
 from z3c.relationfield import RelationValue
 
@@ -42,6 +44,9 @@ from collective.salesforce.fundraising.us_states import states_list
 
 from collective.stripe.utils import get_settings as get_stripe_settings
 from collective.stripe.utils import IStripeUtility
+
+import logging
+logger = logging.getLogger("Plone")
 
 class DonationFormStripe(grok.View):
     """ Renders a donation form setup to submit through Stripe """
@@ -118,6 +123,7 @@ class ProcessStripeDonation(grok.View):
         try:
             amount = int(self.request.form.get('x_amount'))
         except TypeError:
+            logger.info('collective.salesforce.fundraising: Stripe Payment: Validation error due to non-integer amount: %s' % self.request.form.get('x_amount',None))
             response['message'] = 'Please enter a whole dollar amount value for Amount'
             return json.dumps(response)
 
@@ -127,13 +133,18 @@ class ProcessStripeDonation(grok.View):
         # Is this a recurring donation?
         self.recurring_plan_id = self.request.form.get('recurring_plan', None)
         self.customer_id = None
+        
+        # Setup result attributes
+        self.stripe_result = None
+        self.customer_result = None
+        self.subscribe_result = None
 
         try:
             if not self.recurring_plan_id:
                 self.stripe_result = stripe_util.charge_card(
                     token=self.request.form.get('stripeToken'),
                     amount=stripe_amount,
-                    description='test donation',
+                    description = self.request.form.get('email').lower(),
                     context=self.context,
                 )
             else:
@@ -147,14 +158,14 @@ class ProcessStripeDonation(grok.View):
                     #customer_id = person.stripe_customer_id
                    
                 if not self.customer_id: 
-                    customer_result = stripe_util.create_customer(
+                    self.customer_result = stripe_util.create_customer(
                         token = self.request.form.get('stripeToken'),
                         description = self.request.form.get('email').lower(),
                         context = self.context,
                     )
-                    self.customer_id = customer_result['id']
+                    self.customer_id = self.customer_result['id']
                     
-                self.stripe_result = stripe_util.subscribe_customer(
+                self.subscribe_result = stripe_util.subscribe_customer(
                     customer_id = self.customer_id,
                     plan = self.recurring_plan_id,
                     quantity = amount,
@@ -171,37 +182,45 @@ class ProcessStripeDonation(grok.View):
             body = e.json_body
             err  = body['error']
             response['message'] = err['message']
+            logger.info('collective.salesforce.fundraising: Stripe Payment CardError: %s' % response['message'])
 
         except stripe_api.InvalidRequestError, e:
             body = e.json_body
             err  = body['error']
             response['message'] = err['message']
+            logger.warning('collective.salesforce.fundraising: Stripe Payment InvalidRequestError: %s' % response['message'])
 
         except stripe_api.AuthenticationError, e:
             body = e.json_body
             err  = body['error']
             response['message'] = err['message']
+            logger.warning('collective.salesforce.fundraising: Stripe Payment AuthenticationError: %s' % response['message'])
 
         except stripe_api.APIConnectionError, e:
             response['message'] = 'There was a problem connecting with our credit card processor.  Please try again in a few minutes or contact us to report the issue'
+            logger.warning('collective.salesforce.fundraising: Stripe Payment APIConnectionError: %s' % response['message'])
 
         except stripe_api.StripeError, e:
             response['message'] = 'There was an error communicating with our payment processor.  Please try again later or contact us to report the issue'
+            logger.warning('collective.salesforce.fundraising: Stripe Payment StripeError: %s' % e.json_body)
 
-        except:
+        except Exception, e:
             response['message'] = 'There was an error with your payment.  Please try again later or contact us to report the issue'
+            logger.warning('collective.salesforce.fundraising: Stripe Payment Other Error: %s' % e) 
 
         if response['success']:
             try:
                 response['redirect'] = self.post_process_donation()
-            except:
+            except Exception, e: 
                 response['redirect'] = self.context.get_fundraising_campaign_page().absolute_url() + '/@@post_donation_error'
+                logger.warning('collective.salesforce.fundraising: Stripe Post Payment Error: %s' % e)
             
         return json.dumps(response)
 
 
     def post_process_donation(self):
-        campaign = self.context.get_fundraising_campaign_page()
+        #import pdb; pdb.set_trace()
+        page = self.context.get_fundraising_campaign_page()
         source_campaign_id = self.request.form.get('source_campaign_id')
         source_url = self.request.form.get('source_url')
         form_name = self.request.form.get('form_name')
@@ -218,7 +237,7 @@ class ProcessStripeDonation(grok.View):
         if product_id:
             res = pc.searchResults(sf_object_id=product_id, portal_type='collective.salesforce.fundraising.donationproduct')
             if not res:
-                return 'ERROR: Product with ID %s not found' % product_id
+                raise ValueError('collective.salesforce.fundraising: Stripe Post Payment Error: Product with ID %s not found' % product_id)
             product = res[0].getObject()
 
         if product_id or c_products:
@@ -231,21 +250,18 @@ class ProcessStripeDonation(grok.View):
                 item_id, item_quantity = item.split(':')
                 product_res = pc.searchResults(sf_object_id = item_id, portal_type='collective.salesforce.fundraising.donationproduct')
                 if not product_res:
-                    return 'ERROR: Product with ID %s not found' % product_id
+                    raise ValueError('collective.salesforce.fundraising: Stripe Post Payment Error: Product with ID %s not found' % item_id)
                 products.append({'id': item_id, 'quantity': item_quantity, 'product': product_res[0].getObject()})
 
         settings = get_settings()
-
-        # Look for an existing Plone user
-        mt = getToolByName(self.context, 'portal_membership')
-        first_name = self.request.form.get('first_name', None)
-        last_name = self.request.form.get('last_name', None)
 
         # lowercase all email addresses to avoid lookup errors if typed with different caps
         email = self.request.form.get('email', None)
         if email:
             email = email.lower()
 
+        first_name = self.request.form.get('first_name', None)
+        last_name = self.request.form.get('last_name', None)
         email_opt_in = self.request.form.get('email_signup', None) == 'YES'
         phone = self.request.form.get('phone', None)
         address = self.request.form.get('address', None)
@@ -255,82 +271,29 @@ class ProcessStripeDonation(grok.View):
         country = self.request.form.get('country', None)
         amount = int(float(self.request.form.get('x_amount', None)))
 
-        res = self.get_existing_person()
-        # If no existing user, create one which creates the contact in SF (1 API call)
-        if not res:
-            data = {
-                'first_name': first_name,
-                'last_name': last_name,
-                'email': email,
-                'address': address,
-                'city': city,
-                'state': state,
-                'zip': zipcode,
-                'country': country,
-                'phone': phone,
-            }
-
-            # Treat the email_opt_in field as a ratchet.  Once toggled on, it stays on even if unchecked
-            # on a subsequent donation.  Unsubscribing is the way to prevent emails.
-            if email_opt_in:
-                data['email_opt_in'] = email_opt_in
-
-            # Create the user
-            people_container = getattr(getSite(), 'people')
-            person = createContentInContainer(
-                people_container,
-                'collective.salesforce.fundraising.person',
-                checkConstraints=False,
-                **data
-            )
-
-        # If existing user, fill with updated data from subscription profile (1 API call, Person update handler)
-        else:
-            # Authenticate the user temporarily to fetch their person object with some level of permissions applied
-            mtool = getToolByName(self.context, 'portal_membership')
-            acl = getToolByName(self.context, 'acl_users')
-            newSecurityManager(None, acl.getUser(email))
-            mtool.loginUser()
-
-            # See if any values are modified and if so, update the Person and upsert the changes to SF
-            person = res[0].getObject()
-            old_data = [person.address, person.city, person.state, person.zip, person.country, person.phone]
-            new_data = [address, city, state, zipcode, country, phone]
-
-            if new_data != old_data:
-                person.address = address
-                person.city = city
-                person.state = state
-                person.zip = zipcode
-                person.country = country
-                person.phone = phone
-                person.reindexObject()
-
-                person.upsertToSalesforce()
-
-            mtool.logoutUser()
-
-            # For some reason, the logoutUser in post_process_donation causes the request to become a 302, fix that manually here
-            # I think this has something to do with collective.pluggable login but not sure
-            if self.request.response.status == 302:
-                self.request.response.setStatus(200)
-                self.request.response.setHeader('location', None)
-
         # Create the Donation
         intids = getUtility(IIntIds)
-        person_intid = intids.getId(person)
-        campaign_intid = intids.getId(campaign)
-
+        page_intid = intids.getId(page)
 
         data = {
+            'first_name': first_name,
+            'last_name': last_name,
+            'email': email,
+            'email_opt_in': email_opt_in,
+            'phone': phone,
+            'address_street': address,
+            'address_city': city,
+            'address_state': state,
+            'address_zip': zipcode,
+            'address_country': zipcode,
             'secret_key': build_secret_key(),
-            'campaign': RelationValue(campaign_intid),
+            'campaign': RelationValue(page_intid),
             'amount': amount,
             'stage': 'Posted',
             'products': [],
-            'campaign_sf_id': campaign.sf_object_id,
-            'source_campaign_sf_id': campaign.get_source_campaign(),
-            'source_url': campaign.get_source_url(),
+            'campaign_sf_id': page.sf_object_id,
+            'source_campaign_sf_id': page.get_source_campaign(),
+            'source_url': page.get_source_url(),
         }
        
         if self.recurring_plan_id:
@@ -361,19 +324,24 @@ class ProcessStripeDonation(grok.View):
                 data['products'].append('%s|%s|%s' % (item['product'].price, item['quantity'], IUUID(item['product'])))
 
         donation = createContentInContainer(
-            campaign,
+            page,
             'collective.salesforce.fundraising.donation',
             checkConstraints=False,
             **data
         )
-        donation.person = RelationValue(person_intid)
-        event = ObjectModifiedEvent(donation)
-        notify(event)
 
         # Record the transaction and its amount in the campaign
-        campaign.add_donation(amount)
+        try:
+            page.add_donation(amount)
+        except Exception, e:
+            logger.warning('collective.salesforce.fundraising: Error adding donation to totals: %s' % e)
+            
 
-        # Send the email receipt
+        # Queue sending of the email receipt - FIXME: rendering receipt currently requires the request which is not possible in async
+        #async = getUtility(IAsyncService)
+        #async.queueJob(sendDonationReceipt, IUUID(donation))
+
+        # Send receipt immediately
         donation.send_donation_receipt(self.request, donation.secret_key)
 
         # If this is an honorary or memorial donation, redirect to the form to provide details
@@ -384,11 +352,3 @@ class ProcessStripeDonation(grok.View):
             redirect_url = '%s?key=%s' % (donation.absolute_url(), donation.secret_key)
 
         return redirect_url
-
-    def get_existing_person(self):
-        # lowercase all email addresses to avoid lookup errors if typed with different caps
-        email = self.request.form.get('email', None)
-        if email:
-            email = email.lower()
-
-        return get_brains_for_email(self.context, email, self.request)

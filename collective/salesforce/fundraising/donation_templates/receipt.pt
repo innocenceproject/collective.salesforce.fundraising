@@ -47,13 +47,13 @@
             </tal:if_products>
           </div>
           <br />
-          <div class="donor-details" style="padding: 0 20px 20px 20px" tal:condition="view/person/last_name|nothing">
-            <div><b class="donor-name" tal:content="string:${view/person/first_name} ${view/person/last_name}" /></div>
-            <div class="donor-street-address" tal:content="view/person/address" />
-            <div class="donor-city-state-zip" tal:content="string:${view/person/city}, ${view/person/state}  ${view/person/zip}" />
-            <div class="donor-country" tal:content="view/person/country" />
-            <div class="donor-email" tal:content="view/person/email" />
-            <div class="donor-phone" tal:content="view/person/phone" />
+          <div class="donor-details" style="padding: 0 20px 20px 20px" tal:condition="view/context/last_name|nothing">
+            <div><b class="donor-name" tal:content="string:${view/context/first_name} ${view/context/last_name}" /></div>
+            <div class="donor-street-address" tal:content="view/context/address_street" />
+            <div class="donor-city-state-zip" tal:content="string:${view/context/address_city}, ${view/context/address_state}  ${view/context/address_zip}" />
+            <div class="donor-country" tal:content="view/context/address_country" />
+            <div class="donor-email" tal:content="view/context/email" />
+            <div class="donor-phone" tal:content="view/context/phone" />
           </div>
         </td>
       </tr>

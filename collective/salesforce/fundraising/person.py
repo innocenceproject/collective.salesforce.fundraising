@@ -15,6 +15,7 @@ from zope.app.container.interfaces import IObjectAddedEvent
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.namedfile.field import NamedBlobImage
+from plone.app.async.interfaces import IAsyncService
 from Products.CMFCore.interfaces import ISiteRoot
 
 from collective.salesforce.content.interfaces import IModifiedViaSalesforceSync
@@ -140,13 +141,7 @@ def setOwnerRole(person, event):
         person.manage_setLocalRoles(person.email, roles)
 
 
-@grok.subscribe(IPerson, IObjectAddedEvent)
-def upsertNewSalesforceContact(person, event):
-    # abort if this site doesn't have this product installed
-    mdata = getToolByName(person, 'portal_memberdata')
-    if 'sf_object_id' not in mdata.propertyIds():
-        return
-
+def upsertPersonToSalesforceContact(person):
     # NOTE: commented out because we always want to update SF when a contact is updated
     # Skip if the sf_object_id is already set (could happen from 
     # collective.salesforce.content sync)
@@ -154,18 +149,26 @@ def upsertNewSalesforceContact(person, event):
     #    return
 
     # upsert Contact in Salesforce
-    person.upsertToSalesforce()
+    return person.upsertToSalesforce()
 
-
-@grok.subscribe(IPerson, IObjectModifiedEvent)
-def upsertModifiedSalesforceContact(person, event):
+@grok.subscribe(IPerson, IObjectAddedEvent)
+def queueUpsertNewSalesforceContact(person, event):
     # abort if this site doesn't have this product installed
     mdata = getToolByName(person, 'portal_memberdata')
     if 'sf_object_id' not in mdata.propertyIds():
         return
+    async = getUtility(IAsyncService)
+    async.queueJob(upsertPersonToSalesforceContact, person)
 
-    # upsert Contact in Salesforce
-    person.upsertToSalesforce()
+@grok.subscribe(IPerson, IObjectModifiedEvent)
+def queueUpsertModifiedSalesforceContact(person, event):
+    # abort if this site doesn't have this product installed
+    mdata = getToolByName(person, 'portal_memberdata')
+    if 'sf_object_id' not in mdata.propertyIds():
+        return
+    async = getUtility(IAsyncService)
+    async.queueJob(upsertPersonToSalesforceContact, person)
+    
 
 
 class EmailLoginRouter(grok.View):

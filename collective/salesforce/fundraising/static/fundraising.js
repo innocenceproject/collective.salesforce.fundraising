@@ -8,6 +8,9 @@ document.location.search.replace(/\??(?:([^=]+)=([^&]*)&?)/g, function () {
     _GET_VARS[decode(arguments[1])] = decode(arguments[2]);
 });
 
+/*! http://mths.be/placeholder v1.8.7 by @mathias */
+(function(f,h,c){var a='placeholder' in h.createElement('input'),d='placeholder' in h.createElement('textarea'),i=c.fn,j;if(a&&d){j=i.placeholder=function(){return this};j.input=j.textarea=true}else{j=i.placeholder=function(){return this.filter((a?'textarea':':input')+'[placeholder]').not('.placeholder').bind('focus.placeholder',b).bind('blur.placeholder',e).trigger('blur.placeholder').end()};j.input=a;j.textarea=d;c(function(){c(h).delegate('form','submit.placeholder',function(){var k=c('.placeholder',this).each(b);setTimeout(function(){k.each(e)},10)})});c(f).bind('unload.placeholder',function(){c('.placeholder').val('')})}function g(l){var k={},m=/^jQuery\d+$/;c.each(l.attributes,function(o,n){if(n.specified&&!m.test(n.name)){k[n.name]=n.value}});return k}function b(){var k=c(this);if(k.val()===k.attr('placeholder')&&k.hasClass('placeholder')){if(k.data('placeholder-password')){k.hide().next().show().focus().attr('id',k.removeAttr('id').data('placeholder-id'))}else{k.val('').removeClass('placeholder')}}}function e(){var o,n=c(this),k=n,m=this.id;if(n.val()===''){if(n.is(':password')){if(!n.data('placeholder-textinput')){try{o=n.clone().attr({type:'text'})}catch(l){o=c('<input>').attr(c.extend(g(this),{type:'text'}))}o.removeAttr('name').data('placeholder-password',true).data('placeholder-id',m).bind('focus.placeholder',b);n.data('placeholder-textinput',o).data('placeholder-id',m).before(o)}n=n.removeAttr('id').hide().prev().attr('id',m).show()}n.addClass('placeholder').val(n.attr('placeholder'))}else{n.removeClass('placeholder')}}}(this,document,jQuery));
+
 function form_input_is_int(input){
   return !isNaN(input)&&parseInt(input)==input;
 }
@@ -262,22 +265,30 @@ function setupStripeForm() {
     var forms = $('form.donation-form-stripe');
     forms.each(function () {
         var stripe_form = $(this);
+        
+        //stripe_form.submit(stripPlaceholderValues);
+
+        stripe_form.data('validator').onSuccess = function () {
+            var stripe_form = $(this);
+            if (stripe_form.checkValidity() == true) {
+                Stripe.createToken({
+                    number: stripe_form.find('.subfield-card-number input').val(),
+                    name: stripe_form.find('.subfield-first-name input').val() + ' ' + stripe_form.find('.subfield-last-name input').val(),
+                    cvc: stripe_form.find('.subfield-card-cvc input').val(),
+                    exp_month: stripe_form.find('select.card-expiration-month').val(),
+                    exp_year: stripe_form.find('select.card-expiration-year').val(),
+                    address_line1: stripe_form.find('.subfield-address input').val(),
+                    address_city: stripe_form.find('.subfield-city input').val(),
+                    address_state: stripe_form.find('.subfield-state input').val(),
+                    address_zip: stripe_form.find('.subfield-zip input').val(),
+                    address_country: stripe_form.find('.subfield-country input').val()
+                }, stripeDonationResponseHandler);
+            }
+            //return false;
+        };
+
         stripe_form.submit(function (e) {
             e.preventDefault();
-            // FIXME: this didn't work for some reason, possibly jquery version issues?
-            //stripe_form.find('.form-buttons input').prop('disabled', true);
-            
-            Stripe.createToken({
-                number: stripe_form.find('.subfield-card-number input').val(),
-                cvc: stripe_form.find('.subfield-card-cvc input').val(),
-                exp_month: stripe_form.find('select.card-expiration-month').val(),
-                exp_year: stripe_form.find('select.card-expiration-year').val()
-                //address_line1: stripe_form.find('.subfield-address input').val(),
-                //address_city: stripe_form.find('.subfield-city input').val(),
-                //address_state: stripe_form.find('.subfield-state input').val(),
-                //address_zip: stripe_form.find('.subfield-zip input').val(),
-                //address_country: stripe_form.find('.subfield-country input').val(),
-            }, stripeDonationResponseHandler);
             return false;
         });
     })
@@ -494,8 +505,16 @@ function stripPlaceholderValues() {
     // If value = placeholder, remove value on submit
     $(this).find('input[type=text], input[type=email]').each(function () {
         if ($(this).attr('placeholder') && $(this).val() == $(this).attr('placeholder')) {
-            //alert('removing value ' + $(this).val() + ' as placeholder ' + $(this).attr('placeholder'));
             $(this).val('');
+        }    
+    });
+}
+
+function stripFormPlaceholderValues(form) {
+    // If value = placeholder, remove value on submit
+    form.find('input[type=text], input[type=email]').each(function () {
+        if (form.attr('placeholder') && form.val() == form.attr('placeholder')) {
+            form.val('');
         }    
     });
 }
@@ -549,47 +568,51 @@ $(document).ready(function() {
     });
 
     // HTML5 placeholder attribute processing in non-HTML5 browsers
-    function placeholder(){
-        $("form.donation-form input[type=text], form.donation-form input[type=email]").each(function(){
-            var phvalue = $(this).attr("placeholder");
-            if ($(this).val() == '') {
-                $(this).val(phvalue);
-                $(this).addClass('placeholder');
-            }
-        });
-    }
-    placeholder();
-    $("form.donation-form input[type=text], form.donation-form input[type=email]").focusin(function(){
-        var phvalue = $(this).attr("placeholder");
-        if (phvalue == $(this).val()) {
-            $(this).val("");
-            $(this).removeClass('placeholder');
-        }
-    });
-    $("form.donation-form input[type=text], form.donation-form input[type=email]").focusout(function(){
-        var phvalue = $(this).attr("placeholder");
-        if ($(this).val() == "") {
-            $(this).val(phvalue);
-            $(this).addClass('placeholder');
-        }
-    });
-    $("form.donation-form input[type=text], form.donation-form input[type=email]").keyup(function(){
-        if ($(this).val() != '') {
-            $(this).removeClass('placeholder');
-        }
-    });
+    //function placeholder(){
+    //    $("form.donation-form input[type=text], form.donation-form input[type=email]").each(function(){
+    //        var phvalue = $(this).attr("placeholder");
+    //        if ($(this).val() == '') {
+    //            $(this).val(phvalue);
+    //            $(this).addClass('placeholder');
+    //        }
+    //    });
+    //}
+    //placeholder();
+    //$("form.donation-form input[type=text], form.donation-form input[type=email]").focusin(function(){
+    //    var phvalue = $(this).attr("placeholder");
+    //    if (phvalue == $(this).val()) {
+    //        $(this).val("");
+    //        $(this).removeClass('placeholder');
+    //    }
+    //});
+    //$("form.donation-form input[type=text], form.donation-form input[type=email]").focusout(function(){
+    //    var phvalue = $(this).attr("placeholder");
+    //    if ($(this).val() == "") {
+    //        $(this).val(phvalue);
+    //        $(this).addClass('placeholder');
+    //    }
+    //});
+    //$("form.donation-form input[type=text], form.donation-form input[type=email]").keyup(function(){
+    //    if ($(this).val() != '') {
+    //        $(this).removeClass('placeholder');
+    //    }
+    //});
     
     // adds an effect called "scrolltofield" to the validator
     $.tools.validator.addEffect("scrolltofield", function(errs, event) {
         var conf = this.getConf();
+        var err_fields = [];
 
         // loop errors
         $.each(errs, function(i, err) {
-    
+  
             // add error class  
             var input = err.input;                  
             input.addClass(conf.errorClass);
             
+            // add to err_fields
+            err_fields.push(input.attr('name'))
+         
             // If single error is enabled, focus on the input
             if (conf.singleError == true) {
                 var buttons = input.parents('form').find('.form-buttons');
@@ -600,7 +623,7 @@ $(document).ready(function() {
                 }, 5000);
                 if ($.browser.msie != true) {
                     var container = $('body');
-                    container.scrollTop(input.offset().top - container.offset().top);
+                    container.animate({scrollTop: input.offset().top - container.offset().top});
                 }
             }
                 
@@ -640,6 +663,7 @@ $(document).ready(function() {
                 return false;
             }
         });
+        
     }, function (inputs) {});
  
     // Setup donation form tabs
@@ -677,21 +701,76 @@ $(document).ready(function() {
     });
 
     // Construct Authorize.net transaction description as inputs change
-    var authnet_dpm_form = ($('.donation-form-authnet-dpm').length);
-    if (authnet_dpm_form.length) {
-    }
+    //var authnet_dpm_form = ($('.donation-form-authnet-dpm').length);
+    //if (authnet_dpm_form.length) {
+    //}
 
     $('form.donation-form').each(function () {
         var form = $(this);
+        var handle_form = true;
         showHideDonationForm(form);
+
         // If this is not a recurly form (which already handles client side validation), enable validation
-        if (! form.hasClass('donation-form-recurly')) {
-            // Strip placeholder values
-            form.submit(stripPlaceholderValues);
+        if (form.hasClass('donation-form-recurly') == true) {
+            handle_form = false;
+        }
+
+        if (handle_form == true) {
+            // Setup placeholders
+            form.find('input, textarea').placeholder();
 
             // Set validator
-            //form.attr('novalidate','novalidate').validator({effect: 'scrolltofield', singleError: true, position: 'bottom left', messageClass: 'field-error-message', onFail: function (e, els) {placeholder();}});
-            form.attr('novalidate','novalidate').validator({effect: 'scrolltofield', singleError: true, position: 'bottom left', messageClass: 'field-error-message', onFail: function (e, els) {placeholder();}});
+            form.attr('novalidate','novalidate');
+            form.validator({
+                //effect: 'scrolltofield', 
+                singleError: true, 
+                position: 'bottom left', 
+                errorInputEvent: 'keyup',
+                //inputEvent: 'blur',
+                messageClass: 'field-error-message', 
+                onFail: function (e, els) {
+                    form.find('.field-error-message').show();
+    
+                    var button = form.find('.form-buttons input');
+                    button.removeClass('submitted');
+                    button.next('.button-loading-indicator').hide();
+                }
+            // Handle form submit
+            }).submit(function(e) {
+                var form = $(this);
+    
+                // client-side validation passed
+                if (!e.isDefaultPrevented()) {
+                    // Mark the form as submitted
+                    var button = form.find('.form-buttons input');
+                    button.addClass('submitted');
+                    button.next('.button-loading-indicator').show();
+    
+                    // For Authorize.net DPM method, just submit the form normally
+                    if (form.hasClass('donation-form-authnet-dpm') == true) {
+                        return;
+                    }
+    
+                    // For Stripe, create the token and trigger the response handler
+                    if (form.hasClass('donation-form-stripe') == true) {
+                        Stripe.createToken({
+                            number: form.find('.subfield-card-number input').val(),
+                            name: form.find('.subfield-first-name input').val() + ' ' + form.find('.subfield-last-name input').val(),
+                            cvc: form.find('.subfield-card-cvc input').val(),
+                            exp_month: form.find('select.card-expiration-month').val(),
+                            exp_year: form.find('select.card-expiration-year').val(),
+                            address_line1: form.find('.subfield-address input').val(),
+                            address_city: form.find('.subfield-city input').val(),
+                            address_state: form.find('.subfield-state input').val(),
+                            address_zip: form.find('.subfield-zip input').val(),
+                            address_country: form.find('.subfield-country input').val()
+                        }, stripeDonationResponseHandler);
+                    }
+                }
+
+                // prevent default form submission logic
+                e.preventDefault();
+            });
         }
     });
 
@@ -709,8 +788,8 @@ $(document).ready(function() {
 
     setupAuthnetDpmForm();
     setupHonoraryForm();
+    //setupStripeForm();
     setupProductForm();
-    setupStripeForm();
 
     // Handle Fundraising Seal More Info link
     $('.fundraising-seal a').click(function () {
@@ -724,9 +803,10 @@ $(document).ready(function() {
     $('.subfield-country').change(linkStateAndCountryField);
 
     // Show loading indicator after form button clicked and make validator play nicely with double submission logic
-    $('.form-buttons input').click(function () {
+    //$('.form-buttons input').click(function () {
         // Remove the placeholder values before validating to avoid thinking the placeholder fulfills a field's requirements
-        $(this).parents('form.donation-form').each(stripPlaceholderValues);
+        //$(this).parents('form.donation-form').each(stripPlaceholderValues);
+/*
         if ($(this).parents('form.donation-form').data('validator').checkValidity() == true) {
             if ($(this).hasClass('submitted') == true) {
                 return false;
@@ -736,7 +816,8 @@ $(document).ready(function() {
         } else {
             placeholder();
         }
-    });
+*/
+    //});
 
     // If there was a donation form error on the page, select the tab with an error
     $('.donation-form-error').each(function () {
