@@ -12,9 +12,13 @@ from zope.interface import Interface
 from zope.component import getUtility
 from zope.component import getMultiAdapter
 from zope.site.hooks import getSite
+from zope.app.intid.interfaces import IIntIds
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
+from zope.event import notify
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
+from zope.lifecycleevent import ObjectModifiedEvent
+from AccessControl.SecurityManagement import newSecurityManager
 from plone.uuid.interfaces import IUUID
 from plone.app.uuid.utils import uuidToObject
 from plone.app.async.interfaces import IAsyncService
@@ -22,6 +26,7 @@ from plone.namedfile.field import NamedImage
 from Products.CMFCore.utils import getToolByName
 from plone.i18n.locales.countries import CountryAvailability
 from plone.directives import dexterity, form
+from plone.dexterity.utils import createContentInContainer
 from plone.formwidget.contenttree.source import ObjPathSourceBinder
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from plone.z3cform.interfaces import IWrappedForm
@@ -34,6 +39,9 @@ from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 from collective.salesforce.fundraising.personal_campaign_page import IPersonalCampaignPage
+
+import logging
+logger = logging.getLogger("Plone")
 
 def build_secret_key():
     return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(32))
@@ -66,6 +74,72 @@ class IDonation(form.Schema, IImageScaleTraversable):
         description=u"The user account of the donor",
         required=False,
         source=availablePeople,
+    )
+
+    first_name = schema.TextLine(
+        title=u"First Name",
+        description=u"The donor's first name as submitted in the donation form",
+        required=False,
+    )
+
+    last_name = schema.TextLine(
+        title=u"Last Name",
+        description=u"The donor's last name as submitted in the donation form",
+        required=False,
+    )
+
+    email = schema.TextLine(
+        title=u"Email",
+        description=u"The donor's email as submitted in the donation form",
+        required=False,
+    )
+
+    email_opt_in = schema.TextLine(
+        title=u"Email Opt In",
+        description=u"The donor's selection for email opt in submitted in the donation form",
+        required=False,
+    )
+
+    phone = schema.TextLine(
+        title=u"Phone",
+        description=u"The donor's phone number as submitted in the donation form",
+        required=False,
+    )
+
+    address_street = schema.TextLine(
+        title=u"Street Address",
+        description=u"The donor's street address as submitted in the donation form",
+        required=False,
+    )
+
+    address_city = schema.TextLine(
+        title=u"City",
+        description=u"The donor's city as submitted in the donation form",
+        required=False,
+    )
+
+    address_state = schema.TextLine(
+        title=u"State",
+        description=u"The donor's state as submitted in the donation form",
+        required=False,
+    )
+
+    address_zip = schema.TextLine(
+        title=u"Zip",
+        description=u"The donor's zip as submitted in the donation form",
+        required=False,
+    )
+
+    address_country = schema.TextLine(
+        title=u"Country",
+        description=u"The donor's country as submitted in the donation form",
+        required=False,
+    )
+
+    fingerprint = schema.TextLine(
+        title=u"Fingerprint",
+        description=u"The Stripe card fingerprint",
+        required=False,
     )
 
     campaign = RelationChoice(
@@ -111,6 +185,9 @@ class ISalesforceDonationSync(Interface):
     def create_campaign_member():
         """ create a campaign member object linking the contact to the campaign """
 
+class IDonationReceipt(Interface):
+    def render_html():
+        """ render the receipt as html """
 
 class Donation(dexterity.Container):
     grok.implements(IDonation)
@@ -136,11 +213,6 @@ class Donation(dexterity.Container):
         return page.get_chimpdrill_campaign_data()
 
     def get_chimpdrill_thank_you_data(self, request):
-        if not self.person or not self.person.to_object:
-            # Skip if we have no email to send to
-            return
-        person = self.person.to_object
-
         receipt_view = None
         receipt = None
         receipt_view = getMultiAdapter((self, request), name='receipt')
@@ -154,8 +226,8 @@ class Donation(dexterity.Container):
 
         data = {
             'merge_vars': [
-                {'name': 'first_name', 'content': person.first_name},
-                {'name': 'last_name', 'content': person.last_name},
+                {'name': 'first_name', 'content': self.first_name},
+                {'name': 'last_name', 'content': self.last_name},
                 {'name': 'amount', 'content': self.amount},
             ],
             'blocks': [
@@ -171,8 +243,6 @@ class Donation(dexterity.Container):
         return data
 
     def get_chimpdrill_honorary_data(self):
-        person = self.person.to_object
-
         # Use default values if none provided, useful for preview rendering
         honorary_first_name = self.honorary_first_name
         if not honorary_first_name:
@@ -192,8 +262,8 @@ class Donation(dexterity.Container):
         
         data = {
             'merge_vars': [
-                {'name': 'donor_first_name', 'content': person.first_name},
-                {'name': 'donor_last_name', 'content': person.last_name},
+                {'name': 'donor_first_name', 'content': self.first_name},
+                {'name': 'donor_last_name', 'content': self.last_name},
                 {'name': 'honorary_first_name', 'content': honorary_first_name},
                 {'name': 'honorary_last_name', 'content': honorary_last_name},
                 {'name': 'honorary_recipient_first_name', 'content': honorary_recipient_first_name},
@@ -211,14 +281,12 @@ class Donation(dexterity.Container):
         return data
 
     def get_chimpdrill_personal_page_donation_data(self):
-        person = self.person.to_object
-
         data = {
             'merge_vars': [
                 {'name': 'amount', 'content': self.amount},
-                {'name': 'donor_first_name', 'content': person.first_name},
-                {'name': 'donor_last_name', 'content': person.last_name},
-                {'name': 'donor_email', 'content': person.email},
+                {'name': 'donor_first_name', 'content': self.first_name},
+                {'name': 'donor_last_name', 'content': self.last_name},
+                {'name': 'donor_email', 'content': self.email},
             ],
             'blocks': [],
         }
@@ -230,11 +298,7 @@ class Donation(dexterity.Container):
         return data
 
     def send_chimpdrill_thank_you(self, request, template):
-        if not self.person or not self.person.to_object:
-            # Skip if we have no email to send to
-            return
-
-        mail_to = self.person.to_object.email
+        mail_to = self.email
         data = self.get_chimpdrill_thank_you_data(request)
 
         return template.send(email = mail_to,
@@ -263,14 +327,10 @@ class Donation(dexterity.Container):
             blocks = data['blocks'],
         )
 
-        donor = self.person
-        if donor is not None:
-            donor = donor.to_object
-        if donor is not None:
-            template.send(email = donor.email,
-                merge_vars = data['merge_vars'],
-                blocks = data['blocks'],
-            )
+        template.send(email = self.email,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
             
         
     def render_chimpdrill_honorary(self, template):
@@ -295,14 +355,10 @@ class Donation(dexterity.Container):
             blocks = data['blocks'],
         )
 
-        donor = self.person
-        if donor is not None:
-            donor = donor.to_object
-        if donor is not None:
-            template.send(email = donor.email,
-                merge_vars = data['merge_vars'],
-                blocks = data['blocks'],
-            )
+        template.send(email = self.email,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
 
         
     def render_chimpdrill_memorial(self, template):
@@ -322,10 +378,6 @@ class Donation(dexterity.Container):
         )
 
     def send_chimpdrill_personal_page_donation(self, template):
-        if not self.person or not self.person.to_object:
-            # Skip if we have no email to send to
-            return
-
         page = self.get_fundraising_campaign_page()
         if not page.is_personal():
             # Skip if the donation was not to a personal campaign page
@@ -366,10 +418,7 @@ class Donation(dexterity.Container):
         portal_url = getToolByName(self, 'portal_url')
         portal = portal_url.getPortalObject()
         mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-        if not self.person or not self.person.to_object:
-            # Skip if we have no email to send to
-            return
-        mail_to = self.person.to_object.email
+        mail_to = self.email
 
         # Construct the email message                
         msg = MIMEMultipart('alternative')
@@ -424,8 +473,8 @@ class ThankYouView(grok.View):
             self.donor_quote_form = CreateDonationDonorQuote(self.context, self.request)
             alsoProvides(self.donor_quote_form, IWrappedForm)
             self.donor_quote_form.update()
-            self.donor_quote_form.widgets.get('name').value = u'%s %s' % (self.receipt_view.person.first_name, self.receipt_view.person.last_name)
-            self.donor_quote_form.widgets.get('contact_sf_id').value = unicode(self.receipt_view.person.sf_object_id)
+            self.donor_quote_form.widgets.get('name').value = u'%s %s' % (self.context.first_name, self.context.last_name)
+            #self.donor_quote_form.widgets.get('contact_sf_id').value = unicode(self.receipt_view.person.sf_object_id)
             self.donor_quote_form.widgets.get('key').value = unicode(self.context.secret_key)
             self.donor_quote_form.widgets.get('amount').value = int(self.context.amount)
             self.donor_quote_form_html = self.donor_quote_form.render()
@@ -493,10 +542,6 @@ class HonoraryMemorialView(grok.View):
         else:
             email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
 
-        person = self.context.person
-        if person:
-            person = person.to_object
-
         email_body = email_view()
 
         txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
@@ -506,9 +551,7 @@ class HonoraryMemorialView(grok.View):
         portal = portal_url.getPortalObject()
 
         mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-        mail_cc = None
-        if self.context.person and self.context.person.to_object:
-            mail_cc = self.context.person.to_object.email
+        mail_cc = self.context.email
 
         msg = MIMEMultipart('alternative')
         subject_vars = {'first_name': self.context.honorary_first_name, 'last_name': self.context.honorary_last_name}
@@ -580,7 +623,43 @@ class HonoraryMemorialView(grok.View):
 
         return self.form_template()
 
-class DonationReceipt(grok.View):
+class DonationReceipt(grok.Adapter):
+    grok.provides(IDonationReceipt)
+    grok.context(IDonation)
+
+    render = ViewPageTemplateFile('donation_templates/receipt.pt')
+
+    def update(self):
+        settings = get_settings()
+        self.organization_name = settings.organization_name
+        self.donation_receipt_legal = settings.donation_receipt_legal
+        if getattr(self.context, 'donation_receipt_legal', None):
+            self.donation_receipt_legal = self.context.donation_receipt_legal
+
+        self.products = []
+        if self.context.products:
+            for product in self.context.products:
+                price, quantity, product_uuid = product.split('|', 2)
+                total = int(price) * int(quantity)
+                product = uuidToObject(product_uuid)
+                if not product:
+                    continue
+                if product.donation_only:
+                    price = total
+                    quantity = '-'
+                self.products.append({
+                    'price': price,
+                    'quantity': quantity,
+                    'product': product,
+                    'total': total,
+                })
+
+        self.campaign = self.context.get_fundraising_campaign()
+        self.page = self.context.get_fundraising_campaign_page()
+        self.is_personal = self.page.is_personal()
+    
+
+class DonationReceiptView(grok.View):
     """ Renders an html receipt for a donation.  This is intended to be embedded in another view
 
     Uses a random key in url to authenticate access
@@ -605,10 +684,6 @@ class DonationReceipt(grok.View):
         self.donation_receipt_legal = settings.donation_receipt_legal
         if getattr(self.context, 'donation_receipt_legal', None):
             self.donation_receipt_legal = self.context.donation_receipt_legal
-
-        self.person = self.context.person
-        if self.person:
-            self.person = self.context.person.to_object
 
         self.products = []
         if self.context.products:
@@ -722,8 +797,6 @@ class HonoraryEmail(grok.View):
             self.amount = self.context.amount
         
     def set_honorary_info(self):
-        self.donor = self.context.person.to_object
-
         if self.request.get('show_template', None) == 'true':
             self.honorary = {
                 'first_name': '[Memory Name]',
@@ -800,8 +873,6 @@ class MemorialEmail(grok.View):
             self.amount = self.context.amount
         
     def set_honorary_info(self):
-        self.donor = self.context.person.to_object
-
         if self.request.get('show_template', None) == 'true':
             self.honorary = {
                 'first_name': '[Memory Name]',
@@ -844,7 +915,6 @@ class SalesforceSyncView(grok.View):
     def render(self):
         async = getUtility(IAsyncService)
         async.queueJob(async_salesforce_sync, self.context)
-        async_salesforce_sync(self.context)
         return 'OK: Queued for sync'
 
     def update(self):
@@ -876,6 +946,12 @@ class SalesforceDonationSync(grok.Adapter):
         self.person = self.context.person
         if self.person:
             self.person = self.person.to_object
+
+        # Skip if there is no person set on the donation.  This means the 
+        # syncDonationPerson hasn't yet run successfully and we need the person
+        # to get their contact id
+        if self.person is None:
+            return
 
         self.sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
         self.campaign = self.context.get_fundraising_campaign_page()
@@ -998,6 +1074,89 @@ class SalesforceDonationSync(grok.Adapter):
                 'Status': 'Responded',
             })
 
+@grok.subscribe(IDonation, IObjectAddedEvent)
+def queueSyncDonationPerson(donation, event):
+    async = getUtility(IAsyncService)
+    async.queueJob(syncDonationPerson, donation)
+
+
+def syncDonationPerson(donation):
+    if donation.person:
+        return        
+
+    person = None
+
+    mt = getToolByName(donation, 'membrane_tool')
+    pm = getToolByName(donation, 'portal_membership')
+    res = mt.searchResults(getUserName = donation.email)
+    if res:
+        person = res[0].getObject()
+
+    # If no existing user, create one which creates the contact in SF (1 API call)
+    if not res:
+        data = {
+            'first_name': donation.first_name,
+            'last_name': donation.last_name,
+            'email': donation.email,
+            'phone': donation.phone,
+            'address': donation.address_street,
+            'city': donation.address_city,
+            'state': donation.address_state,
+            'zip': donation.address_zip,
+            'country': donation.address_country,
+        }
+
+        # Treat the email_opt_in field as a ratchet.  Once toggled on, it stays on even if unchecked
+        # on a subsequent donation.  Unsubscribing is the way to prevent emails once opted in.
+        if donation.email_opt_in:
+            data['email_opt_in'] = donation.email_opt_in
+
+        # Create the user
+        people_container = getattr(getSite(), 'people')
+        person = createContentInContainer(
+            people_container,
+            'collective.salesforce.fundraising.person',
+            checkConstraints=False,
+            **data
+        )
+
+    # If existing user, fill with updated data from subscription profile (1 API call, Person update handler)
+    else:
+        # Authenticate the user temporarily to fetch their person object with some level of permissions applied
+        mtool = getToolByName(donation, 'portal_membership')
+        acl = getToolByName(donation, 'acl_users')
+        #newSecurityManager(None, acl.getUser(donation.email))
+        #mtool.loginUser()
+
+        # See if any values are modified and if so, update the Person and upsert the changes to SF
+        person = res[0].getObject()
+        old_data = [person.address, person.city, person.state, person.zip, person.country, person.phone]
+        new_data = [donation.address_street, donation.address_city, donation.address_state, donation.address_zip, donation.address_country, donation.phone]
+
+        if new_data != old_data:
+            person.address = donation.address_street
+            person.city = donation.address_city
+            person.state = donation.address_state
+            person.zip = donation.address_zip
+            person.country = donation.address_country
+            person.phone = donation.phone
+            person.reindexObject()
+
+            person.upsertToSalesforce()
+
+        #mtool.logoutUser()
+
+    # Set the person field on the campaign
+    intids = getUtility(IIntIds)
+    person_intid = intids.getId(person)
+    donation.person = RelationValue(person_intid)
+    person.upsertToSalesforce()
+
+    # Skipping event since we don't want to queue the update, we need to run it now
+    event = ObjectModifiedEvent(donation)
+    notify(event)
+
+
 def async_salesforce_sync(donation):
     return ISalesforceDonationSync(donation).sync_to_salesforce()
 
@@ -1006,52 +1165,64 @@ def queueSalesforceSync(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(async_salesforce_sync, donation)
 
-@grok.subscribe(IDonation, IObjectModifiedEvent)
-def mailchimpSubscribeDonor(donation, event):
-    if not donation.person or not donation.person.to_object:
-        # Skip if we have no email to send to
-        return
-    campaign = donation.get_fundraising_campaign()
-    if not campaign.chimpdrill_list_donors:
-        return
+# FIXME: can't be async for now since receipt requires request
+#@grok.subscribe(IDonation, IObjectAddedEvent)
+#def queueDonationReceipt(donation, event):
+#    async = getUtility(IAsyncService)
+#    receipt_html = donation.get_receipt_html()
+#    async.queueJob(async_salesforce_sync, donation, receipt_html)
+#
+#def sendDonationReceipt(donation, receipt_html):
+#    pass
 
-    person = donation.person.to_object
-    if not person.email_opt_in:
-        return
+def mailchimpSubscribeDonor(donation):
+    campaign = donation.get_fundraising_campaign()
 
     merge_vars = {
-        'FNAME': person.first_name,
-        'LNAME': person.last_name,
+        'FNAME': donation.first_name,
+        'LNAME': donation.last_name,
         'L_AMOUNT': donation.amount,
         'L_DATE': donation.get_friendly_date(),
         'L_RECEIPT': '%s?key=%s' % (donation.absolute_url(), donation.secret_key),
     }
     mc = getUtility(IMailsnakeConnection).get_mailchimp()
-    mc.listSubscribe(
+    return mc.listSubscribe(
         id = campaign.chimpdrill_list_donors,
-        email_address = person.email,
+        email_address = donation.email,
         merge_vars = merge_vars,
         update_existing = True,
         double_optin = False,
         send_welcome = False,
     )
 
-@grok.subscribe(IDonation, IObjectAddedEvent)
-def mailchimpUpdateFundraiserVars(donation, event):
-    return
-
 @grok.subscribe(IDonation, IObjectModifiedEvent)
-def mailchimpSendPersonalCampaignDonation(donation, event):
-    if not donation.person or not donation.person.to_object:
-        # Skip if we have no email to send to
-        return
-    page = donation.get_fundraising_campaign_page()
-    if not page.is_personal():
-        # Skip if not a personal page
-        return
+def queueMailchimpSubscribeDonor(donation, event):
+    campaign = donation.get_fundraising_campaign()
+    if not campaign.chimpdrill_list_donors:
+        return 'Skipping, no donors list specified for campaign'
 
+    async = getUtility(IAsyncService)
+    async.queueJob(mailchimpSubscribeDonor, donation)
+
+
+#@grok.subscribe(IDonation, IObjectAddedEvent)
+#def mailchimpUpdateFundraiserVars(donation, event):
+    #return
+
+def mailchimpSendPersonalCampaignDonation(donation):
     campaign = donation.get_fundraising_campaign()
     uuid = getattr(campaign, 'chimpdrill_template_personal_page_donation', None)
     if uuid:
         template = uuidToObject(uuid)
         return donation.send_chimpdrill_personal_page_donation(template)
+
+@grok.subscribe(IDonation, IObjectModifiedEvent)
+def queueMailchimpSendPersonalCampaignDonation(donation, event):
+    page = donation.get_fundraising_campaign_page()
+    if not page.is_personal():
+        # Skip if not a personal page
+        return 'Skipping, not a personal page'
+
+    async = getUtility(IAsyncService)
+    async.queueJob(mailchimpSendPersonalCampaignDonation, donation)
+
