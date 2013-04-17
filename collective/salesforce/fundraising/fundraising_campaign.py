@@ -983,59 +983,59 @@ class HonoraryMemorialView(grok.View):
                 # Expire the donation in the cache so the new Honorary values are looked up next time
                 self.context.clear_donation_from_cache(self.donation_id, self.amount)
 
-                # If there was an email passed and we're supposed to send an email, send the email
-                if honorary['notification_type'] == 'Email' and honorary['email']:
-
-                    settings = get_settings() 
-
-                    # Construct the email bodies
-                    pt = getToolByName(self.context, 'portal_transforms')
-                    if honorary['type'] == u'Honorary':
-                        email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
-                    else:
-                        email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
-
-                    email_view.set_honorary_info(
-                        donor = '%(FirstName)s %(LastName)s' % self.receipt_view.contact,
-                        honorary = honorary,
-                    )
-                    email_body = email_view()
-        
-                    txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
-
-                    # Construct the email message                
-                    portal_url = getToolByName(self.context, 'portal_url')
-                    portal = portal_url.getPortalObject()
-
-                    mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-                    mail_cc = self.receipt_view.contact.Email
-
-                    msg = MIMEMultipart('alternative')
-                    if honorary['type'] == 'Memorial': 
-                        msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % honorary
-                    else:
-                        msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % honorary
-                    msg['From'] = mail_from
-                    msg['To'] = honorary['email']
-                    msg['Cc'] = mail_cc
-        
-                    part1 = MIMEText(txt_body, 'plain')
-                    part2 = MIMEText(email_body, 'html')
-    
-                    msg.attach(part1)
-                    msg.attach(part2)
-
-                    # Attempt to send it
-                    try:
-
-                        # Send the notification email
-                        host = getToolByName(self, 'MailHost')
-                        host.send(msg, immediate=True)
-
-                    except smtplib.SMTPRecipientsRefused:
-                        # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
-                        pass
-
+#                # If there was an email passed and we're supposed to send an email, send the email
+#                if honorary['notification_type'] == 'Email' and honorary['email']:
+#
+#                    settings = get_settings() 
+#
+#                    # Construct the email bodies
+#                    pt = getToolByName(self.context, 'portal_transforms')
+#                    if honorary['type'] == u'Honorary':
+#                        email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
+#                    else:
+#                        email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
+#
+#                    email_view.set_honorary_info(
+#                        donor = '%(FirstName)s %(LastName)s' % self.receipt_view.contact,
+#                        honorary = honorary,
+#                    )
+#                    email_body = email_view()
+#        
+#                    txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
+#
+#                    # Construct the email message                
+#                    portal_url = getToolByName(self.context, 'portal_url')
+#                    portal = portal_url.getPortalObject()
+#
+#                    mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
+#                    mail_cc = self.receipt_view.contact.Email
+#
+#                    msg = MIMEMultipart('alternative')
+#                    if honorary['type'] == 'Memorial': 
+#                        msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % honorary
+#                    else:
+#                        msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % honorary
+#                    msg['From'] = mail_from
+#                    msg['To'] = honorary['email']
+#                    msg['Cc'] = mail_cc
+#        
+#                    part1 = MIMEText(txt_body, 'plain')
+#                    part2 = MIMEText(email_body, 'html')
+#    
+#                    msg.attach(part1)
+#                    msg.attach(part2)
+#
+#                    # Attempt to send it
+#                    try:
+#
+#                        # Send the notification email
+#                        host = getToolByName(self, 'MailHost')
+#                        host.send(msg, immediate=True)
+#
+#                    except smtplib.SMTPRecipientsRefused:
+#                        # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
+#                        pass
+#
                 # Redirect on to the thank you page
                 self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%i' % (self.context.absolute_url(), self.donation_id, self.amount))
 
@@ -1190,7 +1190,7 @@ class DonationReceipt(grok.View):
         res = self.context.lookup_donation(self.donation_id, self.amount)
         
         if not len(res['records']):
-            raise ValueError('Donation with id %s and amount %s was not found.' % (donation_id, amount))
+            raise ValueError('Donation with id %s and amount %s was not found.' % (self.donation_id, self.amount))
 
         self.line_items = self.context.lookup_donation_product_line_items(
             self.donation_id)

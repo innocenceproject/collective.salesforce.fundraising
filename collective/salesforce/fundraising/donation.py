@@ -535,51 +535,51 @@ class HonoraryMemorialView(grok.View):
         
         settings = get_settings() 
 
-        # Construct the email bodies
-        pt = getToolByName(self.context, 'portal_transforms')
-        if self.context.honorary_type == u'Honorary':
-            email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
-        else:
-            email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
-
-        email_body = email_view()
-
-        txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
-
-        # Construct the email message                
-        portal_url = getToolByName(self.context, 'portal_url')
-        portal = portal_url.getPortalObject()
-
-        mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-        mail_cc = self.context.email
-
-        msg = MIMEMultipart('alternative')
-        subject_vars = {'first_name': self.context.honorary_first_name, 'last_name': self.context.honorary_last_name}
-        if self.context.honorary_type == 'Memorial': 
-                msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % subject_vars
-        else:
-            msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % subject_vars
-        msg['From'] = mail_from
-        msg['To'] = self.context.honorary_email
-        if mail_cc:
-            msg['Cc'] = mail_cc
-
-        part1 = MIMEText(txt_body, 'plain')
-        part2 = MIMEText(email_body, 'html')
-
-        msg.attach(part1)
-        msg.attach(part2)
-
-        # Attempt to send it
-        try:
-
-            # Send the notification email
-            host = getToolByName(self, 'MailHost')
-            host.send(msg, immediate=True)
-
-        except smtplib.SMTPRecipientsRefused:
-            # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
-            pass
+#        # Construct the email bodies
+#        pt = getToolByName(self.context, 'portal_transforms')
+#        if self.context.honorary_type == u'Honorary':
+#            email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
+#        else:
+#            email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
+#
+#        email_body = email_view()
+#
+#        txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
+#
+#        # Construct the email message                
+#        portal_url = getToolByName(self.context, 'portal_url')
+#        portal = portal_url.getPortalObject()
+#
+#        mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
+#        mail_cc = self.context.email
+#
+#        msg = MIMEMultipart('alternative')
+#        subject_vars = {'first_name': self.context.honorary_first_name, 'last_name': self.context.honorary_last_name}
+#        if self.context.honorary_type == 'Memorial': 
+#                msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % subject_vars
+#        else:
+#            msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % subject_vars
+#        msg['From'] = mail_from
+#        msg['To'] = self.context.honorary_email
+#        if mail_cc:
+#            msg['Cc'] = mail_cc
+#
+#        part1 = MIMEText(txt_body, 'plain')
+#        part2 = MIMEText(email_body, 'html')
+#
+#        msg.attach(part1)
+#        msg.attach(part2)
+#
+#        # Attempt to send it
+#        try:
+#
+#            # Send the notification email
+#            host = getToolByName(self, 'MailHost')
+#            host.send(msg, immediate=True)
+#
+#        except smtplib.SMTPRecipientsRefused:
+#            # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
+#            pass
 
 
     def render(self):
