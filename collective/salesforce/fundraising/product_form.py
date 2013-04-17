@@ -143,7 +143,7 @@ class DonationFormStripe(BaseDonationFormStripe):
         """ Donation levels are not used on a product form """
         return
 
-    def campaign_sf_id(self):
+    def real_context(self):
         """get the sf_object_id of the acquisition parent of the donation
 
         because a donation product may be acquired from a personal fundraising
@@ -152,7 +152,13 @@ class DonationFormStripe(BaseDonationFormStripe):
         acquisition parent, not the containment parent.
         """
         acquired_parent = aq_parent(self.context)
-        return acquired_parent.sf_object_id
+        return acquired_parent
+
+    def campaign_sf_id(self):
+        return self.real_context().sf_object_id
+
+    def campaign_base_url(self):
+        return self.real_context().absolute_url()
 
 class ProcessStripeDonation(BaseProcessStripeDonation):
     grok.context(IProductForm)
