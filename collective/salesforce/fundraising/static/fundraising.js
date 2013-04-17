@@ -715,6 +715,10 @@ $(document).ready(function() {
             handle_form = false;
         }
 
+        if (form.hasClass('donation-form-honorary') == true) {
+            handle_form = false;
+        }
+
         if (handle_form == true) {
             // Setup placeholders
             form.find('input, textarea').placeholder();
