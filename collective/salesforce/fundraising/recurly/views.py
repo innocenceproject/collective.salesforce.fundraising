@@ -145,6 +145,7 @@ class PostRecurlySubscription(grok.View):
                 checkConstraints=False,
                 **data
             )
+            person.upsertToSalesforce()
 
         # If existing user, fill with updated data from subscription profile (1 API call, Person update handler)
         else:
