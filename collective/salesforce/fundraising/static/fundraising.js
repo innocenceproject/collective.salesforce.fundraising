@@ -197,6 +197,14 @@ function hideDonationErrorOnChange(form) {
     });
 }
 
+function clearFormSubmit(form) {
+    form.find('.form-buttons .button-loading-indicator').hide();
+    var buttons = form.find('.form-buttons input');
+    buttons.removeClass('submitted');
+    buttons.removeClass('submitting');
+    buttons.attr('disabled', false);
+}
+
 function stripeDonationResponseHandler(status, response) {
     // FIXME: This handler will currently only work with a single Stripe donation form on the page
     //        Need to determine how to determine the originating form somehow (perhaps class on form before token generation?)
@@ -210,9 +218,7 @@ function stripeDonationResponseHandler(status, response) {
             form_error.slideDown();
             hideDonationErrorOnChange(form);
         }
-        form.find('.form-buttons .button-loading-indicator').hide();
-        form.find('.form-buttons input').removeClass('submitted');
-        form.find('.form-buttons input').removeClass('submitting');
+        clearFormSubmit(form);
 
         // FIXME: this didn't work for some reason, possibly jquery version issues?
         //$('.form-buttons input').prop('disabled', false);
@@ -239,9 +245,7 @@ function stripeDonationResponseHandler(status, response) {
                     form_error.find('p.error-message').text(data['message']);
                     form_error.slideDown();
                     hideDonationErrorOnChange(form);
-                    form.find('.form-buttons .button-loading-indicator').hide();
-                    form.find('.form-buttons input').removeClass('submitted');
-                    form.find('.form-buttons input').removeClass('submitting');
+                    clearFormSubmit(form);
                 }
             },
             error: function (data, textStatus) {
@@ -252,9 +256,7 @@ function stripeDonationResponseHandler(status, response) {
                 form_error.find('p.error-message').text('Please try again or contact us for assistance');
                 form_error.slideDown();
                 hideDonationErrorOnChange(form);
-                form.find('.form-buttons .button-loading-indicator').hide();
-                form.find('.form-buttons input').removeClass('submitted');
-                form.find('.form-buttons input').removeClass('submitting');
+                clearFormSubmit(form);
             },
             dataType: 'json'
         });
@@ -656,8 +658,7 @@ $(document).ready(function() {
                 .fadeIn(conf.speed);     
    
             // Clear submitting and submitted classes to allow re-submission
-            $('.form-buttons input').removeClass('submitted');
-            $('.form-buttons input').removeClass('submitting');
+            clearFormSubmit(input.closest('form'));
 
             if (conf.singleError == true) {
                 return false;
@@ -733,11 +734,7 @@ $(document).ready(function() {
                 //inputEvent: 'blur',
                 messageClass: 'field-error-message', 
                 onFail: function (e, els) {
-                    form.find('.field-error-message').show();
-    
-                    var button = form.find('.form-buttons input');
-                    button.removeClass('submitted');
-                    button.next('.button-loading-indicator').hide();
+                    clearFormSubmit(form);
                 }
             // Handle form submit
             }).submit(function(e) {
@@ -747,7 +744,9 @@ $(document).ready(function() {
                 if (!e.isDefaultPrevented()) {
                     // Mark the form as submitted
                     var button = form.find('.form-buttons input');
-                    button.addClass('submitted');
+                    button.attr('disabled', true);
+                    //button.addClass('submitted');
+                    button.addClass('submitting');
                     button.next('.button-loading-indicator').show();
     
                     // For Authorize.net DPM method, just submit the form normally
@@ -852,6 +851,25 @@ $(document).ready(function() {
     $('.portletLogin input[name="came_from"]').each(function () {
         if ($(this).val() != _GET_VARS['came_from']) {
             $(this).val(_GET_VARS['came_from']);
+        }
+    });
+
+    // Enforce integer only in quantity and amount fields
+    $('.donation-form .field-amount input, .donation-form input.field-product-quantity').keydown(function(event) {
+        // Allow: backspace, delete, tab, escape, and enter
+        if ( event.keyCode == 46 || event.keyCode == 8 || event.keyCode == 9 || event.keyCode == 27 || event.keyCode == 13 || 
+             // Allow: Ctrl+A
+            (event.keyCode == 65 && event.ctrlKey === true) || 
+             // Allow: home, end, left, right
+            (event.keyCode >= 35 && event.keyCode <= 39)) {
+                 // let it happen, don't do anything
+                 return;
+        }
+        else {
+            // Ensure that it is a number and stop the keypress
+            if (event.shiftKey || (event.keyCode < 48 || event.keyCode > 57) && (event.keyCode < 96 || event.keyCode > 105 )) {
+                event.preventDefault(); 
+            }   
         }
     });
     
