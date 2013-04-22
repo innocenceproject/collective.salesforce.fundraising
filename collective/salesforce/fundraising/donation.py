@@ -27,6 +27,7 @@ from Products.CMFCore.utils import getToolByName
 from plone.i18n.locales.countries import CountryAvailability
 from plone.directives import dexterity, form
 from plone.dexterity.utils import createContentInContainer
+from plone.formwidget.contenttree.source import PathSourceBinder
 from plone.formwidget.contenttree.source import ObjPathSourceBinder
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from plone.z3cform.interfaces import IWrappedForm
@@ -73,7 +74,7 @@ class IDonation(form.Schema, IImageScaleTraversable):
         title=u"Donor",
         description=u"The user account of the donor",
         required=False,
-        source=availablePeople,
+        source=PathSourceBinder(portal_type='collective.salesforce.fundraising.person'),
     )
 
     first_name = schema.TextLine(
@@ -146,7 +147,10 @@ class IDonation(form.Schema, IImageScaleTraversable):
         title=u"Campaign",
         description=u"The campaign this is related to",
         required=False,
-        source=availableCampaigns,
+        source=PathSourceBinder(portal_type=[
+            'collective.salesforce.fundraising.fundraisingcampaign',
+            'collective.salesforce.fundraising.personalcampaignpage',
+        ])
     )
 
     products = schema.List(
@@ -166,10 +170,76 @@ class IDonation(form.Schema, IImageScaleTraversable):
     recurring_plan_id = schema.TextLine(
         title=u"Recurring Plan ID",
         description=u"If this is a recurring donation, this is set to the ID of the plan",
+        required=False,
     )
 
     form.model("models/donation.xml")
 alsoProvides(IDonation, IContentType)
+
+class ICreateOfflineDonation(form.Schema, IImageScaleTraversable):
+    """
+    A schema of Donation without using model xml files so fields can be selected in forms
+    """
+    amount = schema.Int(
+        title=u"Amount",
+        description=u"",
+        required=True,
+    )
+
+    first_name = schema.TextLine(
+        title=u"First Name",
+        description=u"The donor's first name as submitted in the donation form",
+        required=True,
+    )
+
+    last_name = schema.TextLine(
+        title=u"Last Name",
+        description=u"The donor's last name as submitted in the donation form",
+        required=True,
+    )
+
+    email = schema.TextLine(
+        title=u"Email",
+        description=u"The donor's email as submitted in the donation form",
+        required=True,
+    )
+
+    phone = schema.TextLine(
+        title=u"Phone",
+        description=u"The donor's phone number as submitted in the donation form",
+        required=False,
+    )
+
+    address_street = schema.TextLine(
+        title=u"Street Address",
+        description=u"The donor's street address as submitted in the donation form",
+        required=True,
+    )
+
+    address_city = schema.TextLine(
+        title=u"City",
+        description=u"The donor's city as submitted in the donation form",
+        required=True,
+    )
+
+    address_state = schema.TextLine(
+        title=u"State",
+        description=u"The donor's state as submitted in the donation form",
+        required=True,
+    )
+
+    address_zip = schema.TextLine(
+        title=u"Zip",
+        description=u"The donor's zip as submitted in the donation form",
+        required=True,
+    )
+
+    address_country = schema.TextLine(
+        title=u"Country",
+        description=u"The donor's country as submitted in the donation form",
+        required=True,
+    )
+
 
 class ISalesforceDonationSync(Interface):
     def sync_to_salesforce():
@@ -443,7 +513,14 @@ class Donation(dexterity.Container):
             # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
             pass
 
-
+    def fix_campaign(self):
+        """ """
+        intids = getUtility(IIntIds)
+        try:
+            return self.campaign.to_id
+        except:
+            campaign_id = intids.getId(self.campaign)
+            self.campaign = RelationValue(campaign_id)
 
 
 class ThankYouView(grok.View):
@@ -992,7 +1069,7 @@ class SalesforceDonationSync(grok.Adapter):
             'Success_Transaction_Id__c': self.context.transaction_id,
             'Amount': self.context.amount,
             'Name': '%s %s - $%i One Time Donation' % (self.person.first_name, self.person.last_name, self.context.amount),
-            'StageName': 'Posted',
+            'StageName': self.context.stage,
             'CloseDate': datetime.now(),
             'CampaignId': self.campaign.sf_object_id,
             'Source_Campaign__c': self.context.source_campaign_sf_id,
@@ -1212,6 +1289,8 @@ def queueMailchimpSubscribeDonor(donation, event):
 def mailchimpSendPersonalCampaignDonation(donation):
     campaign = donation.get_fundraising_campaign()
     uuid = getattr(campaign, 'chimpdrill_template_personal_page_donation', None)
+    if donation.offline:
+        return 'Skipping, offline donation'
     if uuid:
         template = uuidToObject(uuid)
         return donation.send_chimpdrill_personal_page_donation(template)

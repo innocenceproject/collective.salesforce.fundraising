@@ -32,6 +32,8 @@
       <span tal:replace="view/count_donations" /> Donations Total / <span tal:replace="view/count_not_thanked" /> Left to Thank
     </h3>
 
+    <a href="create-offline-donation" tal:attributes="href string:${view/context/absolute_url}/@@create-offline-donation" class="button">Add Offline Gift</a>
+
     <table class="listing fancy">
       <thead>
         <tr>
@@ -45,7 +47,7 @@
       <tbody>
         <tr tal:repeat="donation view/donations" tal:attributes="class python: 'status-complete' if donation['thanked'] else 'status-pending'">
           <td><input class="checkbox-thanked" type="checkbox" name="donations_thanked" tal:attributes="checked python: 'checked' if donation['thanked'] else None; value donation/id" /></td>
-          <td tal:content="donation/name"></td>
+          <td><span tal:content="donation/name" /><span tal:condition="donation/offline|nothing">(offline donation)</span></td>
           <td><a href="mailto:" tal:attributes="href string:mailto:${donation/email}" tal:content="donation/email">john@doe.com</a></td>
           <td tal:content="python: '$' + str(int(donation['amount']))"></td>
           <td tal:content="donation/date"></td>
@@ -57,7 +59,6 @@
       // When the checkboxes are changed, record the result in the background using the save_thanked_status view
       $('input.checkbox-thanked').change(function () {
         var target_url = $('#personal-campaign-fundraiser a').attr('href');
-        alert(target_url);
         target_url += '/save_thanked_status?'
         var parent_tr = $(this).closest('tr');
         if ($(this).is(":checked")) {

@@ -30,6 +30,8 @@ from collective.salesforce.fundraising.personal_campaign_page import IEditPerson
 from collective.salesforce.fundraising.person import IAddPerson
 from collective.salesforce.fundraising.donor_quote import IDonorQuote
 from collective.salesforce.fundraising.donation import IDonation
+from collective.salesforce.fundraising.donation import ICreateOfflineDonation
+from collective.salesforce.fundraising.donation import build_secret_key
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
@@ -509,3 +511,68 @@ class AddPersonForm(form.SchemaForm):
         # merge in with standard plone login process.  
         login_next = self.context.restrictedTraverse('login_next')
         login_next()
+
+
+class CreateOfflineDonation(form.Form):
+    grok.name('create-offline-donation')
+    grok.require('collective.salesforce.fundraising.EditPersonalCampaign')
+    grok.context(IPersonalCampaignPage)
+    schema = ICreateOfflineDonation
+
+    @property
+    def fields(self):
+        return field.Fields(ICreateOfflineDonation).select(
+            'amount',
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'address_street',
+            'address_city',
+            'address_state',
+            'address_zip',
+            'address_country',
+        )
+
+    ignoreContext = True
+
+    label = _(u"Add Offline Donation")
+    description = _(u"If you have raised money offline via cash or check, enter them here so you get credit towards your goal")
+
+    #def updateWidgets(self):
+        #super(CreateOfflineDonation, self).updateWidgets()
+        #self.widgets['contact_sf_id'].mode = 'hidden'
+        #self.widgets['donation_id'].mode = 'hidden'
+        #self.widgets['amount'].mode = 'hidden'
+
+    @button.buttonAndHandler(_(u'Submit'))
+    def handleOk(self, action):
+        data, errors = self.extractData()
+        if errors:
+            self.status = self.formErrorsMessage
+            return
+
+        intids = getUtility(IIntIds)
+        page_intid = intids.getId(self.context)
+       
+        data['title'] = '%s %s - One-time Offline Donation' % (data['first_name'], data['last_name'])
+        data['secret_key'] = build_secret_key()
+        data['campaign'] = RelationValue(page_intid)
+        data['stage'] = 'Pledged'
+        data['products'] = []
+        data['campaign_sf_id'] = self.context.sf_object_id
+ 
+        # Add a donation in the current context,
+        # using the data from the form
+        parent_campaign = self.context
+        donation = createContentInContainer(parent_campaign,
+            'collective.salesforce.fundraising.donation',
+            checkConstraints=False, **data)
+
+        # Add the donation to the campaign totals
+        self.context.add_donation(data['amount'])
+        
+        IStatusMessage(self.request).add(u'Your offline donation was submitted and is now reflected in your total raised and total number of donations.')
+        self.request.response.redirect(parent_campaign.absolute_url())
+        #self.request.response.redirect(parent_campaign.absolute_url() + '/donors')
+
