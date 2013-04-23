@@ -281,9 +281,9 @@ function setupStripeForm() {
                     exp_year: stripe_form.find('select.card-expiration-year').val(),
                     address_line1: stripe_form.find('.subfield-address input').val(),
                     address_city: stripe_form.find('.subfield-city input').val(),
-                    address_state: stripe_form.find('.subfield-state input').val(),
+                    address_state: stripe_form.find('.subfield-state .active').val(),
                     address_zip: stripe_form.find('.subfield-zip input').val(),
-                    address_country: stripe_form.find('.subfield-country input').val()
+                    address_country: stripe_form.find('.subfield-country select').val()
                 }, stripeDonationResponseHandler);
             }
             //return false;
@@ -855,7 +855,7 @@ $(document).ready(function() {
     });
 
     // Enforce integer only in quantity and amount fields
-    $('.donation-form .field-amount input, .donation-form input.field-product-quantity').keydown(function(event) {
+    $('.donation-form .field-amount input, .donation-form input.field-product-quantity, body.portaltype-collective-salesforce-fundraising #form-widgets-amount').keydown(function(event) {
         // Allow: backspace, delete, tab, escape, and enter
         if ( event.keyCode == 46 || event.keyCode == 8 || event.keyCode == 9 || event.keyCode == 27 || event.keyCode == 13 || 
              // Allow: Ctrl+A
