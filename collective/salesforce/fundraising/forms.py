@@ -15,6 +15,7 @@ from plone.directives import form
 from zope.component import getUtility
 from zope.app.intid.interfaces import IIntIds
 from z3c.form import button, field
+from z3c.form.browser import radio
 from z3c.relationfield import RelationValue
 from plone.directives import dexterity
 from plone.dexterity.utils import createContentInContainer
@@ -519,31 +520,13 @@ class CreateOfflineDonation(form.Form):
     grok.context(IPersonalCampaignPage)
     schema = ICreateOfflineDonation
 
-    @property
-    def fields(self):
-        return field.Fields(ICreateOfflineDonation).select(
-            'amount',
-            'first_name',
-            'last_name',
-            'email',
-            'phone',
-            'address_street',
-            'address_city',
-            'address_state',
-            'address_zip',
-            'address_country',
-        )
+    fields = field.Fields(ICreateOfflineDonation)
+    fields['payment_method'].widgetFactory = radio.RadioFieldWidget
 
     ignoreContext = True
 
     label = _(u"Add Offline Donation")
     description = _(u"If you have raised money offline via cash or check, enter them here so you get credit towards your goal")
-
-    #def updateWidgets(self):
-        #super(CreateOfflineDonation, self).updateWidgets()
-        #self.widgets['contact_sf_id'].mode = 'hidden'
-        #self.widgets['donation_id'].mode = 'hidden'
-        #self.widgets['amount'].mode = 'hidden'
 
     @button.buttonAndHandler(_(u'Submit'))
     def handleOk(self, action):
@@ -561,6 +544,7 @@ class CreateOfflineDonation(form.Form):
         data['stage'] = 'Pledged'
         data['products'] = []
         data['campaign_sf_id'] = self.context.sf_object_id
+        data['offline'] = True
  
         # Add a donation in the current context,
         # using the data from the form
@@ -572,7 +556,6 @@ class CreateOfflineDonation(form.Form):
         # Add the donation to the campaign totals
         self.context.add_donation(data['amount'])
         
-        IStatusMessage(self.request).add(u'Your offline donation was submitted and is now reflected in your total raised and total number of donations.')
+        IStatusMessage(self.request).add(u'Your offline gift was entered and will be counted in your total raised. The gift and donor contact information will appear in "My Donors" shortly.')
         self.request.response.redirect(parent_campaign.absolute_url())
-        #self.request.response.redirect(parent_campaign.absolute_url() + '/donors')
 
