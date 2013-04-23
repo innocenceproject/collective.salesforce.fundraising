@@ -24,6 +24,7 @@ from plone.memoize import instance
 from plone.uuid.interfaces import IUUID
 from plone.uuid.interfaces import IUUIDAware
 from plone.app.uuid.utils import uuidToObject
+from plone.app.async.interfaces import IAsyncService
 from plone.formwidget.contenttree.source import ObjPathSourceBinder
 from z3c.relationfield.schema import RelationChoice
 from z3c.relationfield import RelationValue
@@ -374,6 +375,10 @@ class MyDonorsView(grok.View):
             if not person:
                 continue
 
+            payment_method = getattr(donation, 'payment_method', None)
+            if payment_method not in [u'Cash',u'Check']:
+                payment_method = u'Online'
+
             self.donations.append({
                 'name': '%s %s' % (person.first_name, person.last_name),
                 'email': person.email,
@@ -382,6 +387,7 @@ class MyDonorsView(grok.View):
                 'date': donation.get_friendly_date(),
                 'id': b_donation.UID,
                 'thanked': is_thanked,
+                'payment_method': payment_method,
             })
             self.count_donations += 1
             if is_thanked:
@@ -431,8 +437,7 @@ class PageConfirmationEmailView(grok.View):
     def set_page_values(self, data):
         self.data = data
 
-@grok.subscribe(IPersonalCampaignPage, IObjectModifiedEvent)
-def mailchimpSubscribeFundraiser(page, event):
+def mailchimpSubscribeFundraiser(page):
     campaign = page.get_fundraising_campaign()
     if not campaign.chimpdrill_list_fundraisers:
         return
@@ -471,3 +476,9 @@ def mailchimpSubscribeFundraiser(page, event):
         send_welcome = False,
     )
     logger.info("collective.salesforce.fundraising: Mailchimp Subscribe: result = %s" % res)
+
+@grok.subscribe(IPersonalCampaignPage, IObjectModifiedEvent)
+def queueMailchimpSubscribeFundraiser(page, event):
+    async = getUtility(IAsyncService)
+    async.queueJob(mailchimpSubscribeFundraiser, page)
+
