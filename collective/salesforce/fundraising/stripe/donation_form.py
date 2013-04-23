@@ -294,6 +294,7 @@ class ProcessStripeDonation(grok.View):
             'campaign_sf_id': page.sf_object_id,
             'source_campaign_sf_id': page.get_source_campaign(),
             'source_url': page.get_source_url(),
+            'payment_method': 'Stripe',
         }
        
         if self.recurring_plan_id:
@@ -330,11 +331,13 @@ class ProcessStripeDonation(grok.View):
             **data
         )
 
+        # No longer needed since this is now triggered via an event listener and pushed into the background to prevent
+        # re-running the transaction due to zodb conflicts retrying the transaction again.
         # Record the transaction and its amount in the campaign
-        try:
-            page.add_donation(amount)
-        except Exception, e:
-            logger.warning('collective.salesforce.fundraising: Error adding donation to totals: %s' % e)
+        #try:
+            #page.add_donation(amount)
+        #except Exception, e:
+            #logger.warning('collective.salesforce.fundraising: Error adding donation to totals: %s' % e)
             
 
         # Queue sending of the email receipt - FIXME: rendering receipt currently requires the request which is not possible in async
