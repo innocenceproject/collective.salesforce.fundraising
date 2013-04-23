@@ -42,6 +42,10 @@
             <title>Is Offline?</title>
             <description>Check if the donation is an offline donation being credited to the campaign</description>
         </field>
+        <field name="payment_method" type="zope.schema.TextLine" sf:field="Opportunity.Payment_Method__c">
+            <title>Payment Method</title>
+            <description>The method of payment used for the donation</description>
+        </field>
         <field name="stage" type="zope.schema.TextLine" sf:field="Opportunity.StageName">
             <title>Stage</title>
             <description>The donation's stage</description>
