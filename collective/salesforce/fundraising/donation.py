@@ -18,12 +18,14 @@ from zope.app.container.interfaces import IObjectAddedEvent
 from zope.event import notify
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 from zope.lifecycleevent import ObjectModifiedEvent
+from AccessControl import getSecurityManager
 from AccessControl.SecurityManagement import newSecurityManager
 from plone.uuid.interfaces import IUUID
 from plone.app.uuid.utils import uuidToObject
 from plone.app.async.interfaces import IAsyncService
 from plone.namedfile.field import NamedImage
 from Products.CMFCore.utils import getToolByName
+from Products.CMFCore.permissions import ModifyPortalContent
 from plone.i18n.locales.countries import CountryAvailability
 from plone.directives import dexterity, form
 from plone.dexterity.utils import createContentInContainer
@@ -31,6 +33,7 @@ from plone.formwidget.contenttree.source import PathSourceBinder
 from plone.formwidget.contenttree.source import ObjPathSourceBinder
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from plone.z3cform.interfaces import IWrappedForm
+from z3c.form.browser.radio import RadioWidget
 from z3c.relationfield import RelationList
 from z3c.relationfield import RelationValue
 from z3c.relationfield.schema import RelationChoice
@@ -176,7 +179,7 @@ class IDonation(form.Schema, IImageScaleTraversable):
     form.model("models/donation.xml")
 alsoProvides(IDonation, IContentType)
 
-class ICreateOfflineDonation(form.Schema, IImageScaleTraversable):
+class ICreateOfflineDonation(form.Schema):
     """
     A schema of Donation without using model xml files so fields can be selected in forms
     """
@@ -186,57 +189,57 @@ class ICreateOfflineDonation(form.Schema, IImageScaleTraversable):
         required=True,
     )
 
+    form.widget(payment_method='z3c.form.browser.radio.RadioFieldWidget')
+    payment_method = schema.Choice(
+        title=u"Cash or Check?",
+        description=u"Please select how you collected the offline gift.",
+        values=[u'Cash', u'Check'],
+        required=True,
+    )
+
     first_name = schema.TextLine(
         title=u"First Name",
-        description=u"The donor's first name as submitted in the donation form",
         required=True,
     )
 
     last_name = schema.TextLine(
         title=u"Last Name",
-        description=u"The donor's last name as submitted in the donation form",
         required=True,
     )
 
     email = schema.TextLine(
         title=u"Email",
-        description=u"The donor's email as submitted in the donation form",
+        description=u"We will not automatically add this email to our email list",
         required=True,
     )
 
     phone = schema.TextLine(
         title=u"Phone",
-        description=u"The donor's phone number as submitted in the donation form",
         required=False,
     )
 
     address_street = schema.TextLine(
         title=u"Street Address",
-        description=u"The donor's street address as submitted in the donation form",
         required=True,
     )
 
     address_city = schema.TextLine(
         title=u"City",
-        description=u"The donor's city as submitted in the donation form",
         required=True,
     )
 
     address_state = schema.TextLine(
         title=u"State",
-        description=u"The donor's state as submitted in the donation form",
         required=True,
     )
 
     address_zip = schema.TextLine(
         title=u"Zip",
-        description=u"The donor's zip as submitted in the donation form",
         required=True,
     )
 
     address_country = schema.TextLine(
         title=u"Country",
-        description=u"The donor's country as submitted in the donation form",
         required=True,
     )
 
@@ -1074,6 +1077,7 @@ class SalesforceDonationSync(grok.Adapter):
             'CampaignId': self.campaign.sf_object_id,
             'Source_Campaign__c': self.context.source_campaign_sf_id,
             'Source_Url__c': self.context.source_url,
+            'Payment_Method__c': self.context.payment_method,
         }
 
         if self.products:
@@ -1305,3 +1309,14 @@ def queueMailchimpSendPersonalCampaignDonation(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(mailchimpSendPersonalCampaignDonation, donation)
 
+# Background the process of adding new donations to the totals for the page and campaign
+# This turned out to be necessary to avoid zodb conflicts which would re-run the transaction
+# causing Stripe to return an error the second time that the token was already used.
+def addAmountToPage(donation):
+    page = donation.get_fundraising_campaign_page()
+    page.add_donation(donation.amount)
+
+@grok.subscribe(IDonation, IObjectAddedEvent)
+def queueAddAmountToPage(donation, event):
+    async = getUtility(IAsyncService)
+    async.queueJob(addAmountToPage, donation)
