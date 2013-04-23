@@ -41,15 +41,17 @@
           <th>Name</th>
           <th>Email</th>
           <th>Amount</th>
+          <th>Type</th>
           <th>Date</th>
         </tr>
       </thead>
       <tbody>
         <tr tal:repeat="donation view/donations" tal:attributes="class python: 'status-complete' if donation['thanked'] else 'status-pending'">
           <td><input class="checkbox-thanked" type="checkbox" name="donations_thanked" tal:attributes="checked python: 'checked' if donation['thanked'] else None; value donation/id" /></td>
-          <td><span tal:content="donation/name" /><span tal:condition="donation/offline|nothing">(offline donation)</span></td>
+          <td><span tal:content="donation/name" /></td>
           <td><a href="mailto:" tal:attributes="href string:mailto:${donation/email}" tal:content="donation/email">john@doe.com</a></td>
           <td tal:content="python: '$' + str(int(donation['amount']))"></td>
+          <td tal:content="donation/payment_method"></td>
           <td tal:content="donation/date"></td>
         </tr>
       </tbody>
