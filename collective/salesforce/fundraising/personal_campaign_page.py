@@ -368,21 +368,33 @@ class MyDonorsView(grok.View):
         for b_donation in self.context.get_donations():
             donation = b_donation.getObject()
             is_thanked = b_donation.UID in thanked_donations
-            person = donation.person
-            if person:
-                person = donation.person.to_object
-
-            if not person:
-                continue
+            
+            # FIXME: this code is written to be backwards compatible with donations which only used the person field
+            first_name = getattr(donation, 'first_name', None)
+            last_name = getattr(donation, 'last_name', None)
+            email = getattr(donation, 'email', None)
+            phone = getattr(donation, 'phone', None)
+           
+            if not first_name: 
+                person = donation.person
+                if person:
+                    person = donation.person.to_object
+                    first_name = person.first_name
+                    last_name = person.last_name
+                    email = person.email
+                    phone = person.phone
+    
+                if not person:
+                    continue
 
             payment_method = getattr(donation, 'payment_method', None)
             if payment_method not in [u'Cash',u'Check']:
                 payment_method = u'Online'
 
             self.donations.append({
-                'name': '%s %s' % (person.first_name, person.last_name),
-                'email': person.email,
-                'phone': person.phone,
+                'name': '%s %s' % (first_name, last_name),
+                'email': email,
+                'phone': phone,
                 'amount': donation.amount,
                 'date': donation.get_friendly_date(),
                 'id': b_donation.UID,
