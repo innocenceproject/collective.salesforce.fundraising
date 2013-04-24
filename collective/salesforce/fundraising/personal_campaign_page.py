@@ -164,7 +164,7 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         url = super(PersonalCampaignPage, self).absolute_url()
         cached = getattr(aq_base(self), '_absolute_url', None)
         if url.startswith('http'):
-            if cached is None or cached is not url:
+            if cached is None or cached != url:
                 self._absolute_url = url
 
         return getattr(aq_base(self), '_absolute_url', url)
