@@ -1336,6 +1336,18 @@ class ClearCache(grok.View):
     def render(self):
         self.request.response.redirect(self.context.absolute_url())
 
+class ResendDonationReceipt(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.name('resend-donation-receipt')
+    grok.require('zope2.View')
+
+    def render(self):
+        donation_id = self.request.form.get('donation_id',None)
+        amount = int(self.request.form.get('amount',0))
+        self.context.send_donation_receipt(self.request, donation_id, amount)
+        return 'Receipt sent for %s' % donation_id
+        
+
 # Pages added inside the campaign need to display the same portlets as the
 # campaign.
 @grok.subscribe(IATDocument, IObjectAddedEvent)
