@@ -388,7 +388,7 @@ class MyDonorsView(grok.View):
                     continue
 
             payment_method = getattr(donation, 'payment_method', None)
-            if payment_method not in [u'Cash',u'Check']:
+            if payment_method not in [u'Cash',u'Check',u'Offline Credit Card']:
                 payment_method = u'Online'
 
             self.donations.append({
