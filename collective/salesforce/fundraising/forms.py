@@ -554,7 +554,7 @@ class CreateOfflineDonation(form.Form):
             checkConstraints=False, **data)
 
         # Add the donation to the campaign totals
-        self.context.add_donation(data['amount'])
+        #self.context.add_donation(data['amount'])
         
         IStatusMessage(self.request).add(u'Your offline gift was entered and will be counted in your total raised. The gift and donor contact information will appear in "My Donors" shortly.')
         self.request.response.redirect(parent_campaign.absolute_url())
