@@ -5,7 +5,6 @@
                 create_text python:'My Fundraising Page' if existing_campaign else 'Create My Page';
                 campaign python: view.context.get_fundraising_campaign();
                 fundraisers_count view/context/personal_fundraisers_count;
-                fundraisers_raised python: '$%i' % (int(campaign.donations_total) - int(campaign.direct_donations_total));
                 view_all python:view.context.get_fundraising_campaign().absolute_url() + '/personal-fundraisers'"
     tal:condition="view/context/allow_personal">
 
