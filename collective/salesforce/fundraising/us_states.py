@@ -1,4 +1,5 @@
 states = {
+        'APO': 'Army Post Office',
         'AK': 'Alaska',
         'AL': 'Alabama',
         'AR': 'Arkansas',
@@ -10,6 +11,7 @@ states = {
         'DC': 'District of Columbia',
         'DE': 'Delaware',
         'FL': 'Florida',
+        'FPO': 'Fleet Post Office',
         'GA': 'Georgia',
         'GU': 'Guam',
         'HI': 'Hawaii',
