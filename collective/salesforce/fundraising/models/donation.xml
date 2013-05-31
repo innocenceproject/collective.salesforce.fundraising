@@ -34,7 +34,7 @@
             <description>The ID of the Stripe recurring plan associated with this donation</description>
             <required>False</required>
         </field>
-        <field name="amount" type="zope.schema.TextLine" sf:field="Opportunity.Amount">
+        <field name="amount" type="zope.schema.Int" sf:field="Opportunity.Amount">
             <title>Donation Amount</title>
             <description>The amount of the donation</description>
         </field>
