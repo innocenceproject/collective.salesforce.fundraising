@@ -176,6 +176,25 @@ class IDonation(form.Schema, IImageScaleTraversable):
         required=False,
     )
 
+    is_receipt_sent = schema.Bool(
+        title=u"Receipt Sent?",
+        description=u"Was an email receipt sent for this donation?  NOTE: This is checked automatically by the system",
+        required=False,
+        default=False,
+    )
+
+    is_notification_sent = schema.Bool(
+        title=u"Notification Sent to Fundraiser?",
+        description=u"Was an email notification sent for this donation?  NOTE: This is checked automatically by the system",
+    )
+
+    is_added = schema.Bool(
+        title=u"Added to Campaign?",
+        description=u"Was this donation added to the totals for the campaign?  NOTE: This is checked automatically by the system",
+        required=False,
+        default=False,
+    )
+
     form.model("models/donation.xml")
 alsoProvides(IDonation, IContentType)
 
@@ -191,9 +210,9 @@ class ICreateOfflineDonation(form.Schema):
 
     form.widget(payment_method='z3c.form.browser.radio.RadioFieldWidget')
     payment_method = schema.Choice(
-        title=u"Cash or Check?",
+        title=u"Payment Method",
         description=u"Please select how you collected the offline gift.",
-        values=[u'Cash', u'Check'],
+        values=[u'Cash', u'Check', 'Offline Credit Card'],
         required=True,
     )
 
@@ -279,7 +298,7 @@ class Donation(dexterity.Container):
         return res[0].getObject()
 
     def get_friendly_date(self):
-        return self.created().strftime('%B %d, %Y %I:%S%p %Z')
+        return self.created().strftime('%B %d, %Y %I:%M%p %Z')
 
     def get_chimpdrill_campaign_data(self):
         page = self.get_fundraising_campaign_page()
@@ -478,7 +497,9 @@ class Donation(dexterity.Container):
         uuid = getattr(campaign, 'chimpdrill_template_thank_you', None)
         if uuid:
             template = uuidToObject(uuid)
-            return self.send_chimpdrill_thank_you(request, template)
+            res = self.send_chimpdrill_thank_you(request, template)
+            self.is_receipt_sent = True
+            return res
 
         # Construct the email bodies
         pt = getToolByName(self, 'portal_transforms')
@@ -511,6 +532,7 @@ class Donation(dexterity.Container):
             # (if any error is raised) rather than sent at the transaction
             # boundary or queued for later delivery.
             host.send(msg, immediate=True)
+            self.is_receipt_sent = True
 
         except smtplib.SMTPRecipientsRefused:
             # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
@@ -599,7 +621,7 @@ class HonoraryMemorialView(grok.View):
 
         # If a chimpdrill template is configured for this campaign, use it to send the email
         campaign = self.context.get_fundraising_campaign()
-        if self.context.honorary_type == 'memorial':
+        if self.context.honorary_type == 'Memorial':
             template_uid = getattr(campaign, 'chimpdrill_template_memorial')
             if template_uid:
                 template = uuidToObject(template_uid)
@@ -1291,6 +1313,8 @@ def queueMailchimpSubscribeDonor(donation, event):
     #return
 
 def mailchimpSendPersonalCampaignDonation(donation):
+    if getattr(donation, 'is_notification_sent', False):
+        return 'Skipping: Donation notification already sent to fundraiser'
     campaign = donation.get_fundraising_campaign()
     uuid = getattr(campaign, 'chimpdrill_template_personal_page_donation', None)
     if donation.offline:
@@ -1298,6 +1322,7 @@ def mailchimpSendPersonalCampaignDonation(donation):
     if uuid:
         template = uuidToObject(uuid)
         return donation.send_chimpdrill_personal_page_donation(template)
+    donation.is_notification_sent = True
 
 @grok.subscribe(IDonation, IObjectModifiedEvent)
 def queueMailchimpSendPersonalCampaignDonation(donation, event):
@@ -1313,8 +1338,11 @@ def queueMailchimpSendPersonalCampaignDonation(donation, event):
 # This turned out to be necessary to avoid zodb conflicts which would re-run the transaction
 # causing Stripe to return an error the second time that the token was already used.
 def addAmountToPage(donation):
+    if getattr(donation, 'is_added', False):
+        return 'Skipping: Donation already added to campaign'
     page = donation.get_fundraising_campaign_page()
     page.add_donation(donation.amount)
+    donation.is_added = True
 
 @grok.subscribe(IDonation, IObjectAddedEvent)
 def queueAddAmountToPage(donation, event):
