@@ -1,7 +1,9 @@
 from five import grok
+from zope.component import getUtility
 from AccessControl.SecurityManagement import newSecurityManager
 from Products.CMFCore.utils import getToolByName
 from zope.site.hooks import getSite
+from collective.simplesalesforce.utils import ISalesforceUtility
 from collective.salesforce.fundraising.interfaces import IMemberCreated
 from collective.salesforce.fundraising.nameparser import HumanName
 
@@ -46,18 +48,22 @@ def handleNewAccount(event):
         mtool.loginUser()
 
         # create Contact in Salesforce
-        sfbc = getToolByName(site, 'portal_salesforcebaseconnector')
+        sfconn = getUtility(ISalesforceUtility).get_connection()
         first, last = split_name(member.getProperty('fullname'))
         email = member.getProperty('email')
-        
-        res = sfbc.upsert('Email', {
-            'type': 'Contact',
+
+        res = sfconn.query("select id from contact where email = '%s' order by LastModifiedDate desc" % email)
+        contact_id = None
+        if res['totalSize'] > 0:
+            contact_id = res['records'][0]['id']
+
+        res = sfconn.Contact.upsert(contact_id, {
             'FirstName': first,
             'LastName': last,
             'Email': email,
         })
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
+        if not res['success']:
+            raise Exception(res['errors'][0])
 
         # store the contact's Salesforce Id
-        member.setMemberProperties({'sf_object_id': res[0]['id']})
+        member.setMemberProperties({'sf_object_id': res['id']})

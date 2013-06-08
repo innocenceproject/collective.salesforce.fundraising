@@ -25,6 +25,8 @@ from Products.CMFCore.utils import getToolByName
 
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 
+from collective.simplesalesforce.utils import ISalesforceUtility
+
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.personal_campaign_page import IPersonalCampaignPage
 from collective.salesforce.fundraising.personal_campaign_page import IEditPersonalCampaignPage
@@ -112,9 +114,8 @@ class CreatePersonalCampaignPageForm(form.Form):
         settings = get_settings()
 
         # Add the campaign in Salesforce
-        sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+        sfconn = getUtility(ISalesforceUtility).get_connection()
         data = {
-            'type': 'Campaign',
             'Type': 'Personal Fundraising',
             'ParentId': parent_campaign.sf_object_id,
             'Name': data['title'],
@@ -128,13 +129,13 @@ class CreatePersonalCampaignPageForm(form.Form):
         if settings.sf_campaign_record_type_personal:
             data['RecordTypeID'] = settings.sf_campaign_record_type_personal
 
-        res = sfbc.create(data)
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
+        res = sfconn.Campaign.create(data)
+        if not res['success']:
+            raise Exception(res['errors'][0])
 
         # Save the Id of the new campaign so it can be updated later.
         campaign.parent_sf_id = parent_campaign.sf_object_id
-        campaign.sf_object_id = res[0]['id']
+        campaign.sf_object_id = res['id']
         campaign.contact_sf_id = contact_id
         if person is not None:
             campaign.person = RelationValue(person_intid)
@@ -195,19 +196,17 @@ class EditPersonalCampaign(dexterity.EditForm):
 #
 #        if changed:
 #            # Update the campaign in Salesforce
-#            sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+#            sfconn = getUtility(ISalesforceUtility).get_connection()
 #            data = {
-#                'type': 'Campaign',
-#                'id': self.context.sf_object_id,
 #                'Name': data['title'],
 #                'Description': data['description'],
 #                'Public_Name__c': data['title'],
 #                'ExpectedRevenue': data['goal'],
 #                }
 #
-#            res = sfbc.update(data)
-#            if not res[0]['success']:
-#                raise Exception(res[0]['errors'][0]['message'])
+#            res = sfconn.Campaign.update(self.context.sf_object_id, data)
+#            if not res['success']:
+#                raise Exception(res['errors'][0])
 #
 #        campaign.reindexObject()
 #
@@ -262,9 +261,8 @@ class CreateDonorQuote(form.Form):
             contact_id = member.getProperty('sf_object_id')
 
         # Add the Constituent Quote to Salesforce
-        sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-        res = sfbc.create({
-            'type': 'Constituent_Quote__c',
+        sfconn = getUtility(ISalesforceUtility).get_connection()
+        res = sfconn.Constituent_Quote__c.create({
             'Quote__c': data['quote'],
             'Name__c': data['name'],
             'Campaign__c': parent_campaign.sf_object_id,
@@ -273,8 +271,8 @@ class CreateDonorQuote(form.Form):
             'Amount__c': data['amount'],
         })
 
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
+        if not res['success']:
+            raise Exception(res['errors'][0])
 
         # Save the Id of the constituent quote so it can be updated
         quote.sf_object_id = res[0]['id']

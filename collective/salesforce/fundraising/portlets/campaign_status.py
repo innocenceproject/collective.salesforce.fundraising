@@ -80,7 +80,7 @@ class Renderer(base.Renderer):
             return self.context.aq_inner.aq_parent
 
     def addcommas(self, num):
-        locale.setlocale(locale.LC_ALL, 'en_US')
+        locale.setlocale(locale.LC_ALL, 'en_US.utf8')
         return locale.format('%d', num, grouping=True)
 
 

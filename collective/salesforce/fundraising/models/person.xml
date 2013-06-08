@@ -46,11 +46,6 @@
             <required>False</required>
         </field>
 
-        <field name="gender" title="" type="zope.schema.TextLine" sf:field="Gender__c">
-            <title>Gender</title>
-            <required>False</required>
-        </field>
-
         <field name="registered" type="zope.schema.Bool">
             <title>Registered?</title>
             <description>If checked, this user has created a site login account</description>

@@ -45,6 +45,8 @@ from Products.ATContentTypes.interfaces import IATDocument
 
 from dexterity.membrane.membrane_helpers import get_membrane_user
 
+from collective.simplesalesforce.utils import ISalesforceUtility
+
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import sanitize_soql
@@ -298,7 +300,7 @@ def handleFundraisingCampaignCreated(campaign, event):
 
     # Add campaign in Salesforce if it doesn't have a Salesforce id yet
     if getattr(campaign, 'sf_object_id', None) is None:
-        sfbc = getToolByName(campaign, 'portal_salesforcebaseconnector')
+        sfconn = getUtility(ISalesforceUtility).get_connection()
 
         settings = get_settings()
 
@@ -311,7 +313,6 @@ def handleFundraisingCampaignCreated(campaign, event):
             end_date = end_date.isoformat()
 
         data = {
-            'type': 'Campaign',
             'Type': 'Fundraising',
             'Name': campaign.title,
             'Public_Name__c': campaign.title,
@@ -325,10 +326,10 @@ def handleFundraisingCampaignCreated(campaign, event):
         if settings.sf_campaign_record_type:
             data['RecordTypeId'] = settings.sf_campaign_record_type
 
-        res = sfbc.create(data)
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
-        campaign.sf_object_id = res[0]['id']
+        res = sfconn.Campaign.create(data)
+        if not res['success']:
+            raise Exception(res['errors'][0])
+        campaign.sf_object_id = res['id']
         campaign.reindexObject(idxs=['sf_object_id'])
 
 
@@ -484,8 +485,8 @@ class FundraisingCampaignPage(object):
  
     @instance.memoize
     def lookup_donation(self, donation_id, amount):
-        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
-        return sfbc.query(RECEIPT_SOQL % (donation_id, amount, self.sf_object_id))
+        sfconn = getUtility(ISalesforceUtility).get_connection()
+        return sfconn.query(RECEIPT_SOQL % (donation_id, amount, self.sf_object_id))
 
     @instance.memoize
     def lookup_donation_product_line_items(self, donation_id):
@@ -493,10 +494,10 @@ class FundraisingCampaignPage(object):
 
         resolve them to object title, price and quantity before caching result
         """
-        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
+        sfconn = getUtility(ISalesforceUtility).get_connection()
         pc = getToolByName(self, 'portal_catalog')
         typename = 'collective.salesforce.fundraising.donationproduct'
-        items = sfbc.query(LINE_ITEM_SOQL % donation_id)
+        items = sfconn.query(LINE_ITEM_SOQL % donation_id)
         lines = []
         for item in items:
             qty = int(item['Quantity'])
@@ -961,23 +962,24 @@ class HonoraryMemorialView(grok.View):
                 }
 
                 # Dump the data into Salesforce
-                sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
-                sfbc.update({
-                    'type': 'Opportunity',
-                    'Id': self.donation_id,
-                    'Honorary_Type__c': honorary['type'],
-                    'Honorary_Notification_Type__c': honorary['notification_type'],
-                    'Honorary_First_Name__c': honorary['first_name'],
-                    'Honorary_Last_Name__c': honorary['last_name'],
-                    'Honorary_Recipient_First_Name__c': honorary['recipient_first_name'],
-                    'Honorary_Recipient_Last_Name__c': honorary['recipient_last_name'],
-                    'Honorary_Email__c': honorary['email'],
-                    'Honorary_Street_Address__c': honorary['address'],
-                    'Honorary_City__c': honorary['city'],
-                    'Honorary_State__c': honorary['state'],
-                    'Honorary_Zip__c': honorary['zip'],
-                    'Honorary_Country__c': honorary['country'],
-                    'Honorary_Message__c': honorary['message'],
+                sfconn = getUtility(ISalesforceUtility).get_connection()
+                sfconn.Opportunity.update({
+                    self.donation_id,
+                    {
+                        'Honorary_Type__c': honorary['type'],
+                        'Honorary_Notification_Type__c': honorary['notification_type'],
+                        'Honorary_First_Name__c': honorary['first_name'],
+                        'Honorary_Last_Name__c': honorary['last_name'],
+                        'Honorary_Recipient_First_Name__c': honorary['recipient_first_name'],
+                        'Honorary_Recipient_Last_Name__c': honorary['recipient_last_name'],
+                        'Honorary_Email__c': honorary['email'],
+                        'Honorary_Street_Address__c': honorary['address'],
+                        'Honorary_City__c': honorary['city'],
+                        'Honorary_State__c': honorary['state'],
+                        'Honorary_Zip__c': honorary['zip'],
+                        'Honorary_Country__c': honorary['country'],
+                        'Honorary_Message__c': honorary['message'],
+                    }
                 })
 
                 # Expire the donation in the cache so the new Honorary values are looked up next time

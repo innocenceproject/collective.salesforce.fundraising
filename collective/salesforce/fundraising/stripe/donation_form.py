@@ -133,7 +133,7 @@ class ProcessStripeDonation(grok.View):
         # Is this a recurring donation?
         self.recurring_plan_id = self.request.form.get('recurring_plan', None)
         self.customer_id = None
-        
+
         # Setup result attributes
         self.stripe_result = None
         self.customer_result = None
@@ -219,7 +219,6 @@ class ProcessStripeDonation(grok.View):
 
 
     def post_process_donation(self):
-        #import pdb; pdb.set_trace()
         page = self.context.get_fundraising_campaign_page()
         source_campaign_id = self.request.form.get('source_campaign_id')
         source_url = self.request.form.get('source_url')

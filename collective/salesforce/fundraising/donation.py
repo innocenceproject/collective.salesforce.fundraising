@@ -39,6 +39,7 @@ from z3c.relationfield import RelationValue
 from z3c.relationfield.schema import RelationChoice
 from plone.namedfile.interfaces import IImageScaleTraversable
 from collective.chimpdrill.utils import IMailsnakeConnection
+from collective.simplesalesforce.utils import ISalesforceUtility
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
@@ -1015,6 +1016,7 @@ class SalesforceSyncView(grok.View):
     grok.name('sync_to_salesforce')
 
     def render(self):
+        queueSyncDonationPerson(self.context, None)
         async = getUtility(IAsyncService)
         async.queueJob(async_salesforce_sync, self.context)
         return 'OK: Queued for sync'
@@ -1055,7 +1057,7 @@ class SalesforceDonationSync(grok.Adapter):
         if self.person is None:
             return
 
-        self.sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+        self.sfconn = getUtility(ISalesforceUtility).get_connection()
         self.campaign = self.context.get_fundraising_campaign_page()
         self.pricebook_id = None
         self.settings = get_settings()
@@ -1079,7 +1081,6 @@ class SalesforceDonationSync(grok.Adapter):
             price, quantity, product_uuid = line_item.split('|', 2)
             product = uuidToObject(product_uuid)
             self.products.append({
-                'type': 'OpportunityLineItem',
                 'PricebookEntryId': product.pricebook_entry_sf_id,
                 'UnitPrice': price,
                 'Quantity': quantity,
@@ -1089,13 +1090,12 @@ class SalesforceDonationSync(grok.Adapter):
     def create_opportunity(self):
         # Create the Opportunity object and Opportunity Contact Role (2 API calls)
         data = {
-            'type': 'Opportunity',
             'AccountId': self.settings.sf_individual_account_id,
             'Success_Transaction_Id__c': self.context.transaction_id,
             'Amount': self.context.amount,
             'Name': '%s %s - $%i One Time Donation' % (self.person.first_name, self.person.last_name, self.context.amount),
             'StageName': self.context.stage,
-            'CloseDate': datetime.now(),
+            'CloseDate': datetime.now().isoformat(),
             'CampaignId': self.campaign.sf_object_id,
             'Source_Campaign__c': self.context.source_campaign_sf_id,
             'Source_Url__c': self.context.source_url,
@@ -1132,37 +1132,35 @@ class SalesforceDonationSync(grok.Adapter):
             if self.settings.sf_opportunity_record_type_one_time:
                 data['RecordTypeID'] = self.settings.sf_opportunity_record_type_one_time
 
-        res = self.sfbc.create(data)
+        res = self.sfconn.Opportunity.create(data)
 
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
+        if not res['success']:
+            raise Exception(res['errors'][0])
 
-        self.opportunity = res[0]
-        self.context.sf_object_id = self.opportunity['id']
+        self.opportunity_id = res['id']
+        self.context.sf_object_id = self.opportunity_id
         self.context.reindexObject()
 
     def create_products(self):
         if not self.products:
             return
-        products = []
         for product in self.products:
-            product['OpportunityId'] = self.opportunity['id']
-            products.append(product)
-        res = self.sfbc.create(products)
+            product['OpportunityId'] = self.opportunity_id
+            res = self.sfconn.OpportunityLineItem.create(products)
 
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
+            if not res['success']:
+                raise Exception(res['errors'][0])
 
     def create_opportunity_contact_role(self):
-        res = self.sfbc.create({ 'type': 'OpportunityContactRole',
-            'OpportunityId': self.opportunity['id'],
+        res = self.sfconn.OpportunityContactRole.create({
+            'OpportunityId': self.opportunity_id,
             'ContactId': self.person.sf_object_id,
             'IsPrimary': True,
             'Role': 'Decision Maker',
         })
 
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
+        if not res['success']:
+            raise Exception(res['errors'][0])
 
     def create_campaign_member(self):
         # Create the Campaign Member (1 API Call).  Note, we ignore errors on this step since
@@ -1170,8 +1168,7 @@ class SalesforceDonationSync(grok.Adapter):
         # an error.  We want to let people donate more than once.
         # Ignoring the error saves an API call to first check if the member exists
         if self.settings.sf_create_campaign_member:
-            res = self.sfbc.create({
-                'type': 'CampaignMember',
+            res = self.sfconn.CampaignMember.create({
                 'CampaignId': self.campaign.sf_object_id,
                 'ContactId': self.person.sf_object_id,
                 'Status': 'Responded',

@@ -17,6 +17,7 @@ from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.namedfile.field import NamedBlobImage
 from plone.app.async.interfaces import IAsyncService
 from Products.CMFCore.interfaces import ISiteRoot
+from collective.simplesalesforce.utils import ISalesforceUtility
 
 from collective.salesforce.content.interfaces import IModifiedViaSalesforceSync
 from collective.salesforce.fundraising import MessageFactory as _
@@ -79,11 +80,10 @@ class Person(dexterity.Item):
     grok.implements(IAddPerson, IPerson)
 
     def upsertToSalesforce(self):
-        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
+        sfconn = getUtility(ISalesforceUtility).get_connection()
        
         # only upsert values that are non-empty to Salesforce to avoid overwritting existing values with null 
         data = {
-            'type': 'Contact',
             'FirstName': self.first_name,
             'LastName': self.last_name,
             'Email': self.email,
@@ -103,20 +103,29 @@ class Person(dexterity.Item):
             data['MailingPostalCode'] = self.zip
         if self.country:
             data['MailingCountry'] = self.country
-        if self.gender:
-            data['Gender__c'] = self.gender
+        #if self.gender:
+        #    data['Gender__c'] = self.gender
         customer_id = getattr(self, 'stripe_customer_id', None)
         if customer_id:
             data['Stripe_Customer_ID__c'] = customer_id
 
-        res = sfbc.upsert('Email', data)
+        res = sfconn.query("select id from contact where email = '%s' order by LastModifiedDate desc" % self.email)
+        contact_id = None
+        if res['totalSize'] > 0:
+            # If contact exists, update
+            contact_id = res['records'][0]['Id']
 
-        if not res[0]['success']:
-            raise Exception(res[0]['errors'][0]['message'])
+            res = sfconn.Contact.update(contact_id, data)
+        else:
+            # Otherwise create
+            res = sfconn.Contact.create(data)
 
         # store the contact's Salesforce Id if it doesn't already have one
         if not getattr(self, 'sf_object_id', None):
-            self.sf_object_id = res[0]['id']
+            if contact_id:
+                self.sf_object_id = contact_id
+            else:
+                self.sf_object_id = res['id']
     
         self.reindexObject()
 
@@ -227,12 +236,12 @@ class CleanupSalesforceIds(grok.View):
 
     def render(self):
         
-        sfbc = getToolByName(self, 'portal_salesforcebaseconnector')
+        sfconn = getUtility(ISalesforceUtility).get_connection()
     
         soql = "select Id, Email from Contact where Online_Fundraising_User__c = True"
       
         # FIXME: Handle paginated query in case the number of contacts is > 200 
-        res = sfbc.query(soql)
+        res = sfconn.query(soql)
 
         num_person_updated = 0
         num_member_updated = 0
@@ -240,7 +249,7 @@ class CleanupSalesforceIds(grok.View):
 
         mtool = getToolByName(self.context, 'portal_membership')
 
-        for contact in res:
+        for contact in res['records']:
             person_res = get_brains_for_email(self.context, contact.Email)
             if not person_res:
                 num_skipped += 1

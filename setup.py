@@ -43,6 +43,7 @@ setup(name='collective.salesforce.fundraising',
           'z3c.relationfield',
           'plone.directives.dexterity',
           'plone.app.async',
+          'collective.simplesalesforce',
           # -*- Extra requirements: -*-
       ],
       extras_require={

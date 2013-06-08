@@ -2,6 +2,7 @@ import re
 from five import grok
 from zope.interface import alsoProvides
 from zope import schema
+from zope.component import getUtility
 from zope.app.content.interfaces import IContentType
 from plone.directives import dexterity, form
 from z3c.form import button
@@ -14,6 +15,7 @@ from Products.statusmessages.interfaces import IStatusMessage
 from plone.namedfile.interfaces import IImageScaleTraversable
 from plone.namedfile.field import NamedBlobImage
 from Products.validation.validators.BaseValidators import EMAIL_RE
+from collective.simplesalesforce.utils import ISalesforceUtility
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 
@@ -58,9 +60,8 @@ def createSalesforceCampaign(message, event):
 
     # create Share Message campaign in Salesforce
     site = getSite()
-    sfbc = getToolByName(site, 'portal_salesforcebaseconnector')
+    sfconn = getUtility(ISalesforceUtility).get_connection()
     data = {
-        'type': 'Campaign',
         'Type': 'Share Message',
         'Name': message.title,
         'Public_Name__c': message.title,
@@ -72,11 +73,11 @@ def createSalesforceCampaign(message, event):
     if settings.sf_campaign_record_type_share:
         data['RecordTypeId'] = settings.sf_campaign_record_type_share
 
-    res = sfbc.create(data)
-    if not res[0]['success']:
-        raise Exception(res[0]['errors'][0]['message'])
+    res = sfconn.Campaign.create(data)
+    if not res['success']:
+        raise Exception(res['errors'][0])
 
-    message.sf_object_id = res[0]['id']
+    message.sf_object_id = res['id']
 
 class JanrainView(grok.View):
     grok.context(IShareMessage)

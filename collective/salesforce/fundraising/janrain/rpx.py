@@ -212,7 +212,7 @@ class RpxPostLogin(grok.View):
                 'state': address.get('region', None),
                 'zip': address.get('postalCode', None),
                 'country': address.get('country', None),
-                'gender': profile.get('gender', None),
+                #'gender': profile.get('gender', None),
                 'social_signin': True,
             }
 
