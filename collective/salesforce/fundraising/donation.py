@@ -1132,6 +1132,20 @@ class SalesforceDonationSync(grok.Adapter):
             'Source_Campaign__c': self.context.source_campaign_sf_id,
             'Source_Url__c': self.context.source_url,
             'Payment_Method__c': self.context.payment_method,
+            'Honorary_Type__c': self.context.honorary_type,
+            'Honorary_First_Name__c': self.context.honorary_first_name,
+            'Honorary_Last_Name__c': self.context.honorary_last_name,
+            'Honorary_Contact__c': self.context.honorary_contact_sf_id,
+            'Honorary_Message__c': self.context.honorary_message,
+            'Honorary_Notification_Type__c': self.context.honorary_notification_type,
+            'Honorary_Recipient_First_Name__c': self.context.honorary_recipient_first_name,
+            'Honorary_Recipient_Last_Name__c': self.context.honorary_recipient_last_name,
+            'Honorary_Email__c': self.context.honorary_email,
+            'Honorary_Street_Address__c': self.context.honorary_street_address,
+            'Honorary_City__c': self.context.honorary_city,
+            'Honorary_State__c': self.context.honorary_state,
+            'Honorary_Zip__c': self.context.honorary_zip,
+            'Honorary_Country__c': self.context.honorary_country,
         }
 
         if self.products:
@@ -1199,11 +1213,14 @@ class SalesforceDonationSync(grok.Adapter):
         # an error.  We want to let people donate more than once.
         # Ignoring the error saves an API call to first check if the member exists
         if self.settings.sf_create_campaign_member:
-            res = self.sfconn.CampaignMember.create({
-                'CampaignId': self.campaign.sf_object_id,
-                'ContactId': self.context.contact_sf_id,
-                'Status': 'Responded',
-            })
+            try:
+                res = self.sfconn.CampaignMember.create({
+                    'CampaignId': self.campaign.sf_object_id,
+                    'ContactId': self.context.contact_sf_id,
+                    'Status': 'Responded',
+                })
+            except:
+                pass
 
 
 def async_salesforce_sync(donation):
