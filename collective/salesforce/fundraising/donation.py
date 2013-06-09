@@ -1,5 +1,6 @@
 import random
 import string
+import transaction
 from datetime import datetime
 from five import grok
 from zope import schema
@@ -18,8 +19,6 @@ from zope.app.container.interfaces import IObjectAddedEvent
 from zope.event import notify
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 from zope.lifecycleevent import ObjectModifiedEvent
-from AccessControl import getSecurityManager
-from AccessControl.SecurityManagement import newSecurityManager
 from plone.uuid.interfaces import IUUID
 from plone.app.uuid.utils import uuidToObject
 from plone.app.async.interfaces import IAsyncService
@@ -52,13 +51,6 @@ def build_secret_key():
     return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(32))
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
-def availablePeople(context):
-    query = {
-        "portal_type": "collective.salesforce.fundraising.person",
-    }
-    return ObjPathSourceBinder(**query).__call__(context)
-
-@grok.provider(schema.interfaces.IContextSourceBinder)
 def availableCampaigns(context):
     #campaign = context.get_fundraising_campaign()
     query = {
@@ -74,13 +66,6 @@ class IDonation(form.Schema, IImageScaleTraversable):
     """
     A donation linked to its originating campaign and user
     """
-    person = RelationChoice(
-        title=u"Donor",
-        description=u"The user account of the donor",
-        required=False,
-        source=PathSourceBinder(portal_type='collective.salesforce.fundraising.person'),
-    )
-
     first_name = schema.TextLine(
         title=u"First Name",
         description=u"The donor's first name as submitted in the donation form",
@@ -1016,7 +1001,6 @@ class SalesforceSyncView(grok.View):
     grok.name('sync_to_salesforce')
 
     def render(self):
-        queueSyncDonationPerson(self.context, None)
         async = getUtility(IAsyncService)
         async.queueJob(async_salesforce_sync, self.context)
         return 'OK: Queued for sync'
@@ -1047,28 +1031,76 @@ class SalesforceDonationSync(grok.Adapter):
         if sf_object_id:
             return sf_object_id
       
-        self.person = self.context.person
-        if self.person:
-            self.person = self.person.to_object
-
-        # Skip if there is no person set on the donation.  This means the 
-        # syncDonationPerson hasn't yet run successfully and we need the person
-        # to get their contact id
-        if self.person is None:
-            return
-
         self.sfconn = getUtility(ISalesforceUtility).get_connection()
         self.campaign = self.context.get_fundraising_campaign_page()
         self.pricebook_id = None
         self.settings = get_settings()
 
+        self.sync_contact()
+        transaction.commit()
+
         self.get_products()
         self.create_opportunity()
+        transaction.commit()
+
         self.create_products()
+        transaction.commit()
+
         self.create_opportunity_contact_role()
+        transaction.commit()
+
         self.create_campaign_member()
+    
+        self.context.reindexObject()
         
         return self.context.sf_object_id
+
+    def sync_contact(self):
+        # only upsert values that are non-empty to Salesforce to avoid overwritting existing values with null 
+        data = {
+            'FirstName': self.context.first_name,
+            'LastName': self.context.last_name,
+            'Email': self.context.email,
+            'Online_Fundraising_User__c' : True,
+        }
+        if self.context.email_opt_in:
+            data['Email_Opt_In__c'] = self.context.email_opt_in
+        if self.context.phone:
+            data['HomePhone'] = self.context.phone
+        if self.context.address_street:
+            data['MailingStreet'] = self.context.address_street
+        if self.context.address_city:
+            data['MailingCity'] = self.context.address_city
+        if self.context.address_state:
+            data['MailingState'] = self.context.address_state
+        if self.context.address_zip:
+            data['MailingPostalCode'] = self.context.address_zip
+        if self.context.address_country:
+            data['MailingCountry'] = self.context.address_country
+        #if self.gender:
+        #    data['Gender__c'] = self.gender
+        #customer_id = getattr(self, 'stripe_customer_id', None)
+        #if customer_id:
+        #    data['Stripe_Customer_ID__c'] = customer_id
+
+        res = self.sfconn.query("select id from contact where email = '%s' order by LastModifiedDate desc" % self.context.email)
+        contact_id = None
+        if res['totalSize'] > 0:
+            # If contact exists, update
+            contact_id = res['records'][0]['Id']
+
+            res = self.sfconn.Contact.update(contact_id, data)
+        else:
+            # Otherwise create
+            res = self.sfconn.Contact.create(data)
+
+        # store the contact's Salesforce Id if it doesn't already have one
+        if contact_id:
+            self.context.contact_sf_id = contact_id
+        else:
+            self.context.contact_sf_id = res['id']
+
+        return res
 
     def get_products(self):
         self.products = []
@@ -1093,7 +1125,7 @@ class SalesforceDonationSync(grok.Adapter):
             'AccountId': self.settings.sf_individual_account_id,
             'Success_Transaction_Id__c': self.context.transaction_id,
             'Amount': self.context.amount,
-            'Name': '%s %s - $%i One Time Donation' % (self.person.first_name, self.person.last_name, self.context.amount),
+            'Name': '%s %s - $%i One Time Donation' % (self.context.first_name, self.context.last_name, self.context.amount),
             'StageName': self.context.stage,
             'CloseDate': datetime.now().isoformat(),
             'CampaignId': self.campaign.sf_object_id,
@@ -1110,10 +1142,10 @@ class SalesforceDonationSync(grok.Adapter):
                 parent_form = product_obj.get_parent_product_form()
                 if not products_configured:
                     if parent_form:
-                        data['Name'] = '%s %s - %s' % (self.person.first_name, self.person.last_name, parent_form.title)
+                        data['Name'] = '%s %s - %s' % (self.context.first_name, self.context.last_name, parent_form.title)
                     else:
                         product_obj = self.product_objs.get(product['PricebookEntryId'])
-                        data['Name'] = '%s %s - %s (Qty %s)' % (self.person.first_name, self.person.last_name, product_obj.title, product['Quantity'])
+                        data['Name'] = '%s %s - %s (Qty %s)' % (self.context.first_name, self.context.last_name, product_obj.title, product['Quantity'])
 
                     if self.settings.sf_opportunity_record_type_product:
                         data['RecordTypeID'] = self.settings.sf_opportunity_record_type_product
@@ -1139,7 +1171,6 @@ class SalesforceDonationSync(grok.Adapter):
 
         self.opportunity_id = res['id']
         self.context.sf_object_id = self.opportunity_id
-        self.context.reindexObject()
 
     def create_products(self):
         if not self.products:
@@ -1154,7 +1185,7 @@ class SalesforceDonationSync(grok.Adapter):
     def create_opportunity_contact_role(self):
         res = self.sfconn.OpportunityContactRole.create({
             'OpportunityId': self.opportunity_id,
-            'ContactId': self.person.sf_object_id,
+            'ContactId': self.context.contact_sf_id,
             'IsPrimary': True,
             'Role': 'Decision Maker',
         })
@@ -1170,91 +1201,9 @@ class SalesforceDonationSync(grok.Adapter):
         if self.settings.sf_create_campaign_member:
             res = self.sfconn.CampaignMember.create({
                 'CampaignId': self.campaign.sf_object_id,
-                'ContactId': self.person.sf_object_id,
+                'ContactId': self.context.contact_sf_id,
                 'Status': 'Responded',
             })
-
-@grok.subscribe(IDonation, IObjectAddedEvent)
-def queueSyncDonationPerson(donation, event):
-    async = getUtility(IAsyncService)
-    async.queueJob(syncDonationPerson, donation)
-
-
-def syncDonationPerson(donation):
-    if donation.person:
-        return        
-
-    person = None
-
-    mt = getToolByName(donation, 'membrane_tool')
-    pm = getToolByName(donation, 'portal_membership')
-    res = mt.searchResults(getUserName = donation.email)
-    if res:
-        person = res[0].getObject()
-
-    # If no existing user, create one which creates the contact in SF (1 API call)
-    if not res:
-        data = {
-            'first_name': donation.first_name,
-            'last_name': donation.last_name,
-            'email': donation.email,
-            'phone': donation.phone,
-            'address': donation.address_street,
-            'city': donation.address_city,
-            'state': donation.address_state,
-            'zip': donation.address_zip,
-            'country': donation.address_country,
-        }
-
-        # Treat the email_opt_in field as a ratchet.  Once toggled on, it stays on even if unchecked
-        # on a subsequent donation.  Unsubscribing is the way to prevent emails once opted in.
-        if donation.email_opt_in:
-            data['email_opt_in'] = donation.email_opt_in
-
-        # Create the user
-        people_container = getattr(getSite(), 'people')
-        person = createContentInContainer(
-            people_container,
-            'collective.salesforce.fundraising.person',
-            checkConstraints=False,
-            **data
-        )
-
-    # If existing user, fill with updated data from subscription profile (1 API call, Person update handler)
-    else:
-        # Authenticate the user temporarily to fetch their person object with some level of permissions applied
-        mtool = getToolByName(donation, 'portal_membership')
-        acl = getToolByName(donation, 'acl_users')
-        #newSecurityManager(None, acl.getUser(donation.email))
-        #mtool.loginUser()
-
-        # See if any values are modified and if so, update the Person and upsert the changes to SF
-        person = res[0].getObject()
-        old_data = [person.address, person.city, person.state, person.zip, person.country, person.phone]
-        new_data = [donation.address_street, donation.address_city, donation.address_state, donation.address_zip, donation.address_country, donation.phone]
-
-        if new_data != old_data:
-            person.address = donation.address_street
-            person.city = donation.address_city
-            person.state = donation.address_state
-            person.zip = donation.address_zip
-            person.country = donation.address_country
-            person.phone = donation.phone
-            person.reindexObject()
-
-            person.upsertToSalesforce()
-
-        #mtool.logoutUser()
-
-    # Set the person field on the campaign
-    intids = getUtility(IIntIds)
-    person_intid = intids.getId(person)
-    donation.person = RelationValue(person_intid)
-    person.upsertToSalesforce()
-
-    # Skipping event since we don't want to queue the update, we need to run it now
-    event = ObjectModifiedEvent(donation)
-    notify(event)
 
 
 def async_salesforce_sync(donation):
