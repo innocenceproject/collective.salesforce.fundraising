@@ -5,7 +5,7 @@ from zope.component import getMultiAdapter
 from zope.interface import Interface
 from zope.interface import invariant
 from zope.interface import Invalid
-from zope.site.hooks import getSite
+from zope.component.hooks import getSite
 
 from AccessControl.AuthEncoding import pw_encrypt
 from AccessControl.SecurityManagement import newSecurityManager

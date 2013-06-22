@@ -5,10 +5,11 @@ from zope import schema
 from zope.component import getUtility
 from zope.app.content.interfaces import IContentType
 from plone.directives import dexterity, form
+from plone.supermodel import model
 from z3c.form import button
 from zope.app.container.interfaces import IObjectAddedEvent
 from Products.CMFCore.utils import getToolByName
-from zope.site.hooks import getSite
+from zope.component.hooks import getSite
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 from Products.statusmessages.interfaces import IStatusMessage
@@ -22,7 +23,7 @@ from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 
 # Interface class; used to define content-type schema.
 
-class IShareMessage(form.Schema, IImageScaleTraversable):
+class IShareMessage(model.Schema, IImageScaleTraversable):
     """
     A message to be shared on social networks
     """
@@ -32,7 +33,7 @@ class IShareMessage(form.Schema, IImageScaleTraversable):
         description=u"Image used in the share message",
     )
 
-    form.model("models/share_message.xml")
+    model.load("models/share_message.xml")
 alsoProvides(IShareMessage, IContentType)
 
 class ShareMessage(dexterity.Item):

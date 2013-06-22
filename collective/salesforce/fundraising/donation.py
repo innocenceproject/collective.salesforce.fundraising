@@ -6,13 +6,14 @@ from five import grok
 from zope import schema
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from AccessControl import getSecurityManager
 from AccessControl import Unauthorized
 from Acquisition import aq_base
 from zope.interface import alsoProvides
 from zope.interface import Interface
 from zope.component import getUtility
 from zope.component import getMultiAdapter
-from zope.site.hooks import getSite
+from zope.component.hooks import getSite
 from zope.app.intid.interfaces import IIntIds
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
@@ -27,15 +28,16 @@ from Products.CMFCore.utils import getToolByName
 from Products.CMFCore.permissions import ModifyPortalContent
 from plone.i18n.locales.countries import CountryAvailability
 from plone.directives import dexterity, form
+from plone.supermodel import model
 from plone.dexterity.utils import createContentInContainer
 from plone.formwidget.contenttree.source import PathSourceBinder
 from plone.formwidget.contenttree.source import ObjPathSourceBinder
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from plone.z3cform.interfaces import IWrappedForm
 from z3c.form.browser.radio import RadioWidget
-from z3c.relationfield import RelationList
-from z3c.relationfield import RelationValue
-from z3c.relationfield.schema import RelationChoice
+#from z3c.relationfield import RelationList
+#from z3c.relationfield import RelationValue
+#from z3c.relationfield.schema import RelationChoice
 from plone.namedfile.interfaces import IImageScaleTraversable
 from collective.chimpdrill.utils import IMailsnakeConnection
 from collective.simplesalesforce.utils import ISalesforceUtility
@@ -62,7 +64,7 @@ def availableCampaigns(context):
     }
     return ObjPathSourceBinder(**query).__call__(context)
 
-class IDonation(form.Schema, IImageScaleTraversable):
+class IDonation(model.Schema, IImageScaleTraversable):
     """
     A donation linked to its originating campaign and user
     """
@@ -132,15 +134,15 @@ class IDonation(form.Schema, IImageScaleTraversable):
         required=False,
     )
 
-    campaign = RelationChoice(
-        title=u"Campaign",
-        description=u"The campaign this is related to",
-        required=False,
-        source=PathSourceBinder(portal_type=[
-            'collective.salesforce.fundraising.fundraisingcampaign',
-            'collective.salesforce.fundraising.personalcampaignpage',
-        ])
-    )
+#    campaign = RelationChoice(
+#        title=u"Campaign",
+#        description=u"The campaign this is related to",
+#        required=False,
+#        source=PathSourceBinder(portal_type=[
+#            'collective.salesforce.fundraising.fundraisingcampaign',
+#            'collective.salesforce.fundraising.personalcampaignpage',
+#        ])
+#    )
 
     products = schema.List(
         title=u"Products",
@@ -181,10 +183,10 @@ class IDonation(form.Schema, IImageScaleTraversable):
         default=False,
     )
 
-    form.model("models/donation.xml")
+    model.load("models/donation.xml")
 alsoProvides(IDonation, IContentType)
 
-class ICreateOfflineDonation(form.Schema):
+class ICreateOfflineDonation(model.Schema):
     """
     A schema of Donation without using model xml files so fields can be selected in forms
     """
@@ -524,15 +526,6 @@ class Donation(dexterity.Container):
             # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
             pass
 
-    def fix_campaign(self):
-        """ """
-        intids = getUtility(IIntIds)
-        try:
-            return self.campaign.to_id
-        except:
-            campaign_id = intids.getId(self.campaign)
-            self.campaign = RelationValue(campaign_id)
-
 
 class ThankYouView(grok.View):
     grok.context(IDonation)
@@ -674,7 +667,9 @@ class HonoraryMemorialView(grok.View):
         key = self.request.form.get('key', None)
 
         if not key or key != self.context.secret_key:
-            raise Unauthorized
+            sm = getSecurityManager()
+            if not sm.checkPermission(ModifyPortalContent, self.context):
+                raise Unauthorized
 
         self.receipt_view = getMultiAdapter((self.context, self.request), name='receipt')
         self.receipt_view.set_donation_key(key)
@@ -765,7 +760,9 @@ class DonationReceiptView(grok.View):
             key = getattr(self, 'key', None)
 
         if not key or key != self.context.secret_key:
-            raise Unauthorized
+            sm = getSecurityManager()
+            if not sm.checkPermission(ModifyPortalContent, self.context):
+                raise Unauthorized
 
         settings = get_settings()
         self.organization_name = settings.organization_name
@@ -828,7 +825,9 @@ class ThankYouEmail(grok.View):
             key = getattr(self, 'key', None)
 
         if not key or key != self.context.secret_key:
-            raise Unauthorized
+            sm = getSecurityManager()
+            if not sm.checkPermission(ModifyPortalContent, self.context):
+                raise Unauthorized
 
         self.receipt_view = getMultiAdapter((self.context, self.request), name='receipt')
         self.receipt_view.set_donation_key(key)
@@ -872,7 +871,9 @@ class HonoraryEmail(grok.View):
             key = getattr(self, 'key', None)
 
         if not key or key != self.context.secret_key:
-            raise Unauthorized
+            sm = getSecurityManager()
+            if not sm.checkPermission(ModifyPortalContent, self.context):
+                raise Unauthorized
 
         self.set_honorary_info()
             
@@ -948,7 +949,9 @@ class MemorialEmail(grok.View):
             key = getattr(self, 'key', None)
 
         if not key or key != self.context.secret_key:
-            raise Unauthorized
+            sm = getSecurityManager()
+            if not sm.checkPermission(ModifyPortalContent, self.context):
+                raise Unauthorized
 
         self.set_honorary_info()
             
@@ -1012,7 +1015,9 @@ class SalesforceSyncView(grok.View):
             key = getattr(self, 'key', None)
 
         if not key or key != self.context.secret_key:
-            raise Unauthorized
+            sm = getSecurityManager()
+            if not sm.checkPermission(ModifyPortalContent, self.context):
+                raise Unauthorized
 
     def set_donation_key(self, key=None):
         # Do nothing if already set
@@ -1270,10 +1275,6 @@ def queueMailchimpSubscribeDonor(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(mailchimpSubscribeDonor, donation)
 
-
-#@grok.subscribe(IDonation, IObjectAddedEvent)
-#def mailchimpUpdateFundraiserVars(donation, event):
-    #return
 
 def mailchimpSendPersonalCampaignDonation(donation):
     if getattr(donation, 'is_notification_sent', False):

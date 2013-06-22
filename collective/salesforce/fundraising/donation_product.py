@@ -7,6 +7,7 @@ from zope.app.content.interfaces import IContentType
 from Products.CMFCore.utils import getToolByName
 from Products.statusmessages.interfaces import IStatusMessage
 from plone.directives import dexterity, form
+from plone.supermodel import model
 from AccessControl import getSecurityManager
 from Products.CMFCore.permissions import ModifyPortalContent
 
@@ -21,13 +22,13 @@ from collective.salesforce.fundraising.stripe.donation_form import ProcessStripe
 
 # Interface class; used to define content-type schema.
 
-class IDonationProduct(form.Schema, IImageScaleTraversable):
+class IDonationProduct(model.Schema, IImageScaleTraversable):
     """
     A product such as a shirt or an event ticket which can be "purchased"
     through a donation form
     """
 
-    form.model("models/donation_product.xml")
+    model.load("models/donation_product.xml")
 
 alsoProvides(IDonationProduct, IContentType)
 

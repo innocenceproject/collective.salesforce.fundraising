@@ -11,7 +11,7 @@ from AccessControl.SecurityManagement import newSecurityManager
 
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from plone.dexterity.utils import createContentInContainer
-from zope.app.component.hooks import getSite
+from zope.component.hooks import getSite
 
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 

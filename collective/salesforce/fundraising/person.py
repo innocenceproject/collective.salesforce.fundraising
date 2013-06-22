@@ -9,6 +9,7 @@ from AccessControl.SecurityManagement import newSecurityManager
 from zope.app.content.interfaces import IContentType
 from Products.CMFCore.utils import getToolByName
 from plone.directives import dexterity, form
+from plone.supermodel import model
 from dexterity.membrane.content.member import IMember, IEmail
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from zope.app.container.interfaces import IObjectAddedEvent
@@ -23,7 +24,7 @@ from collective.salesforce.content.interfaces import IModifiedViaSalesforceSync
 from collective.salesforce.fundraising import MessageFactory as _
 
 
-class IPerson(form.Schema, IImageScaleTraversable, IMember):
+class IPerson(model.Schema, IImageScaleTraversable, IMember):
     """
     A person who is a user in Plone and a Contact in Salesforce
     """
@@ -34,7 +35,7 @@ class IPerson(form.Schema, IImageScaleTraversable, IMember):
             required = False,
     )
 
-    form.model("models/person.xml")
+    model.load("models/person.xml")
 
 alsoProvides(IPerson, IContentType)
 

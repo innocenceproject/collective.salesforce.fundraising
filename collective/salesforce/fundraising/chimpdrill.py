@@ -1,6 +1,6 @@
 from zope import schema
 from zope.interface import Interface
-from plone.directives import form
+from plone.supermodel import model
 from collective.chimpdrill.schema import ITemplate
 
 class IBaseCampaignEmail(Interface):
@@ -102,13 +102,13 @@ class IBaseHonoraryEmail(Interface):
         description=u"The message in html format.",
     )
 
-class IHonoraryEmail(form.Schema, ITemplate, IBaseCampaignEmail, IBaseHonoraryEmail):
+class IHonoraryEmail(model.Schema, ITemplate, IBaseCampaignEmail, IBaseHonoraryEmail):
     """ Schema for the Honorary donation notification email """
 
-class IMemorialEmail(form.Schema, ITemplate, IBaseCampaignEmail, IBaseHonoraryEmail):
+class IMemorialEmail(model.Schema, ITemplate, IBaseCampaignEmail, IBaseHonoraryEmail):
     """ Schema for the Memorial donation notification email """
 
-class IThankYouEmail(form.Schema, ITemplate, IBaseCampaignEmail):
+class IThankYouEmail(model.Schema, ITemplate, IBaseCampaignEmail):
     block_receipt = schema.Text(
         title=u"Receipt HTML",
         description=u"The HTML code for the receipt itself",
@@ -130,10 +130,10 @@ class IThankYouEmail(form.Schema, ITemplate, IBaseCampaignEmail):
         description=u"The last name of the donor",
     )
 
-class PersonalPageCreated(form.Schema, ITemplate, IBaseCampaignEmail):
+class PersonalPageCreated(model.Schema, ITemplate, IBaseCampaignEmail):
     """ Schema for emails thanking fundraiser for creating a personal campaign page """
 
-class PersonalPageDonation(form.Schema, ITemplate, IBaseCampaignEmail):
+class PersonalPageDonation(model.Schema, ITemplate, IBaseCampaignEmail):
     amount = schema.Int(
         title=u"Amount",
         description=u"The amount of the donation",

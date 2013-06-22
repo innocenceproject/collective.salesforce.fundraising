@@ -5,7 +5,7 @@ from plone.portlets.interfaces import IPortletDataProvider
 from zope.interface import implements
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from Products.CMFCore.utils import getToolByName
-from zope.site.hooks import getSite
+from zope.component.hooks import getSite
 #from plone.z3cform.layout import FormWrapper
 from collective.pluggablelogin import _
 from plone.app.portlets.portlets import base

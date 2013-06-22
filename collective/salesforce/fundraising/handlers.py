@@ -2,7 +2,7 @@ from five import grok
 from zope.component import getUtility
 from AccessControl.SecurityManagement import newSecurityManager
 from Products.CMFCore.utils import getToolByName
-from zope.site.hooks import getSite
+from zope.component.hooks import getSite
 from collective.simplesalesforce.utils import ISalesforceUtility
 from collective.salesforce.fundraising.interfaces import IMemberCreated
 from collective.salesforce.fundraising.nameparser import HumanName

@@ -9,6 +9,7 @@ from email.mime.text import MIMEText
 from Acquisition import aq_base
 from five import grok
 from plone.directives import dexterity, form
+from plone.supermodel import model
 
 from zope.component import getUtility
 from zope.component import getMultiAdapter
@@ -128,7 +129,7 @@ def availablePersonalPageDonationTemplates(context):
             terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
     return SimpleVocabulary(terms)
 
-class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
+class IFundraisingCampaign(model.Schema, IImageScaleTraversable):
     """
     A Fundraising Campaign linked to a Campaign in Salesforce.com
     """
@@ -262,7 +263,7 @@ class IFundraisingCampaign(form.Schema, IImageScaleTraversable):
         required=False,
     )
 
-    form.model("models/fundraising_campaign.xml")
+    model.load("models/fundraising_campaign.xml")
 
 alsoProvides(IFundraisingCampaign, IContentType)
 

@@ -16,7 +16,7 @@ from collective.salesforce.fundraising.interfaces import MemberCreated
 from collective.salesforce.fundraising.utils import get_settings
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from plone.dexterity.utils import createContentInContainer
-from zope.app.component.hooks import getSite
+from zope.component.hooks import getSite
 from plone.namedfile import NamedBlobImage
 
 JANRAIN_API_BASE_URL = 'https://rpxnow.com/api/v2'

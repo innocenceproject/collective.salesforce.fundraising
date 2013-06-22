@@ -23,7 +23,7 @@ from AccessControl.SecurityManagement import newSecurityManager
 from Acquisition import aq_inner
 from zope.component import getMultiAdapter
 
-from zope.site.hooks import getSite
+from zope.component.hooks import getSite
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings

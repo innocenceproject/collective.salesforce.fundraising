@@ -2,12 +2,12 @@ from sets import Set
 from zope import schema
 from five import grok
 from plone.directives import dexterity, form
+from plone.supermodel import model
 
 from Acquisition import aq_base
 from zope.component import getUtility
 from zope.interface import alsoProvides
 from zope.interface import Interface
-from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
@@ -55,7 +55,7 @@ _marker = object()
 
 # Interface class; used to define content-type schema.
 
-class IPersonalCampaignPage(form.Schema, IImageScaleTraversable):
+class IPersonalCampaignPage(model.Schema, IImageScaleTraversable):
     """
     A personal fundraising page
     """
@@ -80,7 +80,7 @@ class IPersonalCampaignPage(form.Schema, IImageScaleTraversable):
         required=False,
         source=availablePeople,
     )
-    form.model("models/personal_campaign_page.xml")
+    model.load("models/personal_campaign_page.xml")
 
 
 alsoProvides(IPersonalCampaignPage, IContentType)
@@ -369,24 +369,11 @@ class MyDonorsView(grok.View):
             donation = b_donation.getObject()
             is_thanked = b_donation.UID in thanked_donations
             
-            # FIXME: this code is written to be backwards compatible with donations which only used the person field
-            first_name = getattr(donation, 'first_name', None)
-            last_name = getattr(donation, 'last_name', None)
-            email = getattr(donation, 'email', None)
-            phone = getattr(donation, 'phone', None)
+            first_name = donation.first_name
+            last_name = donation.last_name
+            email = donation.email
+            phone = donation.phone
            
-            if not first_name: 
-                person = donation.person
-                if person:
-                    person = donation.person.to_object
-                    first_name = person.first_name
-                    last_name = person.last_name
-                    email = person.email
-                    phone = person.phone
-    
-                if not person:
-                    continue
-
             payment_method = getattr(donation, 'payment_method', None)
             if payment_method not in [u'Cash',u'Check',u'Offline Credit Card']:
                 payment_method = u'Online'

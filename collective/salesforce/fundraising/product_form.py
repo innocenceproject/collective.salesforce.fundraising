@@ -7,6 +7,7 @@ from zope.app.content.interfaces import IContentType
 from Products.CMFCore.utils import getToolByName
 from Products.statusmessages.interfaces import IStatusMessage
 from plone.directives import dexterity, form
+from plone.supermodel import model
 from plone.app.textfield import RichText
 from Products.CMFCore.permissions import ModifyPortalContent
 from AccessControl import getSecurityManager
@@ -20,7 +21,7 @@ from collective.salesforce.fundraising.authnet.dpm import AuthnetFingerprint as 
 from collective.salesforce.fundraising.stripe.donation_form import DonationFormStripe as BaseDonationFormStripe
 from collective.salesforce.fundraising.stripe.donation_form import ProcessStripeDonation as BaseProcessStripeDonation
 
-class IProductForm(form.Schema):
+class IProductForm(model.Schema):
     """
     A form displaying multiple donation products which total up to a single total.
     """
@@ -37,7 +38,7 @@ class IProductForm(form.Schema):
 alsoProvides(IProductForm, IContentType)
 
 
-class IProductFieldset(form.Schema):
+class IProductFieldset(model.Schema):
     """
     A fieldset grouping donation products
     """

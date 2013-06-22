@@ -32,8 +32,6 @@ from AccessControl.SecurityManagement import newSecurityManager
 from Acquisition import aq_inner
 from zope.component import getMultiAdapter
 
-from zope.site.hooks import getSite
-
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import get_standard_pricebook_id
@@ -219,12 +217,12 @@ class ProcessStripeDonation(grok.View):
 
 
     def post_process_donation(self):
+        #import pdb; pdb.set_trace()
         page = self.context.get_fundraising_campaign_page()
         source_campaign_id = self.request.form.get('source_campaign_id')
         source_url = self.request.form.get('source_url')
         form_name = self.request.form.get('form_name')
 
-        sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
         pc = getToolByName(self.context, 'portal_catalog')
 
         # Handle Donation Product forms
@@ -240,6 +238,7 @@ class ProcessStripeDonation(grok.View):
             product = res[0].getObject()
 
         if product_id or c_products:
+            sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
             pricebook_id = get_standard_pricebook_id(sfbc)
 
         # Handle Product Forms with multiple products, each with their own quantity

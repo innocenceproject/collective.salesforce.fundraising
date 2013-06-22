@@ -2,18 +2,19 @@ from five import grok
 from zope import schema
 from zope.interface import alsoProvides
 from zope.component import getUtility
-from zope.site.hooks import getSite
+from zope.component.hooks import getSite
 from zope.app.content.interfaces import IContentType
 from plone.namedfile.field import NamedImage
 from Products.CMFCore.utils import getToolByName
 from plone.directives import dexterity, form
+from plone.supermodel import model
 
 from plone.namedfile.interfaces import IImageScaleTraversable
 
 
 # Interface class; used to define content-type schema.
 
-class IDonorQuote(form.Schema, IImageScaleTraversable):
+class IDonorQuote(model.Schema, IImageScaleTraversable):
     """
     A quote from a donor about why they donated
     """
@@ -26,7 +27,7 @@ class IDonorQuote(form.Schema, IImageScaleTraversable):
         title=u"Donation Secret Key",
         description=u"The key used to authenticate to views on the Donation."
     )
-    form.model("models/donor_quote.xml")
+    model.load("models/donor_quote.xml")
 alsoProvides(IDonorQuote, IContentType)
 
 

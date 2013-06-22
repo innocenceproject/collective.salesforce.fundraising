@@ -2,16 +2,16 @@ from five import grok
 from zope import schema
 from zope.interface import alsoProvides
 from zope.component import getUtility
-from zope.site.hooks import getSite
 from zope.app.content.interfaces import IContentType
 from Products.CMFCore.utils import getToolByName
-from plone.directives import dexterity, form
+from plone.directives import dexterity
+from plone.supermodel import model
 from plone import namedfile
 from plone.app.textfield import RichText
 
 # Interface class; used to define content-type schema.
 
-class IFundraisingSeal(form.Schema, namedfile.interfaces.IImageScaleTraversable):
+class IFundraisingSeal(model.Schema, namedfile.interfaces.IImageScaleTraversable):
     """
     A Fundraising Seal such as awards or fund distribution charts.
     These are shown in the Campaign Seals portlet in condensed form

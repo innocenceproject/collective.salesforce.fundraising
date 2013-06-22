@@ -60,9 +60,9 @@ function processNewAmountValue() {
         updateDonationProductTotal(form);
     }
 
-    options.find('.option').removeClass('selected');
+    options.find('.option').removeClass('selected').find('input:radio').attr('checked','');
     var option = options.find('input[value="' + $(this).val() + '"]');
-    option.parent('.option').addClass('selected');
+    option.parent('.option').addClass('selected').find('input:radio').attr('checked','checked');
 
     showHideDonationForm(form)
 
