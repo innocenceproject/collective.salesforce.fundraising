@@ -12,70 +12,193 @@
             <title>Description</title>
             <description>A brief description of this campaign (from Description field on Campaign in Salesforce)</description>
         </field>
+        <field name="image" type="plone.namedfile.field.NamedBlobImage">
+            <title>Image</title>
+            <description>The main promotional image for this campaign.  This image will be shown big and small so pick an image that looks good at all sizes.</description>
+        </field>
         <field name="external_media_url" type="zope.schema.TextLine">
             <title>External Media URL</title>
             <description>A link to externally hosted media promoting the campaign.  For example, a Youtube video, a Flickr photo gallery, etc.</description>
             <required>False</required>
         </field>
-        <field name="show_media_portlet" type="zope.schema.Bool">
-            <title>Show Media Portlet?</title>
-            <description>Uncheck if you don't want to render the Campaign Media portlet showing the image/external media in the right column</description>
-            <required>False</required>
-            <default>True</default>
+        <field name="body" type="plone.app.textfield.RichText">
+            <title>Fundraising Pitch</title>
+            <description>The body of the pitch for this campaign shown above the donation form</description>
         </field>
-        <field name="status" type="zope.schema.TextLine" sf:field="Status">
-            <title>Status</title>
-            <description>The current status of the campaign (From Status field on Campaign in Salesforce)</description>
-            <default>In Progress</default>
+        <field name="thank_you_message" type="plone.app.textfield.RichText">
+            <title>Thank You Message</title>
+            <description>This is the message displayed to a donor after they have donated.</description>
         </field>
-        <field name="goal" type="zope.schema.Int" sf:field="ExpectedRevenue">
-            <title>Goal</title>
-            <description>The dollar amount goal for this campaign (from Expected Revenue field on Campaign in Salesforce)</description>
+        <field name="donation_receipt_legal" type="zope.schema.Text">
+            <title>Donation Receipt Legal Text</title>
+            <description>Enter any legal text you want displayed at the bottom of html receipt.  For example, you might want to state that all donations are tax deductable and include the organization's Tax ID.  This field overrides the site-wide default receipt legal text configured in Fundraising Settings.  If no value is provided, the site default text will be used.</description>
             <required>False</required>
         </field>
-        <field name="donations_total" type="zope.schema.Int" sf:field="HierarchyAmountWonOpportunities">
-            <title>Total Raised</title>
-            <description>The total dollar amount raised thus far (from Amount Won Opportunities on Campaign in Salesforce)</description>
-            <default>0</default>
-            <required>False</required>
-        </field>
-        <field name="donations_count" type="zope.schema.Int" sf:field="HierarchyNumberOfWonOpportunities">
-            <title>Number of Donations</title>
-            <description>Total count of donations</description>
-            <required>False</required>
-        </field>
-        <field name="direct_donations_total" type="zope.schema.Int" sf:field="AmountWonOpportunities">
-            <title>Direct Total Raised</title>
-            <description>The total dollar amount raised thus far donated directly to this campaign</description>
-            <default>0</default>
-            <required>False</required>
-        </field>
-        <field name="direct_donations_count" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
-            <title>Number of Direct Donations</title>
-            <description>Total count of donations made directly to this campaign</description>
-            <default>0</default>
-            <required>False</required>
-        </field>
-        <field name="allow_personal" type="zope.schema.Bool" sf:field="Allow_Personal__c">
-            <title>Allow Personal?</title>
-            <description>If checked, allow the creation of personal campaign pages for this campaign</description>
-            <required>False</required>
-        </field>
-        <field name="personal_only" type="zope.schema.Bool">
-            <title>Personal Fundraising Only?</title>
-            <description>If checked, do not show a donation form on the main fundraising page</description>
-            <required>False</required>
-        </field>
-        <field name="date_start" type="zope.schema.Date" sf:field="StartDate">
-            <title>Start Date</title>
-            <description>The start date of the campaign</description>
-            <required>False</required>
-        </field>
-        <field name="date_end" type="zope.schema.Date" sf:field="EndDate">
-            <title>End Date</title>
-            <description>The end date of the campaign</description>
-            <required>False</required>
-        </field>
+
+        <fieldset name="config" label="Options">
+            <field name="goal" type="zope.schema.Int" sf:field="ExpectedRevenue">
+                <title>Goal</title>
+                <description>The dollar amount goal for this campaign (from Expected Revenue field on Campaign in Salesforce)</description>
+                <required>False</required>
+            </field>
+            <field name="date_start" type="zope.schema.Date" sf:field="StartDate">
+                <title>Start Date</title>
+                <description>The start date of the campaign</description>
+                <required>False</required>
+            </field>
+            <field name="date_end" type="zope.schema.Date" sf:field="EndDate">
+                <title>End Date</title>
+                <description>The end date of the campaign</description>
+                <required>False</required>
+            </field>
+            <field name="donation_form_tabs" type="zope.schema.List">
+                <title>Donation Form Tabs</title>
+                <description>Enter the view names for each tab you wish to display with this form.  You can provide a friendly name for the tab by using the format VIEWNAME|LABEL</description>
+                <value_type type="zope.schema.TextLine" />
+            </field>
+            <field name="stripe_mode" type="zope.schema.Choice">
+                <title>Stripe Payment Processing Mode</title>
+                <description>Stripe can either run in test or live mode.  Test mode allows you to successfully process donations using a dummy card number.  Real cards will fail in test mode.  Live mode is the full production mode which only accepts valid cards</description>
+                <vocabulary>collective.stripe.modes</vocabulary>
+                <default>test</default>
+            </field>
+            <field name="stripe_recurring_plan" type="zope.schema.Choice">
+                <title>Stripe Recurring Plan</title>
+                <description>If selected, recurring donations will be enabled on the Stripe form for this campaign and will subscribe donors who opt for recurring to the selected plan in Stripe</description>
+                <vocabulary>collective.stripe.plans</vocabulary>
+                <required>False</required>
+            </field>
+            <field name="fundraising_seals" type="zope.schema.List">
+                <title>Fundraising Seals Override</title>
+                <description>Normally, the site default seals are shown on a campaign.  If you want to override the seals displayed only on this campaign, enter the full physical path to the seals here</description>
+                <value_type type="zope.schema.TextLine" />
+                <required>False</required>
+            </field>
+            <field name="status" type="zope.schema.TextLine" sf:field="Status">
+                <title>Status</title>
+                <description>The current status of the campaign (From Status field on Campaign in Salesforce)</description>
+                <default>In Progress</default>
+            </field>
+            <field name="donations_total" type="zope.schema.Int" sf:field="HierarchyAmountWonOpportunities">
+                <title>Total Raised</title>
+                <description>The total dollar amount raised thus far (from Amount Won Opportunities on Campaign in Salesforce)</description>
+                <default>0</default>
+                <required>False</required>
+            </field>
+            <field name="donations_count" type="zope.schema.Int" sf:field="HierarchyNumberOfWonOpportunities">
+                <title>Number of Donations</title>
+                <description>Total count of donations</description>
+                <required>False</required>
+            </field>
+            <field name="direct_donations_total" type="zope.schema.Int" sf:field="AmountWonOpportunities">
+                <title>Direct Total Raised</title>
+                <description>The total dollar amount raised thus far donated directly to this campaign</description>
+                <default>0</default>
+                <required>False</required>
+            </field>
+            <field name="direct_donations_count" type="zope.schema.Int" sf:field="NumberOfWonOpportunities">
+                <title>Number of Direct Donations</title>
+                <description>Total count of donations made directly to this campaign</description>
+                <default>0</default>
+                <required>False</required>
+            </field>
+        </fieldset>
+        <fieldset name="email" label="Emails">
+            <field name="chimpdrill_template_thank_you" type="zope.schema.Choice">
+                <title>Thank You Email Template</title>
+                <description>The Mailchimp/Mandrill template to use when sending thank you emails for this campaign</description>
+                <required>False</required>
+                <source>collective.salesforce.fundraising.fundraising_campaign.availableThankYouTemplates</source>
+            </field>
+            <field name="chimpdrill_honorary" type="zope.schema.Choice">
+                <title>Honorary Email Template</title>
+                <description>The Mailchimp/Mandrill template to use when sending honorary emails for this campaign</description>
+                <required>False</required>
+                <source>collective.salesforce.fundraising.fundraising_campaign.availableHonoraryTemplates</source>
+            </field>
+            <field name="chimpdrill_memorial" type="zope.schema.Choice">
+                <title>Memorial Email Template</title>
+                <description>The Mailchimp/Mandrill template to use when sending memorial emails for this campaign</description>
+                <required>False</required>
+                <source>collective.salesforce.fundraising.fundraising_campaign.availableMemorialTemplates</source>
+            </field>
+            <field name="chimpdrill_personal_page_created" type="zope.schema.Choice">
+                <title>Personal Page Created Template</title>
+                <description>The Mailchimp/Mandrill template to use when sending email to new fundraisers immediately after they create their page</description>
+                <required>False</required>
+                <source>collective.salesforce.fundraising.fundraising_campaign.availablePersonalPageCreatedTemplates</source>
+            </field>
+            <field name="chimpdrill_personal_page_donation" type="zope.schema.Choice">
+                <title>Personal Page Donation Template</title>
+                <description>The Mailchimp/Mandrill template to use when sending email to notify fundraisers of a donation to their page</description>
+                <required>False</required>
+                <source>collective.salesforce.fundraising.fundraising_campaign.availablePersonalPageDonationTemplates</source>
+            </field>
+            <field name="chimpdrill_list_donors" type="zope.schema.Choice">
+                <title>Mailchimp List - Donors</title>
+                <description>If selected, donors to this campaign will automatically be added to the selected list</description>
+                <required>False</required>
+                <vocabulary>collective.chimpdrill.lists</vocabulary>
+            </field>
+            <field name="chimpdrill_list_fundraisers" type="zope.schema.Choice">
+                <title>Mailchimp List - Personal Fundraisers</title>
+                <description>If selected, personal fundraisers in this campaign will automatically be added to the selected list.</description>
+                <required>False</required>
+                <vocabulary>collective.chimpdrill.lists</vocabulary>
+            </field>
+        </fieldset>
+
+        <fieldset name="visual" label="Visual">
+            <field name="header_image" type="plone.namedfile.field.NamedBlobImage">
+                <title>Header Image</title>
+                <description>If provided, this image will be used as the header graphic for the campaign instead of the site default.</description>
+                <required>False</required>
+            </field>
+            <field name="hide_title_and_description" type="zope.schema.Bool">
+                <title>Hide Title and Description?</title>
+                <description>If checked, the campaign's title and description will be rendered on the page but hidden from view.  This is useful if you are using a custom header image that already contains the title and description content.</description>
+            </field>
+            <field name="donation_form_header" type="zope.schema.TextLine">
+                <title>Header for Donation Forms</title>
+                <description>This header will be displayed above donation forms for this campaign.  If no value is supplied, the default site-wide header will be used.</description>
+                <required>False</required>
+            </field>
+            <field name="donation_form_description" type="plone.app.textfield.RichText">
+                <title>Description for Donation Forms</title>
+                <description>If provided, this value will be displayed above donation forms for this campaign.  If no value is provided, and a site-wide default is set, that default will be used.</description>
+                <required>False</required>
+            </field>
+            <field name="show_media_portlet" type="zope.schema.Bool">
+                <title>Show Media Portlet?</title>
+                <description>Uncheck if you don't want to render the Campaign Media portlet showing the image/external media in the right column</description>
+                <required>False</required>
+                <default>True</default>
+            </field>
+        </fieldset>
+
+        <fieldset name="personal" label="Personal">
+            <field name="allow_personal" type="zope.schema.Bool" sf:field="Allow_Personal__c">
+                <title>Allow Personal?</title>
+                <description>If checked, allow the creation of personal campaign pages for this campaign</description>
+                <required>False</required>
+            </field>
+            <field name="personal_only" type="zope.schema.Bool">
+                <title>Personal Fundraising Only?</title>
+                <description>If checked, do not show a donation form on the main fundraising page</description>
+                <required>False</required>
+            </field>
+            <field name="default_personal_appeal" type="plone.app.textfield.RichText">
+                <title>Default Personal Appeal</title>
+                <description>When someone creates a personal campaign, this text is the default value in the Personal Appeal field.  The user can choose to keep the default or edit it.</description>
+                <required>False</required>
+            </field>
+            <field name="default_personal_thank_you" type="plone.app.textfield.RichText">
+                <title>Default Personal Thank You Message</title>
+                <description>When someone creates a personal campaign, this text is the default value in the Thank You Message field.  The user can choose to keep the default or edit it.</description>
+                <required>False</required>
+            </field>
+        </fieldset>
+
     </schema>
     
 </model>
