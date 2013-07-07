@@ -539,7 +539,9 @@ class ThankYouView(grok.View):
         key = self.request.form.get('key', None)
 
         if not key or key != self.context.secret_key:
-            raise Unauthorized
+            sm = getSecurityManager()
+            if not sm.checkPermission(ModifyPortalContent, self.context):
+                raise Unauthorized
 
         self.receipt_view = None
         self.receipt = None
