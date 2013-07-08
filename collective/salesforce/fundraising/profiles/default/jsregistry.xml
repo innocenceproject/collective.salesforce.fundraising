@@ -11,5 +11,8 @@
         id="++resource++collective.salesforce.fundraising.static/recurly.min.js"
         cacheable="True" compression="none" cookable="False"
         enabled="True" expression=""  inline="False" insert-after="*"/>
-    <javascript enabled="True" id="++resource++plone.app.jquerytools.validator.js" />
+    <javascript cacheable="True" compression="none" cookable="True"
+        enabled="True" id="++resource++plone.app.jquerytools.validator.js" inline="False"
+        expression=""
+        insert-after="++resource++plone.app.jquerytools.js" />
 </object>
