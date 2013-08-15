@@ -24,6 +24,7 @@
     <element value="collective.salesforce.fundraising.sharemessage" />
     <element value="collective.salesforce.fundraising.donation" />
     <element value="collective.chimpdrill.template" />
+    <element value="collective.cover.content" />
   </property>
   <property name="allow_discussion">False</property>
 

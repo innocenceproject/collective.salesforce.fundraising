@@ -8,7 +8,6 @@ from plone.portlets.interfaces import IPortletDataProvider
 from zope.formlib import form
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 
-from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 
 from zope.i18nmessageid import MessageFactory
 __ = MessageFactory("plone")
@@ -70,6 +69,8 @@ class Renderer(base.Renderer):
     render = ViewPageTemplateFile('campaign_media.pt')
 
     def get_campaign(self):
+        from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
+
         if IFundraisingCampaignPage.providedBy(self.context):
             return self.context
         else:

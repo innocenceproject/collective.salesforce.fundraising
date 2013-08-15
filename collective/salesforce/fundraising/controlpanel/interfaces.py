@@ -33,8 +33,8 @@ class IFundraisingSettings(Interface):
         required=True,
     )
 
-    default_personal_thank_you_message = schema.Text(
-        title=_(u"Default Personal Thank You Message"),
+    default_personal_thank_you = schema.Text(
+        title=_(u"Default Personal Thank You"),
         description=_(u"The default Personal Thank You Message for Personal Campaign Pages"),
         default=u"<p>Thank you for your donation and for helping me reach my goal.</p>",
         required=True,
@@ -44,23 +44,24 @@ class IFundraisingSettings(Interface):
         title=_(u"Default Header Image URL"),
         description=u"If provided, the specified image will be rendered as the header image for fundraising campaigns unless the campaign uses its header_image field to override the default setting.",
         required=False,
+        
     )
 
-    donation_form_header = schema.TextLine(
+    default_donation_form_header = schema.TextLine(
         title=_(u"Default Header for Donation Forms"),
         description=_(u"The text entered here will appear as a header above donation forms.  If left empty, the default value 'Make A Donation' will be used.  This value may be overridden by providing a value on a specific fundraising campaign."),
         default=u'',
         required=False,
     )
 
-    donation_form_description = schema.Text(
+    default_donation_form_description = schema.Text(
         title=_(u"Default Description for Donation Forms"),
         description=_(u"The text entered here will be displayed above donation forms.  If left empty, no text will appear.  HTML is allowed. This value may be overridden by providing a value on a specific fundraising campaign"),
         default=u'',
         required=False,
     )
 
-    donation_receipt_legal = schema.Text(
+    default_donation_receipt_legal = schema.Text(
         title=_(u"Donation Receipt Legal Text"),
         description=_(u"Enter any legal text you want displayed at the bottom of html receipt.  For example, you might want to state that all donations are tax deductable and include the organization's Tax ID"),
         required=False,
@@ -98,9 +99,39 @@ class IFundraisingSettings(Interface):
         required=False,
     )
 
-    chimpdrill_template_thank_you = schema.TextLine(
+    default_chimpdrill_template_thank_you = schema.TextLine(
         title=_(u"Chimpdrill Template - Thank You Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for thank you emails."),
+        required=False,
+    )
+
+    default_chimpdrill_honorary = schema.TextLine(
+        title=_(u"Chimpdrill Template - Honorary Email"),
+        description=_(u"Provide the path to the chimpdrill template to use by default for honorary notification emails."),
+        required=False,
+    )
+
+    default_chimpdrill_memorial = schema.TextLine(
+        title=_(u"Chimpdrill Template - Memorial Email"),
+        description=_(u"Provide the path to the chimpdrill template to use by default for memorial notification emails."),
+        required=False,
+    )
+
+    default_chimpdrill_personal_page_created = schema.TextLine(
+        title=_(u"Chimpdrill Template - Personal Page Created Email"),
+        description=_(u"Provide the path to the chimpdrill template to use by default for personal page created emails."),
+        required=False,
+    )
+
+    default_chimpdrill_personal_page_donation = schema.TextLine(
+        title=_(u"Chimpdrill Template - Personal Page Donation Email"),
+        description=_(u"Provide the path to the chimpdrill template to use by default for personal page donation emails."),
+        required=False,
+    )
+
+    default_stripe_recurring_plan = schema.TextLine(
+        title=_(u"Default Stripe Recurring Plan"),
+        description=_(u"Enter the ID of the default Stripe plan for recurring donations to be handled directly via Stripe"),
         required=False,
     )
 
@@ -119,7 +150,7 @@ class IFundraisingSettings(Interface):
         default=[u'donation_form_authnet_dpm',u'donation_form_recurly'],
     )
     
-    default_donation_form_tabs = schema.TextLine(
+    default_donation_form_tabs = schema.Text(
         title=_(u"Default form view"),
         description=_(u"The name of the form view to be used by default on a fundraising campaign to render the donation form.  This name must match an option in the Available form views field"),
         required=True,

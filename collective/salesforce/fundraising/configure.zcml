@@ -104,9 +104,14 @@
   <include package=".api" />
   <include package=".controlpanel" />
   <include package=".portlets" />
+  <include package=".tiles" />
   <include file="upgrades.zcml" />
 
   <!-- Grok the package to initialise schema interfaces and content classes -->
   <grok:grok package="." />
+
+
+
+  
 
 </configure>

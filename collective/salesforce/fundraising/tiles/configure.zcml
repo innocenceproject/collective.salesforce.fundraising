@@ -1,0 +1,31 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zcml="http://namespaces.zope.org/zcml"
+    xmlns:plone="http://namespaces.plone.org/plone"
+    i18n_domain="collective.cover">
+
+  <plone:tile
+      name="collective.salesforce.fundraising.campaign_media"
+      title="Campaign Media Tile"
+      description="A tile that shows the campaign media with a link to the campaign"
+      icon="++resource++collective.cover/tile-banner.png"
+      add_permission="cmf.ModifyPortalContent"
+      schema=".campaign_media.ICampaignMediaTile"
+      class=".campaign_media.CampaignMediaTile"
+      permission="zope2.View"
+      for="*"
+      />
+
+  <plone:tile
+      name="collective.salesforce.fundraising.donation_form_stripe"
+      title="Donation Form Stripe Tile"
+      description="A tile that shows the Stripe based donation form"
+      icon="++resource++collective.cover/tile-pfg.png"
+      add_permission="cmf.ModifyPortalContent"
+      schema=".donation_form_stripe.IDonationFormStripeTile"
+      class=".donation_form_stripe.DonationFormStripeTile"
+      permission="zope2.View"
+      for="*"
+      />
+</configure>

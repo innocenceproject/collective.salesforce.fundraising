@@ -9,5 +9,6 @@
         <dependency>profile-dexterity.membrane:behavior</dependency>
         <dependency>profile-collective.stripe:default</dependency>
         <dependency>profile-collective.chimpdrill:default</dependency>
+        <dependency>profile-collective.googleanalytics:default</dependency>
     </dependencies>
 </metadata>

@@ -116,14 +116,14 @@ class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
         description=u"This message will be shown to your donors after they donate.  You can use the default text or personalize your thank you message",
     )    
 
-@form.default_value(field=IEditPersonalCampaignPage['title'])
-def titleDefaultValue(data):
-    mtool = getToolByName(data.context, 'portal_membership')
-    member = mtool.getAuthenticatedMember()
-    res = get_brains_for_email(data.context, member.id)
-    if res:
-        person = res[0].getObject()
-        return "%s %s's Fundraising Page" % (person.first_name, person.last_name)
+#@form.default_value(field=IEditPersonalCampaignPage['title'])
+#def titleDefaultValue(data):
+#    mtool = getToolByName(data.context, 'portal_membership')
+#    member = mtool.getAuthenticatedMember()
+#    res = get_brains_for_email(data.context, member.id)
+#    if res:
+#        person = res[0].getObject()
+#        return "%s %s's Fundraising Page" % (person.first_name, person.last_name)
     
 @form.default_value(field=IPersonalCampaignPage['personal_appeal'])
 def personalAppealDefaultValue(data):

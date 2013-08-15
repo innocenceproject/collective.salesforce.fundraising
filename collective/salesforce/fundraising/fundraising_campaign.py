@@ -1,6 +1,7 @@
 import locale
 import random
 import smtplib
+from rwproperty import getproperty, setproperty
 from datetime import date
 
 from email.mime.multipart import MIMEMultipart
@@ -140,35 +141,24 @@ alsoProvides(IFundraisingCampaign, IContentType)
 class IFundraisingCampaignPage(Interface):
     """ Marker interface for campaigns that act like a fundraising campaign """
 
-@form.default_value(field=IFundraisingCampaign['thank_you_message'])
-def thankYouDefaultValue(data):
-    return get_settings().default_thank_you_message
-
-@form.default_value(field=IFundraisingCampaign['default_personal_appeal'])
-def defaultPersonalAppealDefaultValue(data):
-    return get_settings().default_personal_appeal
-
-@form.default_value(field=IFundraisingCampaign['default_personal_thank_you'])
-def defaultPersonalThankYouDefaultValue(data):
-    return get_settings().default_personal_thank_you_message
-
-@form.default_value(field=IFundraisingCampaign['donation_form_tabs'])
-def defaultDonationFormTabsValue(data):
-    return get_settings().available_form_views
+#@form.default_value(field=IFundraisingCampaign['thank_you_message'])
+#def thankYouDefaultValue(data):
+#    return get_settings().default_thank_you_message
+#
+#@form.default_value(field=IFundraisingCampaign['default_personal_appeal'])
+#def defaultPersonalAppealDefaultValue(data):
+#    return get_settings().default_personal_appeal
+#
+#@form.default_value(field=IFundraisingCampaign['default_personal_thank_you'])
+#def defaultPersonalThankYouDefaultValue(data):
+#    return get_settings().default_personal_thank_you_message
+#
+#@form.default_value(field=IFundraisingCampaign['donation_form_tabs'])
+#def defaultDonationFormTabsValue(data):
+#    return get_settings().available_form_views
 
 @grok.subscribe(IFundraisingCampaign, IObjectAddedEvent)
 def handleFundraisingCampaignCreated(campaign, event):
-    # This is necessary because collective.salesforce.content never loads the
-    # form and thus never loads the default values on creation
-    if not campaign.thank_you_message:
-        campaign.thank_you_message = thankYouDefaultValue(None)
-    if not campaign.default_personal_appeal:
-        campaign.default_personal_appeal = defaultPersonalAppealDefaultValue(None)
-    if not campaign.default_personal_thank_you:
-        campaign.default_personal_thank_you = defaultPersonalThankYouDefaultValue(None)
-    if not campaign.donation_form_tabs:
-        campaign.donation_form_tabs = defaultDonationFormTabsValue(None)
-
     # Add campaign in Salesforce if it doesn't have a Salesforce id yet
     if getattr(campaign, 'sf_object_id', None) is None:
         sfconn = getUtility(ISalesforceUtility).get_connection()
@@ -207,6 +197,261 @@ def handleFundraisingCampaignCreated(campaign, event):
 class FundraisingCampaignPage(object):
     grok.implements(IStripeModeChooser)
 
+    # Implementations of default value inheritance for some fields
+    def get_local_or_default(self, field):
+        """Get a field's value using inheritance of [page ->] campaign -> global """
+
+        # Try page
+        page = aq_base(self.get_fundraising_campaign_page())
+        val = getattr(page, '_%s' % field, None)
+
+        test_val = val
+        # check if the output of a rich text field is empty
+        if isinstance(val, RichTextValue):
+            test_val = val.output
+        if test_val is not None:
+            return val
+
+        # Use default if no local value
+        return self.get_default(field)
+
+    def get_default(self, field):
+        # Try campaign if different from page (i.e. personal campaign page or campaign variation)
+        campaign = aq_base(self.get_fundraising_campaign())
+        if campaign != self.get_fundraising_campaign_page():
+            val = getattr(campaign, '_%s' % field, None)
+            # convert rich text objects, if present:
+            if isinstance(val, RichTextValue):
+                val = val.output
+            if val is not None:
+                return val
+
+        # Try global using 'default_' as field name prefix for settings
+        settings = get_settings()
+        val = getattr(settings, 'default_%s' % field, None)
+
+        # Temporary hack to handle default_donation_form_tabs in controlpanel as
+        # a TextLine field while the local value is a List.  This will soon be replaced
+        # by a vocabulary listing available forms
+        if val is not None and field == 'donation_form_tabs':
+            val = val.split('\n')
+
+        return val
+
+            
+        
+
+    @getproperty
+    def external_media_url(self):
+        return self.get_local_or_default('external_media_url')
+    @setproperty
+    def external_media_url(self, external_media_url):
+        if external_media_url != self.get_default('external_media_url'):
+            self._external_media_url = external_media_url
+    
+    @getproperty
+    def body(self):
+        return self.get_local_or_default('body')
+    @setproperty
+    def body(self, body):
+        if body != self.get_default('body'):
+            self._body = body
+    
+    @getproperty
+    def thank_you_message(self):
+        return self.get_local_or_default('thank_you_message')
+    @setproperty
+    def thank_you_message(self, thank_you_message):
+        if thank_you_message != self.get_default('thank_you_message'):
+            self._thank_you_message = thank_you_message
+    
+    @getproperty
+    def donation_receipt_legal(self):
+        return self.get_local_or_default('donation_receipt_legal')
+    @setproperty
+    def donation_receipt_legal(self, donation_receipt_legal):
+        if donation_receipt_legal != self.get_default('donation_receipt_legal'):
+            self._donation_receipt_legal = donation_receipt_legal
+    
+    @getproperty
+    def goal(self):
+        return self.get_local_or_default('goal')
+    @setproperty
+    def goal(self, goal):
+        if goal != self.get_default('goal'):
+            self._goal = goal
+    
+    @getproperty
+    def start_date(self):
+        return self.get_local_or_default('start_date')
+    @setproperty
+    def start_date(self, start_date):
+        if start_date != self.get_default('start_date'):
+            self._start_date = start_date
+    
+    @getproperty
+    def end_date(self):
+        return self.get_local_or_default('end_date')
+    @setproperty
+    def end_date(self, end_date):
+        if end_date != self.get_default('end_date'):
+            self._end_date = end_date
+    
+    @getproperty
+    def donation_form_tabs(self):
+        return self.get_local_or_default('donation_form_tabs')
+    @setproperty
+    def donation_form_tabs(self, donation_form_tabs):
+        if donation_form_tabs != self.get_default('donation_form_tabs'):
+            self._donation_form_tabs = donation_form_tabs
+    
+    @getproperty
+    def stripe_recurring_plan(self):
+        return self.get_local_or_default('stripe_recurring_plan')
+    @setproperty
+    def stripe_recurring_plan(self, stripe_recurring_plan):
+        if stripe_recurring_plan != self.get_default('stripe_recurring_plan'):
+            self._stripe_recurring_plan = stripe_recurring_plan
+    
+    @getproperty
+    def fundraising_seals(self):
+        return self.get_local_or_default('fundraising_seals')
+    @setproperty
+    def fundraising_seals(self, fundraising_seals):
+        if fundraising_seals != self.get_default('fundraising_seals'):
+            self._fundraising_seals = fundraising_seals
+    
+    @getproperty
+    def chimpdrill_template_thank_you(self):
+        return self.get_local_or_default('chimpdrill_template_thank_you')
+    @setproperty
+    def chimpdrill_template_thank_you(self, chimpdrill_template_thank_you):
+        if chimpdrill_template_thank_you != self.get_default('chimpdrill_template_thank_you'):
+            self._chimpdrill_template_thank_you = chimpdrill_template_thank_you
+    
+    @getproperty
+    def chimpdrill_honorary(self):
+        return self.get_local_or_default('chimpdrill_honorary')
+    @setproperty
+    def chimpdrill_honorary(self, chimpdrill_honorary):
+        if chimpdrill_honorary != self.get_default('chimpdrill_honorary'):
+            self._chimpdrill_honorary = chimpdrill_honorary
+    
+    @getproperty
+    def chimpdrill_memorial(self):
+        return self.get_local_or_default('chimpdrill_memorial')
+    @setproperty
+    def chimpdrill_memorial(self, chimpdrill_memorial):
+        if chimpdrill_memorial != self.get_default('chimpdrill_memorial'):
+            self._chimpdrill_memorial = chimpdrill_memorial
+    
+    @getproperty
+    def chimpdrill_personal_page_created(self):
+        return self.get_local_or_default('chimpdrill_personal_page_created')
+    @setproperty
+    def chimpdrill_personal_page_created(self, chimpdrill_personal_page_created):
+        if chimpdrill_personal_page_created != self.get_default('chimpdrill_personal_page_created'):
+            self._chimpdrill_personal_page_created = chimpdrill_personal_page_created
+    
+    @getproperty
+    def chimpdrill_personal_page_donation(self):
+        return self.get_local_or_default('chimpdrill_personal_page_donation')
+    @setproperty
+    def chimpdrill_personal_page_donation(self, chimpdrill_personal_page_donation):
+        if chimpdrill_personal_page_donation != self.get_default('chimpdrill_personal_page_donation'):
+            self._chimpdrill_personal_page_donation = chimpdrill_personal_page_donation
+    
+    @getproperty
+    def chimpdrill_list_donors(self):
+        return self.get_local_or_default('chimpdrill_list_donors')
+    @setproperty
+    def chimpdrill_list_donors(self, chimpdrill_list_donors):
+        if chimpdrill_list_donors != self.get_default('chimpdrill_list_donors'):
+            self._chimpdrill_list_donors = chimpdrill_list_donors
+    
+    @getproperty
+    def chimpdrill_list_fundraisers(self):
+        return self.get_local_or_default('chimpdrill_list_fundraisers')
+    @setproperty
+    def chimpdrill_list_fundraisers(self, chimpdrill_list_fundraisers):
+        if chimpdrill_list_fundraisers != self.get_default('chimpdrill_list_fundraisers'):
+            self._chimpdrill_list_fundraisers = chimpdrill_list_fundraisers
+   
+    # FIXME: Control panel default for this field only has a url, need to interact properly with NamedBlobImage field 
+    @getproperty
+    def header_image(self):
+        return self.get_local_or_default('header_image')
+    @setproperty
+    def header_image(self, header_image):
+        if header_image != self.get_default('header_image'):
+            self._header_image = header_image
+    
+    @getproperty
+    def hide_title_and_description(self):
+        return self.get_local_or_default('hide_title_and_description')
+    @setproperty
+    def hide_title_and_description(self, hide_title_and_description):
+        if hide_title_and_description != self.get_default('hide_title_and_description'):
+            self._hide_title_and_description = hide_title_and_description
+    
+    @getproperty
+    def donation_form_header(self):
+        return self.get_local_or_default('donation_form_header')
+    @setproperty
+    def donation_form_header(self, donation_form_header):
+        if donation_form_header != self.get_default('donation_form_header'):
+            self._donation_form_header = donation_form_header
+    
+    @getproperty
+    def donation_form_description(self):
+        return self.get_local_or_default('donation_form_description')
+    @setproperty
+    def donation_form_description(self, donation_form_description):
+        if donation_form_description != self.get_default('donation_form_description'):
+            self._donation_form_description = donation_form_description
+    
+    @getproperty
+    def show_media_portlet(self):
+        return self.get_local_or_default('show_media_portlet')
+    @setproperty
+    def show_media_portlet(self, show_media_portlet):
+        if show_media_portlet != self.get_default('show_media_portlet'):
+            self._show_media_portlet = show_media_portlet
+    
+    @getproperty
+    def allow_personal(self):
+        return self.get_local_or_default('allow_personal')
+    @setproperty
+    def allow_personal(self, allow_personal):
+        if allow_personal != self.get_default('allow_personal'):
+            self._allow_personal = allow_personal
+    
+    @getproperty
+    def personal_only(self):
+        return self.get_local_or_default('personal_only')
+    @setproperty
+    def personal_only(self, personal_only):
+        if personal_only != self.get_default('personal_only'):
+            self._personal_only = personal_only
+    
+    @getproperty
+    def default_personal_appeal(self):
+        return self.get_local_or_default('default_personal_appeal')
+    @setproperty
+    def default_personal_appeal(self, default_personal_appeal):
+        if default_personal_appeal != self.get_default('default_personal_appeal'):
+            self._default_personal_appeal = default_personal_appeal
+    
+    @getproperty
+    def default_personal_thank_you(self):
+        return self.get_local_or_default('default_personal_thank_you')
+    @setproperty
+    def default_personal_thank_you(self, default_personal_thank_you):
+        if default_personal_thank_you != self.get_default('external_media_url'):
+            self._default_personal_thank_you = default_personal_thank_you
+
+
+    # Fundraising Campaign Page methods
     def is_personal(self):
         return False
 

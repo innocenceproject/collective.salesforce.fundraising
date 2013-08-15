@@ -1,0 +1,18 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      i18n:domain="collective.cover">
+
+<body tal:define="media view/media">
+  <p tal:condition="not: media" i18n:translate="">
+    Please drag&amp;drop some content here to populate the tile.
+  </p>
+
+  <div tal:condition="media" class="campaign_media">
+    <div class="content"
+         tal:content="structure media">Media</div>
+    <div class="visualClear"><!-- --></div>
+  </div>
+</body>
+</html>

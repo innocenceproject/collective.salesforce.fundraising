@@ -1,4 +1,11 @@
 <?xml version="1.0"?>
 <registry>
  <records interface="collective.salesforce.fundraising.controlpanel.interfaces.IFundraisingSettings" />
+
+  <record name="plone.app.tiles">
+    <value purge="false">
+      <element>collective.salesforce.fundraising.campaign_media</element>
+      <element>collective.salesforce.fundraising.donation_form_stripe</element>
+    </value>
+  </record>
 </registry>
