@@ -1,8 +1,9 @@
+import os
 import random
 import string
 import transaction
-from datetime import datetime
 from five import grok
+import martian.util
 from zope import schema
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -18,6 +19,7 @@ from zope.app.intid.interfaces import IIntIds
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
 from zope.event import notify
+from zope.pagetemplate.pagetemplatefile import PageTemplateFile
 from zope.lifecycleevent.interfaces import IObjectModifiedEvent
 from zope.lifecycleevent import ObjectModifiedEvent
 from plone.uuid.interfaces import IUUID
@@ -151,16 +153,15 @@ class IDonation(model.Schema, IImageScaleTraversable):
         value_type=schema.TextLine(),
     )
 
-    is_recurring = schema.Bool(
-        title=u"Is Recurring?",
-        description=u"Is this a recurring donation?",
+    stripe_customer_id = schema.TextLine(
+        title=u"Stripe Customer ID",
+        description=u"If this donation was made through a Stripe customer (typically for recurring), the id will be here",
         required=False,
-        default=False,
     )
 
-    recurring_plan_id = schema.TextLine(
-        title=u"Recurring Plan ID",
-        description=u"If this is a recurring donation, this is set to the ID of the plan",
+    stripe_plan_id = schema.TextLine(
+        title=u"Stripe Plan ID",
+        description=u"If this is a recurring donation, this is set to the ID of the Stripe plan",
         required=False,
     )
 
@@ -182,6 +183,38 @@ class IDonation(model.Schema, IImageScaleTraversable):
         required=False,
         default=False,
     )
+    
+    synced_contact = schema.Bool(
+        title=u"Salesforce Contact Synced?",
+        required=False,
+        default=False,
+    )
+    synced_recurring = schema.Bool(
+        title=u"Salesforce Recurring Donation Synced?",
+        required=False,
+        default=False,
+    )
+    synced_opportunity = schema.Bool(
+        title=u"Salesforce Donation Synced?",
+        required=False,
+        default=False,
+    )
+    synced_products = schema.Bool(
+        title=u"Salesforce Opportunity Products Synced?",
+        required=False,
+        default=False,
+    )
+    synced_contact_role = schema.Bool(
+        title=u"Salesforce Opportunity Contact Role Synced?",
+        required=False,
+        default=False,
+    )
+    synced_campaign_member = schema.Bool(
+        title=u"Salesforce Campaign Member Synced?",
+        required=False,
+        default=False,
+    )
+
 
     model.load("models/donation.xml")
 alsoProvides(IDonation, IContentType)
@@ -266,8 +299,7 @@ class ISalesforceDonationSync(Interface):
         """ create a campaign member object linking the contact to the campaign """
 
 class IDonationReceipt(Interface):
-    def render_html():
-        """ render the receipt as html """
+    """ Callable class which renders the receipt as html """
 
 class Donation(dexterity.Container):
     grok.implements(IDonation)
@@ -288,16 +320,27 @@ class Donation(dexterity.Container):
     def get_friendly_date(self):
         return self.created().strftime('%B %d, %Y %I:%M%p %Z')
 
+    def send_donation_receipt(self):
+        settings = get_settings()
+
+        campaign = self.get_fundraising_campaign()
+        uuid = getattr(campaign, 'chimpdrill_template_thank_you', None)
+        if uuid:
+            template = uuidToObject(uuid)
+            if not template:
+                return
+            res = self.send_chimpdrill_thank_you(template)
+            self.is_receipt_sent = True
+            return res
+
+        logger.warning('collective.salesforce.fundraising: Send Donation Receipt: No template found')
+
     def get_chimpdrill_campaign_data(self):
         page = self.get_fundraising_campaign_page()
         return page.get_chimpdrill_campaign_data()
 
-    def get_chimpdrill_thank_you_data(self, request):
-        receipt_view = None
-        receipt = None
-        receipt_view = getMultiAdapter((self, request), name='receipt')
-        receipt_view.set_donation_key(self.secret_key)
-        receipt = receipt_view()
+    def get_chimpdrill_thank_you_data(self):
+        receipt = IDonationReceipt(self)()
 
         campaign = self.get_fundraising_campaign_page()
         campaign_thank_you = None
@@ -377,17 +420,44 @@ class Donation(dexterity.Container):
 
         return data
 
-    def send_chimpdrill_thank_you(self, request, template):
+    def get_chimpdrill_recurring_receipt_data(self):
+        campaign = self.get_fundraising_campaign_page()
+        campaign_thank_you = None
+        if campaign.thank_you_message:
+            campaign_thank_you = campaign.thank_you_message.output
+
+        
+        update_url = '%s/@@stripe-update-customer-info?customer=%s' % (getSite().absolute_url(), self.stripe_customer_id)
+
+        data = {
+            'merge_vars': [
+                {'name': 'first_name', 'content': self.first_name},
+                {'name': 'last_name', 'content': self.last_name},
+                {'name': 'amount', 'content': self.amount},
+                {'name': 'update_url', 'content': update_url()},
+            ],
+            'blocks': [
+                {'name': 'campaign_thank_you', 'content': campaign_thank_you},
+            ],
+        }
+
+        campaign_data = self.get_chimpdrill_campaign_data()
+        data['merge_vars'].extend(campaign_data['merge_vars'])
+        data['blocks'].extend(campaign_data['blocks'])
+
+        return data
+
+    def send_chimpdrill_thank_you(self, template):
         mail_to = self.email
-        data = self.get_chimpdrill_thank_you_data(request)
+        data = self.get_chimpdrill_thank_you_data()
 
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def render_chimpdrill_thank_you(self, request, template):
-        data = self.get_chimpdrill_thank_you_data(request)
+    def render_chimpdrill_thank_you(self, template):
+        data = self.get_chimpdrill_thank_you_data()
 
         return template.render(
             merge_vars = data['merge_vars'],
@@ -477,54 +547,90 @@ class Donation(dexterity.Container):
             blocks = data['blocks'],
         )
 
-    def send_donation_receipt(self, request, key):
-        settings = get_settings()
+    def render_chimpdrill_recurring_receipt(self, template):
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
 
-        # If configured, send a Mandrill template via collective.chimpdrill
-        campaign = self.get_fundraising_campaign()
-        uuid = getattr(campaign, 'chimpdrill_template_thank_you', None)
-        if uuid:
-            template = uuidToObject(uuid)
-            res = self.send_chimpdrill_thank_you(request, template)
-            self.is_receipt_sent = True
-            return res
-
-        # Construct the email bodies
-        pt = getToolByName(self, 'portal_transforms')
-        email_view = getMultiAdapter((self, request), name='thank-you-email')
-        email_view.set_donation_key(key)
-        email_body = email_view()
-        txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
-
-        # Determine to and from addresses
-        portal_url = getToolByName(self, 'portal_url')
-        portal = portal_url.getPortalObject()
-        mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
+    def send_chimpdrill_recurring_receipt(self, template):
         mail_to = self.email
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
 
-        # Construct the email message                
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = settings.thank_you_email_subject
-        msg['From'] = mail_from
-        msg['To'] = mail_to
-        part1 = MIMEText(txt_body, 'plain')
-        part2 = MIMEText(email_body, 'html')
+        logger.warning('collective.salesforce.fundraising: Send Donation Receipt: No template found')
 
-        msg.attach(part1)
-        msg.attach(part2)
+    def render_chimpdrill_recurring_failed_first(self, template):
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
 
-        # Attempt to send it
-        try:
-            host = getToolByName(self, 'MailHost')
-            # The `immediate` parameter causes an email to be sent immediately
-            # (if any error is raised) rather than sent at the transaction
-            # boundary or queued for later delivery.
-            host.send(msg, immediate=True)
-            self.is_receipt_sent = True
+    def send_chimpdrill_recurring_failed_first(self, template):
+        mail_to = self.email
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
 
-        except smtplib.SMTPRecipientsRefused:
-            # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
-            pass
+        logger.warning('collective.salesforce.fundraising: Send Recurring Failed - First: No template found')
+
+    def render_chimpdrill_recurring_failed_second(self, template):
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+    def send_chimpdrill_recurring_failed_second(self, template):
+        mail_to = self.email
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+        logger.warning('collective.salesforce.fundraising: Send Recurring Failed - Second: No template found')
+
+    def render_chimpdrill_recurring_failed_third(self, template):
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+    def send_chimpdrill_recurring_failed_third(self, template):
+        mail_to = self.email
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+        logger.warning('collective.salesforce.fundraising: Send Recurring Failed - First: No template found')
+
+    def render_chimpdrill_recurring_cancelled(self, template):
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.render(
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+    def send_chimpdrill_recurring_cancelled(self, template):
+        mail_to = self.email
+        data = self.get_chimpdrill_recurring_receipt_data()
+        return template.send(email = mail_to,
+            merge_vars = data['merge_vars'],
+            blocks = data['blocks'],
+        )
+
+        logger.warning('collective.salesforce.fundraising: Send Donation Receipt: No template found')
 
 
 class ThankYouView(grok.View):
@@ -535,19 +641,14 @@ class ThankYouView(grok.View):
     grok.template('thank-you')
 
     def update(self):
-        # Fetch some values that should have been passed from the redirector
+        # check that either the secret_key was passed in the request or the user has modify rights
         key = self.request.form.get('key', None)
-
         if not key or key != self.context.secret_key:
             sm = getSecurityManager()
             if not sm.checkPermission(ModifyPortalContent, self.context):
                 raise Unauthorized
 
-        self.receipt_view = None
-        self.receipt = None
-        self.receipt_view = getMultiAdapter((self.context, self.request), name='receipt')
-        self.receipt_view.set_donation_key(key)
-        self.receipt = self.receipt_view()
+        self.receipt = IDonationReceipt(self.context)()
 
         # Create a wrapped form for inline rendering
         from collective.salesforce.fundraising.forms import CreateDonationDonorQuote
@@ -557,7 +658,8 @@ class ThankYouView(grok.View):
             alsoProvides(self.donor_quote_form, IWrappedForm)
             self.donor_quote_form.update()
             self.donor_quote_form.widgets.get('name').value = u'%s %s' % (self.context.first_name, self.context.last_name)
-            #self.donor_quote_form.widgets.get('contact_sf_id').value = unicode(self.receipt_view.person.sf_object_id)
+            if self.context.contact_sf_id and self.donor_quote_form.widgets.get('contact_sf_id'):
+                self.donor_quote_form.widgets.get('contact_sf_id').value = unicode(self.context.contact_sf_id)
             self.donor_quote_form.widgets.get('key').value = unicode(self.context.secret_key)
             self.donor_quote_form.widgets.get('amount').value = int(self.context.amount)
             self.donor_quote_form_html = self.donor_quote_form.render()
@@ -599,83 +701,31 @@ class HonoraryMemorialView(grok.View):
     form_template = ViewPageTemplateFile('donation_templates/honorary-memorial-donation.pt')
 
     def send_email(self):
-
-        # If a chimpdrill template is configured for this campaign, use it to send the email
         campaign = self.context.get_fundraising_campaign()
         if self.context.honorary_type == 'Memorial':
-            template_uid = getattr(campaign, 'chimpdrill_template_memorial')
+            template_uid = getattr(campaign, 'chimpdrill_memorial')
             if template_uid:
                 template = uuidToObject(template_uid)
                 if template:
                     return self.context.send_chimpdrill_memorial(template)
         else:
-            template_uid = getattr(campaign, 'chimpdrill_template_honorary')
+            template_uid = getattr(campaign, 'chimpdrill_honorary')
             if template_uid:
                 template = uuidToObject(template_uid)
                 if template:
                     return self.context.send_chimpdrill_honorary(template)
 
-        
-        settings = get_settings() 
-
-#        # Construct the email bodies
-#        pt = getToolByName(self.context, 'portal_transforms')
-#        if self.context.honorary_type == u'Honorary':
-#            email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
-#        else:
-#            email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
-#
-#        email_body = email_view()
-#
-#        txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
-#
-#        # Construct the email message                
-#        portal_url = getToolByName(self.context, 'portal_url')
-#        portal = portal_url.getPortalObject()
-#
-#        mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-#        mail_cc = self.context.email
-#
-#        msg = MIMEMultipart('alternative')
-#        subject_vars = {'first_name': self.context.honorary_first_name, 'last_name': self.context.honorary_last_name}
-#        if self.context.honorary_type == 'Memorial': 
-#                msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % subject_vars
-#        else:
-#            msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % subject_vars
-#        msg['From'] = mail_from
-#        msg['To'] = self.context.honorary_email
-#        if mail_cc:
-#            msg['Cc'] = mail_cc
-#
-#        part1 = MIMEText(txt_body, 'plain')
-#        part2 = MIMEText(email_body, 'html')
-#
-#        msg.attach(part1)
-#        msg.attach(part2)
-#
-#        # Attempt to send it
-#        try:
-#
-#            # Send the notification email
-#            host = getToolByName(self, 'MailHost')
-#            host.send(msg, immediate=True)
-#
-#        except smtplib.SMTPRecipientsRefused:
-#            # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
-#            pass
-
+        logger.warning('collective.salesforce.fundraising: Send Honorary/Memorial Email: No template found')
 
     def render(self):
+        # check that either the secret_key was passed in the request or the user has modify rights
         key = self.request.form.get('key', None)
-
         if not key or key != self.context.secret_key:
             sm = getSecurityManager()
             if not sm.checkPermission(ModifyPortalContent, self.context):
                 raise Unauthorized
 
-        self.receipt_view = getMultiAdapter((self.context, self.request), name='receipt')
-        self.receipt_view.set_donation_key(key)
-        self.receipt = self.receipt_view()
+        self.receipt = IDonationReceipt(self.context)()
 
         # Handle POST
         if self.request['REQUEST_METHOD'] == 'POST':
@@ -698,8 +748,12 @@ class HonoraryMemorialView(grok.View):
             if self.context.honorary_notification_type == 'Email' and self.context.honorary_email:
                 self.send_email()
 
+            # Queue an update of the Donation to get honorary fields populated on the Opportunity in Salesforce
+            async = getUtility(IAsyncService)
+            async.queueJob(async_salesforce_sync, self.context)
+
             # Redirect on to the thank you page
-            self.request.response.redirect('%s?key=%s' % (self.context.absolute_url(), self.context.secret_key))
+            return self.request.response.redirect('%s?key=%s' % (self.context.absolute_url(), self.context.secret_key))
 
         self.countries = CountryAvailability().getCountryListing()
         self.countries.sort()
@@ -708,297 +762,47 @@ class HonoraryMemorialView(grok.View):
 
         return self.form_template()
 
-class DonationReceipt(grok.Adapter):
-    grok.provides(IDonationReceipt)
+class HonoraryEmailView(grok.View):
     grok.context(IDonation)
-
-    render = ViewPageTemplateFile('donation_templates/receipt.pt')
-
-    def update(self):
-        settings = get_settings()
-        self.organization_name = settings.organization_name
-        self.donation_receipt_legal = settings.donation_receipt_legal
-        if getattr(self.context, 'donation_receipt_legal', None):
-            self.donation_receipt_legal = self.context.donation_receipt_legal
-
-        self.products = []
-        if self.context.products:
-            for product in self.context.products:
-                price, quantity, product_uuid = product.split('|', 2)
-                total = int(price) * int(quantity)
-                product = uuidToObject(product_uuid)
-                if not product:
-                    continue
-                if product.donation_only:
-                    price = total
-                    quantity = '-'
-                self.products.append({
-                    'price': price,
-                    'quantity': quantity,
-                    'product': product,
-                    'total': total,
-                })
-
-        self.campaign = self.context.get_fundraising_campaign()
-        self.page = self.context.get_fundraising_campaign_page()
-        self.is_personal = self.page.is_personal()
-    
-
-class DonationReceiptView(grok.View):
-    """ Renders an html receipt for a donation.  This is intended to be embedded in another view
-
-    Uses a random key in url to authenticate access
-    """
-    grok.context(IDonation)
-    grok.require('zope2.View')
-
-    grok.name('receipt')
-    grok.template('receipt')
-
-    def update(self):
-        key = getattr(self, 'key', None)
-        if not key:
-            self.set_donation_key()
-            key = getattr(self, 'key', None)
-
-        if not key or key != self.context.secret_key:
-            sm = getSecurityManager()
-            if not sm.checkPermission(ModifyPortalContent, self.context):
-                raise Unauthorized
-
-        settings = get_settings()
-        self.organization_name = settings.organization_name
-        self.donation_receipt_legal = settings.donation_receipt_legal
-        if getattr(self.context, 'donation_receipt_legal', None):
-            self.donation_receipt_legal = self.context.donation_receipt_legal
-
-        self.products = []
-        if self.context.products:
-            for product in self.context.products:
-                price, quantity, product_uuid = product.split('|', 2)
-                total = int(price) * int(quantity)
-                product = uuidToObject(product_uuid)
-                if not product:
-                    continue
-                if product.donation_only:
-                    price = total
-                    quantity = '-'
-                self.products.append({
-                    'price': price,
-                    'quantity': quantity,
-                    'product': product,
-                    'total': total,
-                })
-
-        self.campaign = self.context.get_fundraising_campaign()
-        self.page = self.context.get_fundraising_campaign_page()
-        self.is_personal = False
-        if IPersonalCampaignPage.providedBy(self.page):
-            self.is_personal = True
-
-    def set_donation_key(self, key=None):
-        self.key = self.request.form.get('key', key)
-
-
-class ThankYouEmail(grok.View):
-    grok.context(IDonation)
-    grok.require('zope2.View')
-    
-    grok.name('thank-you-email')
-    email_template = ViewPageTemplateFile('donation_templates/thank-you-email.pt')
-    
-    def render(self):
-        # If the fundraising campaign has a chimpdrill_template_thank_you configured,
-        # render the template rather than using the built in view
-        campaign = self.context.get_fundraising_campaign()
-        template_uid = getattr(campaign, 'chimpdrill_template_thank_you')
-        if template_uid:
-            template = uuidToObject(template_uid)
-            if template:
-                return self.context.render_chimpdrill_thank_you(self.request, template)
-
-        return self.email_template()
-    
-    def update(self):
-        
-        key = getattr(self, 'key', None)
-        if not key:
-            self.set_donation_key()
-            key = getattr(self, 'key', None)
-
-        if not key or key != self.context.secret_key:
-            sm = getSecurityManager()
-            if not sm.checkPermission(ModifyPortalContent, self.context):
-                raise Unauthorized
-
-        self.receipt_view = getMultiAdapter((self.context, self.request), name='receipt')
-        self.receipt_view.set_donation_key(key)
-        self.receipt = self.receipt_view()
-
-        settings = get_settings()
-        self.email_header = settings.email_header
-        self.email_footer = settings.email_footer
-
-    def set_donation_key(self, key=None):
-        # Do nothing if already set
-        if getattr(self, 'key', None):
-            return
-
-        self.key = self.request.form.get('key', key)
-
-
-class HonoraryEmail(grok.View):
-    grok.context(IDonation)
-    grok.require('zope2.View')
-    
     grok.name('honorary-email')
-    email_template = ViewPageTemplateFile('donation_templates/honorary-email.pt')
-
+    
     def render(self):
-        # If the fundraising campaign has a chimpdrill_template_honorary configured,
-        # render the template rather than using the built in view
         campaign = self.context.get_fundraising_campaign()
-        template_uid = getattr(campaign, 'chimpdrill_template_honorary')
-        if template_uid:
-            template = uuidToObject(template_uid)
+        uuid = getattr(campaign, 'chimpdrill_honorary', None)
+        if uuid:
+            template = uuidToObject(uuid)
             if template:
                 return self.context.render_chimpdrill_honorary(template)
+        return 'No template found'
 
-        return self.email_template()
-    
     def update(self):
-        key = getattr(self, 'key', None)
-        if not key:
-            self.set_donation_key()
-            key = getattr(self, 'key', None)
-
+        # check that either the secret_key was passed in the request or the user has modify rights
+        key = self.request.form.get('key', None)
         if not key or key != self.context.secret_key:
             sm = getSecurityManager()
             if not sm.checkPermission(ModifyPortalContent, self.context):
                 raise Unauthorized
 
-        self.set_honorary_info()
-            
-        settings = get_settings()
-        self.email_header = settings.email_header
-        self.email_footer = settings.email_footer
-        self.organization_name = settings.organization_name
-        self.amount = None
-        if self.request.form.get('show_amount', None) == 'Yes':
-            self.amount = self.context.amount
-        
-    def set_honorary_info(self):
-        if self.request.get('show_template', None) == 'true':
-            self.honorary = {
-                'first_name': '[Memory Name]',
-                'last_name': '[Memory Name]',
-                'recipient_first_name': '[Recipient First Name]',
-                'recipient_last_name': '[Recipient Last Name]',
-                'message': '[Message]',
-            }
-        else:
-            self.honorary = {
-                'first_name': self.context.honorary_first_name,
-                'last_name': self.context.honorary_last_name,
-                'recipient_first_name': self.context.honorary_recipient_first_name,
-                'recipient_last_name': self.context.honorary_recipient_last_name,
-                'message': self.context.honorary_message,
-            }
-
-        # Attempt to perform a basic text to html conversion on the message text provided
-        pt = getToolByName(self.context, 'portal_transforms')
-        if self.honorary.get('message'):
-            try:
-                self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
-            except:
-                self.honorary['message'] = honorary['message']
-
-    def set_donation_key(self, key=None):
-        # Do nothing if already set
-        if getattr(self, 'key', None):
-            return
-
-        self.key = self.request.form.get('key', key)
-
-
-#FIXME: I tried to use subclasses to build these 2 views but grok seemed to be getting in the way.
-# I tried making a base mixin class then 2 different views base of it and grok.View as well as 
-# making MemorialEmail subclass Honorary with a new name and template.  Neither worked so I'm 
-# left duplicating logic for now.
-class MemorialEmail(grok.View):
+class MemorialEmailView(grok.View):
     grok.context(IDonation)
-    grok.require('zope2.View')
-    
     grok.name('memorial-email')
-    email_template = ViewPageTemplateFile('donation_templates/memorial-email.pt')
-
+    
     def render(self):
-        # If the fundraising campaign has a chimpdrill_template_memorial configured,
-        # render the template rather than using the built in view
         campaign = self.context.get_fundraising_campaign()
-        template_uid = getattr(campaign, 'chimpdrill_template_memorial')
-        if template_uid:
-            template = uuidToObject(template_uid)
+        uuid = getattr(campaign, 'chimpdrill_memorial', None)
+        if uuid:
+            template = uuidToObject(uuid)
             if template:
                 return self.context.render_chimpdrill_memorial(template)
+        return 'No template found'
 
-        return self.email_template()
-    
     def update(self):
-        key = getattr(self, 'key', None)
-        if not key:
-            self.set_donation_key()
-            key = getattr(self, 'key', None)
-
+        # check that either the secret_key was passed in the request or the user has modify rights
+        key = self.request.form.get('key', None)
         if not key or key != self.context.secret_key:
             sm = getSecurityManager()
             if not sm.checkPermission(ModifyPortalContent, self.context):
                 raise Unauthorized
-
-        self.set_honorary_info()
-            
-        settings = get_settings()
-        self.email_header = settings.email_header
-        self.email_footer = settings.email_footer
-        self.organization_name = settings.organization_name
-        self.amount = None
-        if self.request.form.get('show_amount', None) == 'Yes':
-            self.amount = self.context.amount
-        
-    def set_honorary_info(self):
-        if self.request.get('show_template', None) == 'true':
-            self.honorary = {
-                'first_name': '[Memory Name]',
-                'last_name': '[Memory Name]',
-                'recipient_first_name': '[Recipient First Name]',
-                'recipient_last_name': '[Recipient Last Name]',
-                'message': '[Message]',
-            }
-        else:
-            self.honorary = {
-                'first_name': self.context.honorary_first_name,
-                'last_name': self.context.honorary_last_name,
-                'recipient_first_name': self.context.honorary_recipient_first_name,
-                'recipient_last_name': self.context.honorary_recipient_last_name,
-                'message': self.context.honorary_message,
-            }
-
-        # Attempt to perform a basic text to html conversion on the message text provided
-        pt = getToolByName(self.context, 'portal_transforms')
-        if self.honorary.get('message'):
-            try:
-                self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
-            except:
-                self.honorary['message'] = honorary['message']
-
-    def set_donation_key(self, key=None):
-        # Do nothing if already set
-        if getattr(self, 'key', None):
-            return
-
-        self.key = self.request.form.get('key', key)
-
-
 
 class SalesforceSyncView(grok.View):
     grok.context(IDonation)
@@ -1011,33 +815,57 @@ class SalesforceSyncView(grok.View):
         return 'OK: Queued for sync'
 
     def update(self):
-        key = getattr(self, 'key', None)
-        if not key:
-            self.set_donation_key()
-            key = getattr(self, 'key', None)
-
+        # check that either the secret_key was passed in the request or the user has modify rights
+        key = self.request.form.get('key', None)
         if not key or key != self.context.secret_key:
             sm = getSecurityManager()
             if not sm.checkPermission(ModifyPortalContent, self.context):
                 raise Unauthorized
 
-    def set_donation_key(self, key=None):
-        # Do nothing if already set
-        if getattr(self, 'key', None):
-            return
+# Adapters
 
-        self.key = self.request.form.get('key', key)
+class DonationReceipt(grok.Adapter):
+    grok.provides(IDonationReceipt)
+    grok.context(IDonation)
 
+    def __call__(self):
+        settings = get_settings()
+        self.organization_name = settings.organization_name
+        self.campaign = self.context.get_fundraising_campaign()
+        self.page = self.context.get_fundraising_campaign_page()
+        self.donation_receipt_legal = self.campaign.donation_receipt_legal
+
+        self.products = []
+        if self.context.products:
+            for product in self.context.products:
+                price, quantity, product_uuid = product.split('|', 2)
+                total = int(price) * int(quantity)
+                product = uuidToObject(product_uuid)
+                if not product:
+                    continue
+                if product.donation_only:
+                    price = total
+                    quantity = '-'
+                self.products.append({
+                    'price': price,
+                    'quantity': quantity,
+                    'product': product,
+                    'total': total,
+                })
+
+        self.is_personal = self.page.is_personal()
+
+        module = os.sys.modules[martian.util.caller_module()]
+        _prefix = os.path.dirname(module.__file__)
+
+        pt = PageTemplateFile('donation_templates/receipt.pt')
+        return pt.pt_render({'view': self})
+    
 class SalesforceDonationSync(grok.Adapter):
     grok.provides(ISalesforceDonationSync)
     grok.context(IDonation)
 
     def sync_to_salesforce(self):
-        # Check if the sync has already been run, return object id if so
-        sf_object_id = getattr(aq_base(self.context), 'sf_object_id', None)
-        if sf_object_id:
-            return sf_object_id
-      
         self.sfconn = getUtility(ISalesforceUtility).get_connection()
         self.campaign = self.context.get_fundraising_campaign_page()
         self.pricebook_id = None
@@ -1047,20 +875,30 @@ class SalesforceDonationSync(grok.Adapter):
         transaction.commit()
 
         self.get_products()
-        self.create_opportunity()
+
+        self.upsert_recurring()
         transaction.commit()
 
-        self.create_products()
+        self.upsert_opportunity()
         transaction.commit()
 
-        self.create_opportunity_contact_role()
-        transaction.commit()
+        # The following are only synced on the initial sync.  Logic needs to be added to query then
+        # update as there is no external key that can be used for these.
 
-        self.create_campaign_member()
+        if not self.context.synced_products:
+            self.create_products()
+            transaction.commit()
+
+        if not self.context.synced_contact_role:
+            self.create_opportunity_contact_role()
+            transaction.commit()
+
+        if not self.context.synced_campaign_member:
+            self.create_campaign_member()
+            transaction.commit()
     
         self.context.reindexObject()
-        
-        return self.context.sf_object_id
+        return 'Successfully synced donation %s' % self.context.absolute_url()
 
     def sync_contact(self):
         # only upsert values that are non-empty to Salesforce to avoid overwritting existing values with null 
@@ -1084,11 +922,6 @@ class SalesforceDonationSync(grok.Adapter):
             data['MailingPostalCode'] = self.context.address_zip
         if self.context.address_country:
             data['MailingCountry'] = self.context.address_country
-        #if self.gender:
-        #    data['Gender__c'] = self.gender
-        #customer_id = getattr(self, 'stripe_customer_id', None)
-        #if customer_id:
-        #    data['Stripe_Customer_ID__c'] = customer_id
 
         res = self.sfconn.query("select id from contact where email = '%s' order by LastModifiedDate desc" % self.context.email)
         contact_id = None
@@ -1107,6 +940,7 @@ class SalesforceDonationSync(grok.Adapter):
         else:
             self.context.contact_sf_id = res['id']
 
+        self.context.synced_contact = True
         return res
 
     def get_products(self):
@@ -1126,19 +960,52 @@ class SalesforceDonationSync(grok.Adapter):
             })
             self.product_objs[product.pricebook_entry_sf_id] = product
 
-    def create_opportunity(self):
+    def upsert_recurring(self):
+        self.recurring_id = None
+
+        if not self.context.stripe_customer_id:
+            return
+
+        page = self.context.get_fundraising_campaign_page()
+        # If there is a recurring plan, create the Recurring Donation (1 API call)
+        data = {
+            'Name': self.context.title,
+            'npe03__Amount__c': self.context.amount,
+            'npe03__Recurring_Donation_Campaign__c': page.sf_object_id,
+            'npe03__Contact__c': self.context.contact_sf_id,
+            'npe03__Installment_Period__c': 'Monthly',
+            'npe03__Open_Ended_Status__c': 'Open',
+            'npe03__Paid_Amount__c': self.context.amount,
+            'npe03__Total_Paid_Installments__c': 1,
+        }
+
+        # Add dates formatted in isoformat if they exist
+        if self.context.payment_date:
+            data['npe03__Last_Payment_Date__c'] = self.context.payment_date.isoformat()
+        if self.context.next_payment_date:
+            data['npe03__Next_Payment_Date__c'] = self.context.next_payment_date.isoformat()
+
+        record_id = 'Stripe_Customer_ID__c/%s' % self.context.stripe_customer_id
+        res = self.sfconn.npe03__Recurring_Donation__c.upsert(record_id, data)
+
+        if res not in [201,204]:
+            raise Exception('Upsert recurring donation failed with status %s' % res)
+
+        self.context.synced_recurring = True
+
+    def upsert_opportunity(self):
         # Create the Opportunity object and Opportunity Contact Role (2 API calls)
         data = {
             'AccountId': self.settings.sf_individual_account_id,
-            'Success_Transaction_Id__c': self.context.transaction_id,
             'Amount': self.context.amount,
-            'Name': '%s %s - $%i One Time Donation' % (self.context.first_name, self.context.last_name, self.context.amount),
+            'Name': self.context.title,
             'StageName': self.context.stage,
-            'CloseDate': datetime.now().isoformat(),
+            'CloseDate': self.context.payment_date.isoformat(),
             'CampaignId': self.campaign.sf_object_id,
             'Source_Campaign__c': self.context.source_campaign_sf_id,
             'Source_Url__c': self.context.source_url,
             'Payment_Method__c': self.context.payment_method,
+            'Is_Test__c': self.context.is_test,
             'Honorary_Type__c': self.context.honorary_type,
             'Honorary_First_Name__c': self.context.honorary_first_name,
             'Honorary_Last_Name__c': self.context.honorary_last_name,
@@ -1155,8 +1022,12 @@ class SalesforceDonationSync(grok.Adapter):
             'Honorary_Country__c': self.context.honorary_country,
         }
 
+        if self.context.stripe_customer_id:
+            data['npe03__Recurring_Donation__r'] = {
+                'Stripe_Customer_ID__c': self.context.stripe_customer_id,
+            }
+
         if self.products:
-       
             products_configured = False 
             for product in self.products:
                 product_obj = self.product_objs.get(product['PricebookEntryId'])
@@ -1185,17 +1056,19 @@ class SalesforceDonationSync(grok.Adapter):
             if self.settings.sf_opportunity_record_type_one_time:
                 data['RecordTypeID'] = self.settings.sf_opportunity_record_type_one_time
 
-        res = self.sfconn.Opportunity.create(data)
+        record_id = 'Success_Transaction_ID__c/%s' % self.context.transaction_id
+        res = self.sfconn.Opportunity.upsert(record_id, data)
 
-        if not res['success']:
-            raise Exception(res['errors'][0])
+        if res not in [201,204]:
+            raise Exception('Upsert opportunity failed with status %s' % res)
 
-        self.opportunity_id = res['id']
-        self.context.sf_object_id = self.opportunity_id
+        self.context.synced_opportunity = True
 
     def create_products(self):
+        # FIXME: change to upsert
         if not self.products:
             return
+
         for product in self.products:
             product['OpportunityId'] = self.opportunity_id
             res = self.sfconn.OpportunityLineItem.create(products)
@@ -1203,9 +1076,14 @@ class SalesforceDonationSync(grok.Adapter):
             if not res['success']:
                 raise Exception(res['errors'][0])
 
+        self.context.synced_products = True
+
     def create_opportunity_contact_role(self):
+        # FIXME: change to upsert
         res = self.sfconn.OpportunityContactRole.create({
-            'OpportunityId': self.opportunity_id,
+            'Opportunity': {
+                'Success_Transaction_ID__c': self.context.transaction_id
+            },
             'ContactId': self.context.contact_sf_id,
             'IsPrimary': True,
             'Role': 'Decision Maker',
@@ -1213,6 +1091,8 @@ class SalesforceDonationSync(grok.Adapter):
 
         if not res['success']:
             raise Exception(res['errors'][0])
+
+        self.context.synced_contact_role = True
 
     def create_campaign_member(self):
         # Create the Campaign Member (1 API Call).  Note, we ignore errors on this step since
@@ -1228,8 +1108,11 @@ class SalesforceDonationSync(grok.Adapter):
                 })
             except:
                 pass
+            self.context.synced_campaign_member = True
 
+# Event Handlers
 
+# Salesforce sync
 def async_salesforce_sync(donation):
     return ISalesforceDonationSync(donation).sync_to_salesforce()
 
@@ -1238,16 +1121,18 @@ def queueSalesforceSync(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(async_salesforce_sync, donation)
 
-# FIXME: can't be async for now since receipt requires request
-#@grok.subscribe(IDonation, IObjectAddedEvent)
-#def queueDonationReceipt(donation, event):
-#    async = getUtility(IAsyncService)
-#    receipt_html = donation.get_receipt_html()
-#    async.queueJob(async_salesforce_sync, donation, receipt_html)
-#
-#def sendDonationReceipt(donation, receipt_html):
-#    pass
+# Receipt email
+def sendDonationReceipt(donation):
+    if donation.is_receipt_sent:
+        return 'Skipping send of email receipt as a receipt was already sent'
+    return donation.send_donation_receipt()
 
+@grok.subscribe(IDonation, IObjectAddedEvent)
+def queueDonationReceipt(donation, event):
+    async = getUtility(IAsyncService)
+    async.queueJob(sendDonationReceipt, donation)
+
+# Subscribe donor to list
 def mailchimpSubscribeDonor(donation):
     campaign = donation.get_fundraising_campaign()
 
@@ -1277,7 +1162,7 @@ def queueMailchimpSubscribeDonor(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(mailchimpSubscribeDonor, donation)
 
-
+# Personal campaign donation notification
 def mailchimpSendPersonalCampaignDonation(donation):
     if getattr(donation, 'is_notification_sent', False):
         return 'Skipping: Donation notification already sent to fundraiser'
@@ -1300,9 +1185,7 @@ def queueMailchimpSendPersonalCampaignDonation(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(mailchimpSendPersonalCampaignDonation, donation)
 
-# Background the process of adding new donations to the totals for the page and campaign
-# This turned out to be necessary to avoid zodb conflicts which would re-run the transaction
-# causing Stripe to return an error the second time that the token was already used.
+# Add to campaign totals.  This is best to do async to properly handle conflict errors
 def addAmountToPage(donation):
     if getattr(donation, 'is_added', False):
         return 'Skipping: Donation already added to campaign'

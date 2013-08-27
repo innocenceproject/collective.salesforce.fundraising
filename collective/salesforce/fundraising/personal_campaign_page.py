@@ -134,34 +134,14 @@ def thankYouDefaultValue(data):
     return data.context.get_fundraising_campaign().default_personal_thank_you.output
         
 
-
-# Custom content-type class; objects created for this content type will
-# be instances of this class. Use this class to add content-type specific
-# methods and properties. Put methods that are mainly useful for rendering
-# in separate view classes.
-
-DONATIONS_SOQL = """SELECT
-  OpportunityId,
-  Opportunity.Amount,
-  Opportunity.CloseDate,
-  Contact.FirstName,
-  Contact.LastName,
-  Contact.Email,
-  Contact.Phone
-from OpportunityContactRole
-where
-  IsPrimary = true
-  and Opportunity.CampaignId = '%s'
-  and Opportunity.IsWon = true
-"""
-
-
 class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IEditPersonalCampaignPage, IPersonalCampaignPage, IFundraisingCampaignPage)
 
-    def absolute_url(self):
+    def absolute_url(self, do_not_cache=False):
         """ Fallback to cached value if no REQUEST available """
         url = super(PersonalCampaignPage, self).absolute_url()
+        if do_not_cache:
+            return url
         cached = getattr(aq_base(self), '_absolute_url', None)
         if url.startswith('http'):
             if cached is None or cached != url:
@@ -215,16 +195,6 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
             sort_order='reverse'
         ) 
         return res
-
-    def clear_donations_from_cache(self):
-        """ Clears the donations cache.  This should be called anytime a new donation comes in 
-            for the campaign so a fresh list is pulled after any changes """
-        if not hasattr(self, '_memojito_'):
-            return None
-        key = ('get_donations', (self), frozenset([]))
-        self._memojito_.clear()
-        if self._memojito_.has_key(key):
-            del self._memojito_[key]
 
     def get_fundraiser(self):
         person = getattr(self, 'person', None)
@@ -426,15 +396,6 @@ class PromoteCampaignView(ShareView):
 
     grok.name('promote')
     grok.template('promote')
-
-class PageConfirmationEmailView(grok.View):
-    grok.context(IPersonalCampaignPage)
-
-    grok.name('page-confirmation-email')
-    grok.template('page_confirmation_email')
-
-    def set_page_values(self, data):
-        self.data = data
 
 def mailchimpSubscribeFundraiser(page):
     campaign = page.get_fundraising_campaign()

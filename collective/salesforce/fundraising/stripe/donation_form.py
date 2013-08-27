@@ -6,6 +6,7 @@ import uuid
 import urllib
 
 from datetime import datetime
+from datetime import date
 
 from five import grok
 from zope.component import getUtility
@@ -46,6 +47,9 @@ from collective.stripe.utils import IStripeUtility
 import logging
 logger = logging.getLogger("Plone")
 
+def stripe_timestamp_to_date(timestamp):
+    return date.fromtimestamp(timestamp)
+
 class DonationFormStripe(grok.View):
     """ Renders a donation form setup to submit through Stripe """
     grok.context(IFundraisingCampaignPage)
@@ -62,6 +66,10 @@ class DonationFormStripe(grok.View):
         self.amount = self.request.form.get('x_amount', None)
         if self.amount is not None:
             self.amount = int(self.amount)
+
+        self.states = []
+        self.countries = []
+        self.states = []
 
         self.update_levels()
         self.error = None
@@ -114,6 +122,7 @@ class ProcessStripeDonation(grok.View):
             'success': False,
             'message': None,
             'redirect': None,
+            'charge_id': None,
         }
 
         stripe_api = stripe_util.get_stripe_api()
@@ -136,6 +145,7 @@ class ProcessStripeDonation(grok.View):
         self.stripe_result = None
         self.customer_result = None
         self.subscribe_result = None
+        self.transaction_id = None
 
         try:
             if not self.recurring_plan_id:
@@ -145,36 +155,37 @@ class ProcessStripeDonation(grok.View):
                     description = self.request.form.get('email').lower(),
                     context=self.context,
                 )
+                self.transaction_id = self.stripe_result['id']
             else:
-                self.customer_id = None
-                # FIXME: This will create a new customer each time a recurring donation is submitted
-                # need to figure out a secure way to lookup and use existing customer id to allow
-                # multiple recurring donations for a person
-                #res = self.get_existing_person()
-                #if res:
-                    #person = res[0].getObject()
-                    #customer_id = person.stripe_customer_id
-                   
-                if not self.customer_id: 
-                    self.customer_result = stripe_util.create_customer(
-                        token = self.request.form.get('stripeToken'),
-                        description = self.request.form.get('email').lower(),
-                        context = self.context,
-                    )
-                    self.customer_id = self.customer_result['id']
+                # Embed data in the description field: first|last|campaign_sf_id
+                description_parts = [
+                    self.request.form.get('first_name').strip(), 
+                    self.request.form.get('last_name').strip(),
+                    self.context.get_fundraising_campaign_page().sf_object_id,
+                ]
+                # Create the customer
+                self.customer_result = stripe_util.create_customer(
+                    token = self.request.form.get('stripeToken'),
                     
+                    context = self.context,
+                    description = '|'.join(description_parts),
+                    **{'email': self.request.form['email'].lower()}
+                )
+                self.customer_id = self.customer_result['id']
+               
+                # Subscribe the customer to the plan 
                 self.subscribe_result = stripe_util.subscribe_customer(
                     customer_id = self.customer_id,
                     plan = self.recurring_plan_id,
                     quantity = amount,
                     context = self.context,
                 )
+
+                # Since we are creating a new customer for each subscription, assume there is only
+                # one invoice and one successful charge to get transaction_id
+                self.transaction_id = stripe_api.Invoice.all(customer=self.subscribe_result['customer'])['data'][0]['charge']
                 
             response['success'] = True
-            #response['redirect'] = '%s/post_process_stripe_donation?id=%s' % (
-            #    self.context.absolute_url(),
-            #    resp['id'],
-            #)
             
         except stripe_api.CardError, e:
             body = e.json_body
@@ -208,7 +219,8 @@ class ProcessStripeDonation(grok.View):
 
         if response['success']:
             try:
-                response['redirect'] = self.post_process_donation()
+                response['redirect'] = self.context.get_fundraising_campaign_page().absolute_url(do_not_cache=True) + '/@@record_stripe_donation'
+                response['charge_id'] = self.transaction_id
             except Exception, e: 
                 response['redirect'] = self.context.get_fundraising_campaign_page().absolute_url() + '/@@post_donation_error'
                 logger.warning('collective.salesforce.fundraising: Stripe Post Payment Error: %s' % e)
@@ -216,12 +228,47 @@ class ProcessStripeDonation(grok.View):
         return json.dumps(response)
 
 
-    def post_process_donation(self):
-        #import pdb; pdb.set_trace()
+class RecordStripeDonation(grok.View):
+    grok.context(IFundraisingCampaignPage)
+    grok.name('record_stripe_donation')
+
+    def render(self):
+        charge_id = self.request.form.get('charge_id')
         page = self.context.get_fundraising_campaign_page()
-        source_campaign_id = self.request.form.get('source_campaign_id')
-        source_url = self.request.form.get('source_url')
-        form_name = self.request.form.get('form_name')
+
+        if not charge_id:
+            logger.warning('collective.salesforce.fundraising: Record Stripe Donation Error: no charge_id passed in request')
+            return self.request.response.redirect(page.absolute_url() + '/@@post_donation_error')
+
+        # Check to make sure a donation does not already exist for this transaction.  If it does, redirect to it.
+        pc = getToolByName(self.context, 'portal_catalog')
+        res = pc.searchResults(
+            portal_type='collective.salesforce.fundraising.donation', 
+            transaction_id=charge_id, 
+            sort_limit=1
+        )
+        if len(res) == 1:
+            # Redirect to the donation or the honorary-memorial form if needed
+            donation = res[0].getObject()
+
+            # If this is an honorary or memorial donation, redirect to the form to provide details
+            is_honorary = self.request.form.get('is_honorary', None)
+            if is_honorary == 'true' and donation.honorary_type is None:
+                redirect_url = '%s/honorary-memorial-donation?key=%s' % (donation.absolute_url(), donation.secret_key)
+            else:
+                redirect_url = '%s?key=%s' % (donation.absolute_url(), donation.secret_key)
+    
+            return self.request.response.redirect(redirect_url)
+
+        stripe_util = getUtility(IStripeUtility)
+        stripe_api = stripe_util.get_stripe_api(page)
+
+        charge = stripe_api.Charge.retrieve(charge_id, expand=['customer.subscription','invoice'])
+        # What happens if there is no charge_id passed or no charge was found?
+        if not charge:
+            logger.warning('collective.salesforce.fundraising: Record Stripe Donation Error: charge_id %s was not found' % charge_id)
+            return self.request.response.redirect(page.absolute_url() + '/@@post_donation_error')
+
 
         pc = getToolByName(self.context, 'portal_catalog')
 
@@ -294,13 +341,26 @@ class ProcessStripeDonation(grok.View):
             'source_url': page.get_source_url(),
             'payment_method': 'Stripe',
         }
-       
-        if self.recurring_plan_id:
-            data['stripe_plan_id'] = self.recurring_plan_id 
-            # FIXME: Get plan title from collective.stripe.plans vocabulary term
-            data['title'] = '%s %s - $%i Monthly Recurring Donation' % (first_name, last_name, amount)
+      
+        # Stripe invoices are only used for recurring so if there is an invoice.
+        if charge['invoice']:
+            invoice = charge['invoice']
+            customer = charge['customer']
+            subscription = customer['subscription']
+            plan = invoice['lines']['data'][0]['plan']
+                
+            data['stripe_customer_id'] = customer['id']
+            data['stripe_plan_id'] = plan['id']
+            data['transaction_id'] = charge['id']
+            data['is_test'] = charge['livemode'] == False
+            data['title'] = '%s %s - $%i per %s' % (first_name, last_name, amount, plan['interval'])
+            data['payment_date'] = stripe_timestamp_to_date(subscription['current_period_start'])
+            data['next_payment_date'] = stripe_timestamp_to_date(subscription['current_period_end'])
         else:
-            data['transaction_id'] = self.stripe_result['id']
+            # One time donation
+            data['payment_date'] = stripe_timestamp_to_date(charge['created'])
+            data['transaction_id'] = charge['id']
+            data['is_test'] = charge['livemode'] == False
             data['title'] = '%s %s - $%i One Time Donation' % (first_name, last_name, amount)
 
         if product_id and product is not None:
@@ -329,22 +389,6 @@ class ProcessStripeDonation(grok.View):
             **data
         )
 
-        # No longer needed since this is now triggered via an event listener and pushed into the background to prevent
-        # re-running the transaction due to zodb conflicts retrying the transaction again.
-        # Record the transaction and its amount in the campaign
-        #try:
-            #page.add_donation(amount)
-        #except Exception, e:
-            #logger.warning('collective.salesforce.fundraising: Error adding donation to totals: %s' % e)
-            
-
-        # Queue sending of the email receipt - FIXME: rendering receipt currently requires the request which is not possible in async
-        #async = getUtility(IAsyncService)
-        #async.queueJob(sendDonationReceipt, IUUID(donation))
-
-        # Send receipt immediately
-        donation.send_donation_receipt(self.request, donation.secret_key)
-
         # If this is an honorary or memorial donation, redirect to the form to provide details
         is_honorary = self.request.form.get('is_honorary', None)
         if is_honorary == 'true':
@@ -352,4 +396,4 @@ class ProcessStripeDonation(grok.View):
         else:
             redirect_url = '%s?key=%s' % (donation.absolute_url(), donation.secret_key)
 
-        return redirect_url
+        return self.request.response.redirect(redirect_url)

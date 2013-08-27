@@ -21,6 +21,11 @@ def addCatalogIndexes(context):
         ('donations_count', 'FieldIndex', None),
         ('goal', 'FieldIndex', None),
         ('get_percent_goal', 'FieldIndex', None),
+        ('transaction_id', 'FieldIndex', None),
+        ('stripe_customer_id', 'FieldIndex', None),
+        ('stripe_plan_id', 'FieldIndex', None),
+        ('donation_sf_id', 'FieldIndex', None),
+        ('recurring_donation_sf_id', 'FieldIndex', None),
     )
 
     added = []

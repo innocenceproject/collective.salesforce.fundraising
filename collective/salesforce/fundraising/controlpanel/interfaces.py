@@ -87,6 +87,12 @@ class IFundraisingSettings(Interface):
         default=_(u"I just donated ${{ amount }} to a great cause.  You should join me."),
     )
 
+    default_campaign = schema.TextLine(
+        title=_(u"Default Campaign UID"),
+        description=_(u"The id of the default campaign for this site."),
+        required=False,
+    )
+
     email_header = schema.Text(
         title=_(u"Email Header HTML"),
         description=_(u"Enter any html you want to always render in the header of outbound emails."),
@@ -99,34 +105,74 @@ class IFundraisingSettings(Interface):
         required=False,
     )
 
-    default_chimpdrill_template_thank_you = schema.TextLine(
-        title=_(u"Chimpdrill Template - Thank You Email"),
+    default_chimpdrill_template_thank_you = schema.Choice(
+        title=_(u"Email Template - Thank You Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for thank you emails."),
         required=False,
+        vocabulary=u'collective.salesforce.fundraising.thank_you_templates',
     )
 
-    default_chimpdrill_honorary = schema.TextLine(
-        title=_(u"Chimpdrill Template - Honorary Email"),
+    default_chimpdrill_honorary = schema.Choice(
+        title=_(u"Email Template - Honorary Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for honorary notification emails."),
         required=False,
+        vocabulary=u'collective.salesforce.fundraising.honorary_templates',
     )
 
-    default_chimpdrill_memorial = schema.TextLine(
-        title=_(u"Chimpdrill Template - Memorial Email"),
+    default_chimpdrill_memorial = schema.Choice(
+        title=_(u"Email Template - Memorial Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for memorial notification emails."),
         required=False,
+        vocabulary=u'collective.salesforce.fundraising.memorial_templates',
     )
 
-    default_chimpdrill_personal_page_created = schema.TextLine(
-        title=_(u"Chimpdrill Template - Personal Page Created Email"),
+    default_chimpdrill_personal_page_created = schema.Choice(
+        title=_(u"Email Template - Personal Page Created Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for personal page created emails."),
         required=False,
+        vocabulary=u'collective.salesforce.fundraising.personal_page_created_templates',
     )
 
-    default_chimpdrill_personal_page_donation = schema.TextLine(
-        title=_(u"Chimpdrill Template - Personal Page Donation Email"),
+    default_chimpdrill_personal_page_donation = schema.Choice(
+        title=_(u"Email Template - Personal Page Donation Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for personal page donation emails."),
         required=False,
+        vocabulary=u'collective.salesforce.fundraising.personal_page_donation_templates',
+    )
+
+    chimpdrill_recurring_receipt = schema.Choice(
+        title=_(u"Email Template - Recurring Donation Receipt"),
+        description=_(u"For recurring donations, the email template used to send receipts on recurring charges.  The first charge is sent the normal thank you email."),
+        required=False,
+        vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
+    )
+
+    chimpdrill_recurring_failed_first = schema.Choice(
+        title=_(u"Email Template - Recurring Payment Failed, First Time"),
+        description=_(u"For recurring donations, the email template used to notify a donor that their recurring payment failed to process for the first time."),
+        required=False,
+        vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
+    )
+
+    chimpdrill_recurring_failed_second = schema.Choice(
+        title=_(u"Email Template - Recurring Payment Failed, Second Time"),
+        description=_(u"For recurring donations, the email template used to notify a donor that their recurring payment failed to process for the second time."),
+        required=False,
+        vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
+    )
+
+    chimpdrill_recurring_failed_third = schema.Choice(
+        title=_(u"Email Template - Recurring Payment Failed, Third Time"),
+        description=_(u"For recurring donations, the email template used to notify a donor that their recurring payment failed to process for the third time."),
+        required=False,
+        vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
+    )
+
+    chimpdrill_recurring_cancelled = schema.Choice(
+        title=_(u"Email Template - Recurring Donation Cancelled"),
+        description=_(u"For recurring donations, the email template used to notify a donor that their recurring donation has been cancelled."),
+        required=False,
+        vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
     )
 
     default_stripe_recurring_plan = schema.TextLine(
@@ -147,14 +193,14 @@ class IFundraisingSettings(Interface):
         description=_(u"This is a list of views available on fundraising campaigns which will render the donation form for the campaign.  This list is used as the vocabulary when building new forms"),
         required=True,
         value_type=schema.TextLine(), 
-        default=[u'donation_form_authnet_dpm',u'donation_form_recurly'],
+        default=[u'donation_form_stripe',],
     )
     
     default_donation_form_tabs = schema.Text(
         title=_(u"Default form view"),
         description=_(u"The name of the form view to be used by default on a fundraising campaign to render the donation form.  This name must match an option in the Available form views field"),
         required=True,
-        default=u'donation_form_authnet_dpm',
+        default=u'donation_form_stripe',
     )
 
     # FIXME: Add validation for the structure here
@@ -297,42 +343,6 @@ class IFundraisingSettings(Interface):
     janrain_use_extended_profile = schema.Bool(
         title=_(u"Janrain - Use extended profile?"),
         description=_(u"If checked, the auth_info call after authentication will attempt to fetch an extended profile which is only available in the paid versions."),
-        required=False,
-    )
-
-    authnet_login_key = schema.TextLine(
-        title=_(u"Authorize.net Login Key"),
-        description=_(u"The login key from your Authorize.net account. If not provided, the Authorize.net DPM donation form will not render"),
-        required=False,
-    )
-
-    authnet_transaction_key = schema.TextLine(
-        title=_(u"Authorize.net Transaction Key"),
-        description=_(u"The transaction key from your Authorize.net account. If not provided, the Authorize.net DPM donation form will not render"),
-        required=False,
-    )
-
-    recurly_subdomain = schema.TextLine(
-        title=_(u"Recurly Subdomain"),
-        description=_(u"If you want to use Recurly for recurring donation management, enter your subdomain key here."),
-        required=False,
-    )
-
-    recurly_api_key = schema.TextLine(
-        title=_(u"Recurly API Key"),
-        description=_(u"If you want to use Recurly for recurring donation management, enter your API key here."),
-        required=False,
-    )
-
-    recurly_private_key = schema.TextLine(
-        title=_(u"Recurly Private Key"),
-        description=_(u"If you want to use Recurly for recurring donation management, enter your Private key here."),
-        required=False,
-    )
-
-    recurly_plan_code = schema.TextLine(
-        title=_(u"Recurly Plan Code"),
-        description=_(u"If you want to use Recurly for recurring donation management, enter the code for the plan here."),
         required=False,
     )
 

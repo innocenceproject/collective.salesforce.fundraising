@@ -108,31 +108,31 @@
                 <title>Thank You Email Template</title>
                 <description>The Mailchimp/Mandrill template to use when sending thank you emails for this campaign</description>
                 <required>False</required>
-                <source>collective.salesforce.fundraising.fundraising_campaign.availableThankYouTemplates</source>
+                <vocabulary>collective.salesforce.fundraising.thank_you_templates</vocabulary>
             </field>
             <field name="chimpdrill_honorary" type="zope.schema.Choice">
                 <title>Honorary Email Template</title>
                 <description>The Mailchimp/Mandrill template to use when sending honorary emails for this campaign</description>
                 <required>False</required>
-                <source>collective.salesforce.fundraising.fundraising_campaign.availableHonoraryTemplates</source>
+                <vocabulary>collective.salesforce.fundraising.honorary_templates</vocabulary>
             </field>
             <field name="chimpdrill_memorial" type="zope.schema.Choice">
                 <title>Memorial Email Template</title>
                 <description>The Mailchimp/Mandrill template to use when sending memorial emails for this campaign</description>
                 <required>False</required>
-                <source>collective.salesforce.fundraising.fundraising_campaign.availableMemorialTemplates</source>
+                <vocabulary>collective.salesforce.fundraising.memorial_templates</vocabulary>
             </field>
             <field name="chimpdrill_personal_page_created" type="zope.schema.Choice">
                 <title>Personal Page Created Template</title>
                 <description>The Mailchimp/Mandrill template to use when sending email to new fundraisers immediately after they create their page</description>
                 <required>False</required>
-                <source>collective.salesforce.fundraising.fundraising_campaign.availablePersonalPageCreatedTemplates</source>
+                <vocabulary>collective.salesforce.fundraising.personal_page_created_templates</vocabulary>
             </field>
             <field name="chimpdrill_personal_page_donation" type="zope.schema.Choice">
                 <title>Personal Page Donation Template</title>
                 <description>The Mailchimp/Mandrill template to use when sending email to notify fundraisers of a donation to their page</description>
                 <required>False</required>
-                <source>collective.salesforce.fundraising.fundraising_campaign.availablePersonalPageDonationTemplates</source>
+                <vocabulary>collective.salesforce.fundraising.personal_page_donation_templates</vocabulary>
             </field>
             <field name="chimpdrill_list_donors" type="zope.schema.Choice">
                 <title>Mailchimp List - Donors</title>

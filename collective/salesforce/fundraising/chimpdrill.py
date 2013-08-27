@@ -150,3 +150,35 @@ class PersonalPageDonation(model.Schema, ITemplate, IBaseCampaignEmail):
         title=u"The Donor's email address",
         description=u"The last name of the donor",
     )
+
+class IBaseRecurringEmail(Interface):
+    block_campaign_thank_you = schema.Text(
+        title=u"Campaign Thank You HTML",
+        description=u"The campaign's custom thank you message",
+    )
+    amount = schema.Int(
+        title=u"Amount",
+        description=u"The amount of the donation",
+    )
+    first_name = schema.TextLine(
+        title=u"First Name",
+        description=u"The first name of the donor",
+    )
+    last_name = schema.TextLine(
+        title=u"Last Name",
+        description=u"The last name of the donor",
+    )
+    update_url = schema.TextLine(
+        title=u"Update Card URL",
+        description=u"The URL to update the card for the recurring donation",
+    )
+    
+
+class IRecurringReceipt(model.Schema, ITemplate, IBaseRecurringEmail):
+    """ Schema for sending receipts for recurring transactions """
+
+class IRecurringFailed(model.Schema, ITemplate, IBaseRecurringEmail):
+    """ Schema for sending failed payment notifications """
+
+class IRecurringCancelled(model.Schema, ITemplate, IBaseRecurringEmail):
+    """ Schema for sending notice that a recurring donation has been cancelled """

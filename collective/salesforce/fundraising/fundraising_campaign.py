@@ -130,6 +130,19 @@ def availablePersonalPageDonationTemplates(context):
             terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
     return SimpleVocabulary(terms)
 
+@grok.provider(schema.interfaces.IContextSourceBinder)
+def availableRecurringReceipt(context):
+    query = { "portal_type" : "collective.chimpdrill.template" }
+    terms = []
+    pc = getToolByName(context, 'portal_catalog')
+    res = pc.searchResults(**query)
+    for template in res:
+        obj = template.getObject()
+        uuid = IUUID(obj)
+        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IRecurringReceipt':
+            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
+    return SimpleVocabulary(terms)
+
 class IFundraisingCampaign(model.Schema, IImageScaleTraversable):
     """
     A Fundraising Campaign linked to a Campaign in Salesforce.com
@@ -204,6 +217,11 @@ class FundraisingCampaignPage(object):
         # Try page
         page = aq_base(self.get_fundraising_campaign_page())
         val = getattr(page, '_%s' % field, None)
+        if val is None:
+            # For backwards compatibility, check __dict__ for a previous value and port it
+            if page.__dict__.has_key(field):
+                val = page.__dict__[field]
+                setattr(self, '_%s' % field, val)
 
         test_val = val
         # check if the output of a rich text field is empty
@@ -507,16 +525,6 @@ class FundraisingCampaignPage(object):
         # If all else fails, return the campaign's url
         return self.absolute_url()
 
-    def populate_form_embed(self):
-        form_embed = getattr(self, 'form_embed', None)
-        if not form_embed:
-            form_embed = get_settings().default_form_embed
-
-        form_embed = form_embed.replace('{{CAMPAIGN_ID}}', getattr(self, 'sf_object_id', ''))
-        form_embed = form_embed.replace('{{SOURCE_CAMPAIGN}}', self.get_source_campaign())
-        form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
-        return form_embed
-
     def can_create_donor_quote(self):
         # FIXME: make sure the donor just donated (check session) and that they don't already have a quote for this campaign
         return True
@@ -584,52 +592,15 @@ class FundraisingCampaignPage(object):
             # FIXME - don't hard code maxwidth
             return consumer.get_data(self.external_media_url, maxwidth=270).get('html')
            
-    def clear_donation_from_cache(self, donation_id, amount):
-        """ Clears a donation from the cache.  This is useful if its value needs to be refreshed
-            on the next time it's called but you don't want to call it now. """
+    def clear_donations_from_cache(self):
+        """ Clears the donations cache.  This should be called anytime a new donation comes in 
+            for the campaign so a fresh list is pulled after any changes """
         if not hasattr(self, '_memojito_'):
             return None
-        donation_key = ('lookup_donation', (self, donation_id, amount), frozenset([]))
-        lineitem_key = ('lookup_donation_product_line_items',
-                        (self, donation_id),
-                        frozenset([]))
+        key = ('get_donations', (self), frozenset([]))
         self._memojito_.clear()
-        if self._memojito_.has_key(donation_key):
-            del self._memojito_[donation_key]
-        if self._memojito_.has_key(lineitem_key):
-            del self._memojito_[lineitem_key]
- 
-    @instance.memoize
-    def lookup_donation(self, donation_id, amount):
-        sfconn = getUtility(ISalesforceUtility).get_connection()
-        return sfconn.query(RECEIPT_SOQL % (donation_id, amount, self.sf_object_id))
-
-    @instance.memoize
-    def lookup_donation_product_line_items(self, donation_id):
-        """get any line-items for the given opportunity
-
-        resolve them to object title, price and quantity before caching result
-        """
-        sfconn = getUtility(ISalesforceUtility).get_connection()
-        pc = getToolByName(self, 'portal_catalog')
-        typename = 'collective.salesforce.fundraising.donationproduct'
-        items = sfconn.query(LINE_ITEM_SOQL % donation_id)
-        lines = []
-        for item in items:
-            qty = int(item['Quantity'])
-            prod_id = item['PricebookEntry']['Product2Id']
-            entry_id = item['PricebookEntry']['Id']
-            brains = pc(portal_type=typename, sf_object_id=prod_id)
-            if not brains:
-                continue
-            prod = brains[0].getObject()
-            lines.append({'product': prod.title,
-                          'price': prod.price,
-                          'date': prod.date,
-                          'location': prod.location,
-                          'notes': prod.notes,
-                          'quantity': qty})
-        return lines
+        if self._memojito_.has_key(key):
+            del self._memojito_[key] 
 
     def get_header_image_url(self):
         local_image = getattr(self, 'header_image', None)
@@ -643,61 +614,6 @@ class FundraisingCampaignPage(object):
     def get_display_goal_pct(self):
         settings = get_settings()
         return settings.campaign_status_completion_threshold
-
-    def send_donation_receipt(self, request, donation_id, amount):
-        donation = self.lookup_donation(donation_id, amount)
-        settings = get_settings()
-        
-        # if this donation was a product purchase, get line items:
-        lineitems = []
-        is_product_purchase = False
-        # the id we store in settings may or may not exist, and may or may not
-        # be identical to the one we get back (sf passes ids of two different
-        # lengths, although they mark the same record)
-        recordtype = donation[0]['Opportunity']['RecordTypeId']
-        producttype = settings.sf_opportunity_record_type_product
-        if recordtype and producttype:
-            if compare_sf_ids(recordtype, producttype):
-                is_product_purchase = True
-            
-        if is_product_purchase:
-            lineitems = self.lookup_donation_product_line_items(donation_id)
-
-        # Construct the email bodies
-        pt = getToolByName(self, 'portal_transforms')
-        email_view = getMultiAdapter((self, request), name='thank-you-email')
-        email_view.set_donation_keys(donation_id, amount)
-        email_body = email_view()
-        txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
-
-        # Determine to and from addresses
-        portal_url = getToolByName(self, 'portal_url')
-        portal = portal_url.getPortalObject()
-        mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-        mail_to = email_view.receipt_view.contact.Email
-
-        # Construct the email message                
-        msg = MIMEMultipart('alternative')
-        msg['Subject'] = settings.thank_you_email_subject
-        msg['From'] = mail_from
-        msg['To'] = mail_to
-        part1 = MIMEText(txt_body, 'plain')
-        part2 = MIMEText(email_body, 'html')
-
-        msg.attach(part1)
-        msg.attach(part2)
-
-        # Attempt to send it
-        try:
-            host = getToolByName(self, 'MailHost')
-            # The `immediate` parameter causes an email to be sent immediately
-            # (if any error is raised) rather than sent at the transaction
-            # boundary or queued for later delivery.
-            host.send(msg, immediate=True)
-
-        except smtplib.SMTPRecipientsRefused:
-            # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
-            pass
 
     def get_fundraising_campaign_page(self):
         """ Returns the fundraising campaign page instance, either a Fundraising Campaign or a Personal Campaign Page """
@@ -745,9 +661,11 @@ class FundraisingCampaignPage(object):
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
 
-    def absolute_url(self):
+    def absolute_url(self, do_not_cache=False):
         """ Fallback to cached value if no REQUEST available """
         url = super(FundraisingCampaign, self).absolute_url()
+        if do_not_cache:
+            return url
         cached = getattr(aq_base(self), '_absolute_url', None)
         if url.startswith('http'):
             if cached is None or cached != url:
@@ -974,196 +892,6 @@ class CampaignView(grok.View):
 
         return val
 
-
-class ThankYouView(grok.View):
-    grok.context(IFundraisingCampaignPage)
-    grok.require('zope2.View')
-
-    grok.name('thank-you')
-    grok.template('thank-you')
-
-    def update(self):
-        # Fetch some values that should have been passed from the redirector
-        self.donation_id = self.request.form.get('donation_id', None)
-        self.amount = self.request.form.get('amount', None)
-        if not self.donation_id:
-            self.donation_id = self.request.form.get('form.widgets.donation_id', None)
-        if not self.amount:
-            self.amount = self.request.form.get('form.widgets.amount', None)
-
-        self.receipt_view = None
-        self.receipt = None
-        if self.donation_id and self.amount:
-            self.amount = int(self.amount)
-            self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
-            self.receipt_view.set_donation_keys(self.donation_id, self.amount)
-            self.receipt = self.receipt_view()
-
-        # Create a wrapped form for inline rendering
-        from collective.salesforce.fundraising.forms import CreateDonorQuote
-        # Only show the form if a valid receipt is being displayed
-        if self.context.can_create_donor_quote() and self.receipt_view:
-            self.donor_quote_form = CreateDonorQuote(self.context, self.request)
-            alsoProvides(self.donor_quote_form, IWrappedForm)
-            self.donor_quote_form.update()
-            self.donor_quote_form.widgets.get('name').value = u'%s %s' % (self.receipt_view.contact.FirstName, self.receipt_view.contact.LastName)
-            self.donor_quote_form.widgets.get('contact_sf_id').value = unicode(self.receipt_view.contact.Id)
-            self.donor_quote_form.widgets.get('donation_id').value = unicode(self.donation_id)
-            self.donor_quote_form.widgets.get('amount').value = unicode(self.amount)
-            self.donor_quote_form_html = self.donor_quote_form.render()
-
-        # Determine any sections that should be collapsed
-        self.hide = self.request.form.get('hide', [])
-        if self.hide:
-            self.hide = self.hide.split(',')
-
-    def render_janrain_share(self):
-        settings = get_settings()
-        comment = settings.thank_you_share_message
-        if not comment:
-            comment = ''
-
-        amount_str = ''
-        if self.amount:
-            amount_str = _(u' $%s' % self.amount)
-            comment = comment.replace('{{ amount }}', str(self.amount))
-        else:
-            comment = comment.replace('{{ amount }}', '')
-        
-        return SHARE_JS_TEMPLATE % {
-            'link_id': 'share-message-thank-you',
-            'url': self.context.absolute_url() + '?SOURCE_CODE=thank_you_share',
-            'title': self.context.title.replace("'","\\'"),
-            'description': self.context.description.replace("'","\\'"),
-            'image': self.context.absolute_url() + '/@@images/image',
-            'message': comment,
-        }
-
-class HonoraryMemorialView(grok.View):
-    grok.context(IFundraisingCampaignPage)
-    grok.require('zope2.View')
-
-    grok.name('honorary-memorial-donation')
-
-    form_template = ViewPageTemplateFile('fundraising_campaign_templates/honorary-memorial-donation.pt')
-
-    def render(self):
-        # Fetch some values that should have been passed from the redirector
-        self.donation_id = self.request.form['donation_id']
-        self.amount = int(self.request.form['amount'])
-
-        self.receipt_view = None
-        self.receipt = None
-        if self.donation_id and self.amount:
-            self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
-            self.receipt = self.receipt_view()
-
-            # Handle POST
-            if self.request['REQUEST_METHOD'] == 'POST':
-                # Fetch values from the request
-                honorary = {
-                    'type': self.request.form.get('honorary_type', None),
-                    'notification_type': self.request.form.get('honorary_notification_type', None),
-                    'first_name': self.request.form.get('honorary_first_name', None),
-                    'last_name': self.request.form.get('honorary_last_name', None),
-                    'recipient_first_name': self.request.form.get('honorary_recipient_first_name', None),
-                    'recipient_last_name': self.request.form.get('honorary_recipient_last_name', None),
-                    'email': self.request.form.get('honorary_email', None),
-                    'address': self.request.form.get('honorary_address', None),
-                    'city': self.request.form.get('honorary_city', None),
-                    'state': self.request.form.get('honorary_state', None),
-                    'zip': self.request.form.get('honorary_zip', None),
-                    'country': self.request.form.get('honorary_country', None),
-                    'message': self.request.form.get('honorary_message', None),
-                }
-
-                # Dump the data into Salesforce
-                sfconn = getUtility(ISalesforceUtility).get_connection()
-                sfconn.Opportunity.update({
-                    self.donation_id,
-                    {
-                        'Honorary_Type__c': honorary['type'],
-                        'Honorary_Notification_Type__c': honorary['notification_type'],
-                        'Honorary_First_Name__c': honorary['first_name'],
-                        'Honorary_Last_Name__c': honorary['last_name'],
-                        'Honorary_Recipient_First_Name__c': honorary['recipient_first_name'],
-                        'Honorary_Recipient_Last_Name__c': honorary['recipient_last_name'],
-                        'Honorary_Email__c': honorary['email'],
-                        'Honorary_Street_Address__c': honorary['address'],
-                        'Honorary_City__c': honorary['city'],
-                        'Honorary_State__c': honorary['state'],
-                        'Honorary_Zip__c': honorary['zip'],
-                        'Honorary_Country__c': honorary['country'],
-                        'Honorary_Message__c': honorary['message'],
-                    }
-                })
-
-                # Expire the donation in the cache so the new Honorary values are looked up next time
-                self.context.clear_donation_from_cache(self.donation_id, self.amount)
-
-#                # If there was an email passed and we're supposed to send an email, send the email
-#                if honorary['notification_type'] == 'Email' and honorary['email']:
-#
-#                    settings = get_settings() 
-#
-#                    # Construct the email bodies
-#                    pt = getToolByName(self.context, 'portal_transforms')
-#                    if honorary['type'] == u'Honorary':
-#                        email_view = getMultiAdapter((self.context, self.request), name='honorary-email')
-#                    else:
-#                        email_view = getMultiAdapter((self.context, self.request), name='memorial-email')
-#
-#                    email_view.set_honorary_info(
-#                        donor = '%(FirstName)s %(LastName)s' % self.receipt_view.contact,
-#                        honorary = honorary,
-#                    )
-#                    email_body = email_view()
-#        
-#                    txt_body = pt.convertTo('text/-x-web-intelligent', email_body, mimetype='text/html')
-#
-#                    # Construct the email message                
-#                    portal_url = getToolByName(self.context, 'portal_url')
-#                    portal = portal_url.getPortalObject()
-#
-#                    mail_from = '"%s" <%s>' % (portal.getProperty('email_from_name'), portal.getProperty('email_from_address'))
-#                    mail_cc = self.receipt_view.contact.Email
-#
-#                    msg = MIMEMultipart('alternative')
-#                    if honorary['type'] == 'Memorial': 
-#                        msg['Subject'] = 'Gift received in memory of %(first_name)s %(last_name)s' % honorary
-#                    else:
-#                        msg['Subject'] = 'Gift received in honor of %(first_name)s %(last_name)s' % honorary
-#                    msg['From'] = mail_from
-#                    msg['To'] = honorary['email']
-#                    msg['Cc'] = mail_cc
-#        
-#                    part1 = MIMEText(txt_body, 'plain')
-#                    part2 = MIMEText(email_body, 'html')
-#    
-#                    msg.attach(part1)
-#                    msg.attach(part2)
-#
-#                    # Attempt to send it
-#                    try:
-#
-#                        # Send the notification email
-#                        host = getToolByName(self, 'MailHost')
-#                        host.send(msg, immediate=True)
-#
-#                    except smtplib.SMTPRecipientsRefused:
-#                        # fail silently so errors here don't freak out the donor about their transaction which was successful by this point
-#                        pass
-#
-                # Redirect on to the thank you page
-                self.request.response.redirect('%s/thank-you?donation_id=%s&amount=%i' % (self.context.absolute_url(), self.donation_id, self.amount))
-
-        self.countries = CountryAvailability().getCountryListing()
-        self.countries.sort()
-
-        self.states = states_list
-
-        return self.form_template()
-
 class ShareView(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
@@ -1236,210 +964,6 @@ class PersonalCampaignPagesList(grok.View):
         query['sort_order'] = 'descending'
         self.campaigns = pc.searchResults(**query) 
 
-RECEIPT_SOQL = """select 
-
-    Opportunity.Name, 
-    Opportunity.Amount, 
-    Opportunity.CloseDate, 
-    Opportunity.StageName, 
-    Opportunity.npe03__Recurring_Donation__c, 
-    Opportunity.Honorary_Type__c, 
-    Opportunity.Honorary_First_Name__c, 
-    Opportunity.Honorary_Last_Name__c, 
-    Opportunity.Honorary_Recipient_First_Name__c, 
-    Opportunity.Honorary_Recipient_Last_Name__c, 
-    Opportunity.Honorary_Notification_Type__c, 
-    Opportunity.Honorary_Email__c, 
-    Opportunity.Honorary_Street_Address__c, 
-    Opportunity.Honorary_City__c, 
-    Opportunity.Honorary_State__c, 
-    Opportunity.Honorary_Zip__c, 
-    Opportunity.Honorary_Country__c, 
-    Opportunity.Honorary_Message__c, 
-    Opportunity.RecordTypeId, 
-    Contact.Id, 
-    Contact.FirstName, 
-    Contact.LastName, 
-    Contact.Email, 
-    Contact.Phone,
-    Contact.MailingStreet, 
-    Contact.MailingCity,
-    Contact.MailingState, 
-    Contact.MailingPostalCode, 
-    Contact.MailingCountry 
-
-    from OpportunityContactRole
-
-    where
-        IsPrimary = true
-        and OpportunityId = '%s'
-        and Opportunity.Amount = %d
-        and Opportunity.CampaignId = '%s'
-"""
-
-LINE_ITEM_SOQL = """SELECT
-    Quantity, 
-    PricebookEntry.Product2Id, 
-    PricebookEntry.Id 
-    FROM OpportunityLineItem 
-    WHERE 
-        OpportunityId = '%s'
-"""
-
-class DonationReceipt(grok.View):
-    """ Looks up an opportunity in Salesforce and prepares a donation receipt.
-
-    Uses amount and id as keys
-    """
-    grok.context(IFundraisingCampaignPage)
-    grok.require('zope2.View')
-
-    grok.name('donation-receipt')
-    grok.template('donation-receipt')
-
-    def update(self):
-        if not getattr(self, 'donation_id', None):
-            self.donation_id = sanitize_soql(self.request.form.get('donation_id'))
-
-        if not getattr(self, 'amount', None):
-            self.amount = int(self.request.form.get('amount'))
-        
-        refresh = self.request.form.get('refresh') == 'true'
-        res = self.context.lookup_donation(self.donation_id, self.amount)
-        
-        if not len(res['records']):
-            raise ValueError('Donation with id %s and amount %s was not found.' % (self.donation_id, self.amount))
-
-        self.line_items = self.context.lookup_donation_product_line_items(
-            self.donation_id)
-
-        settings = get_settings()
-        self.organization_name = settings.organization_name
-        self.donation_receipt_legal = settings.donation_receipt_legal
-
-        self.donation = res['records'][0].Opportunity
-        self.contact = res['records'][0].Contact
-
-    def set_donation_keys(self, donation_id, amount):
-        self.donation_id = donation_id
-        self.amount = int(amount)
-
-
-class ThankYouEmail(grok.View):
-    grok.context(IFundraisingCampaignPage)
-    grok.require('zope2.View')
-    
-    grok.name('thank-you-email')
-    grok.template('thank-you-email')
-    
-    def update(self):
-        if not getattr(self, 'donation_id', None):
-            self.donation_id = sanitize_soql(self.request.form.get('donation_id'))
-
-        if not getattr(self, 'amount', None):
-            self.amount = int(self.request.form.get('amount'))
-        
-        self.receipt_view = getMultiAdapter((self.context, self.request), name='donation-receipt')
-        self.receipt_view.set_donation_keys(self.donation_id, self.amount)
-        self.receipt = self.receipt_view()
-
-        settings = get_settings()
-        self.email_header = settings.email_header
-        self.email_footer = settings.email_footer
-
-    def set_donation_keys(self, donation_id, amount):
-        self.donation_id = donation_id
-        self.amount = int(amount)
-
-
-class HonoraryEmail(grok.View):
-    grok.context(IFundraisingCampaignPage)
-    grok.require('zope2.View')
-    
-    grok.name('honorary-email')
-    grok.template('honorary-email')
-    
-    def update(self):
-        if self.request.get('show_template', None) == 'true':
-            # Enable rendering of the template without honorary info
-            self.set_honorary_info(
-                donor = '[Your Name]',
-                honorary = {
-                    'last_name': '[Memory Name]',
-                    'recipient_first_name': '[Recipient First Name]',
-                    'recipient_last_name': '[Recipient Last Name]',
-                    'message': '[Message]',
-                }
-            )
-            
-        settings = get_settings()
-        self.email_header = settings.email_header
-        self.email_footer = settings.email_footer
-        self.organization_name = settings.organization_name
-        self.amount = None
-        if self.request.form.get('show_amount', None) == 'Yes':
-            self.amount = self.request['amount']
-        
-    def set_honorary_info(self, donor, honorary):
-        self.donor = donor
-        self.honorary = honorary
-
-        # Attempt to perform a basic text to html conversion on the message text provided
-        pt = getToolByName(self.context, 'portal_transforms')
-        if self.honorary['message']:
-            try:
-                self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
-            except:
-                self.honorary['message'] = honorary['message']
-
-
-#FIXME: I tried to use subclasses to build these 2 views but grok seemed to be getting in the way.
-# I tried making a base mixin class then 2 different views base of it and grok.View as well as 
-# making MemorialEmail subclass Honorary with a new name and template.  Neither worked so I'm 
-# left duplicating logic for now.
-class MemorialEmail(grok.View):
-    grok.context(IFundraisingCampaignPage)
-    grok.require('zope2.View')
-    
-    grok.name('memorial-email')
-    grok.template('memorial-email')
-
-    def update(self):
-        if self.request.get('show_template', None) == 'true':
-            # Enable rendering of the template without honorary info
-            self.set_honorary_info(
-                donor = '[Your Name]',
-                honorary = {
-                    'first_name': '',
-                    'last_name': '[Memory Name]',
-                    'recipient_first_name': '[Recipient First Name]',
-                    'recipient_last_name': '[Recipient Last Name]',
-                    'message': '[Message]',
-                }
-            )
-            
-        settings = get_settings()
-        self.email_header = settings.email_header
-        self.email_footer = settings.email_footer
-        self.organization_name = settings.organization_name
-        self.amount = None
-        if self.request.form.get('show_amount', None) == 'Yes':
-            self.amount = self.request.form['amount']
-        
-    def set_honorary_info(self, donor, honorary):
-        self.donor = donor
-        self.honorary = honorary
-
-        # Attempt to perform a basic text to html conversion on the message text provided
-        pt = getToolByName(self.context, 'portal_transforms')
-
-        if self.honorary['message']:
-            try:
-                self.honorary['message'] = pt.convertTo('text/html', self.honorary['message'], mimetype='text/-x-web-intelligent')
-            except:
-                self.honorary['message'] = honorary['message']
-
-
 class PostDonationErrorView(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.name('post_donation_error')
@@ -1452,19 +976,8 @@ class ClearCache(grok.View):
     grok.name('clear-cache')
     
     def render(self):
+        self.context.clear_donations_from_cache()
         self.request.response.redirect(self.context.absolute_url())
-
-class ResendDonationReceipt(grok.View):
-    grok.context(IFundraisingCampaignPage)
-    grok.name('resend-donation-receipt')
-    grok.require('zope2.View')
-
-    def render(self):
-        donation_id = self.request.form.get('donation_id',None)
-        amount = int(self.request.form.get('amount',0))
-        self.context.send_donation_receipt(self.request, donation_id, amount)
-        return 'Receipt sent for %s' % donation_id
-        
 
 # Pages added inside the campaign need to display the same portlets as the
 # campaign.

@@ -14,19 +14,9 @@
             <description>The ID of the Salesforce Contact the donation relates to</description>
             <required>False</required>
         </field>
-        <field name="donation_sf_id" type="zope.schema.TextLine" sf:field="OpportunityId">
-            <title>Donation ID</title>
-            <description>The ID of the Salesforce Opportunity (Donation) the donation relates to</description>
-            <required>False</required>
-        </field>
         <field name="opportunity_contact_role_sf_id" type="zope.schema.TextLine" sf:field="Id">
             <title>Opportunity Contact Role ID</title>
             <description>The ID of the Salesforce Opportunity Contact Role</description>
-            <required>False</required>
-        </field>
-        <field name="recurring_donation_sf_id" type="zope.schema.TextLine" sf:field="npe03__Recurring_Donation__c">
-            <title>Recurring Donation ID</title>
-            <description>The ID of the Salesforce Recurring Donation associated with this donation</description>
             <required>False</required>
         </field>
         <field name="stripe_plan_id" type="zope.schema.TextLine" sf:field="npe03__Recurring_Donation__r.Stripe_Plan_ID__c">
@@ -41,6 +31,10 @@
         <field name="offline" type="zope.schema.Bool">
             <title>Is Offline?</title>
             <description>Check if the donation is an offline donation being credited to the campaign</description>
+        </field>
+        <field name="is_test" type="zope.schema.Bool">
+            <title>Is Test Donation?</title>
+            <description>Check if the donation is a test donation.</description>
         </field>
         <field name="payment_method" type="zope.schema.TextLine" sf:field="Opportunity.Payment_Method__c">
             <title>Payment Method</title>
@@ -68,6 +62,16 @@
         <field name="transaction_id" type="zope.schema.TextLine" sf:field="Opportunity.Success_Transaction_ID__c">
             <title>Transaction ID</title>
             <description>The ID of the successful transaction from the payment processor</description>
+            <required>False</required>
+        </field>
+        <field name="payment_date" type="zope.schema.Date" sf:field="Opportunity.CloseDate">
+            <title>Payment Date</title>
+            <description>The payment date from Stripe for the charge</description>
+            <required>False</required>
+        </field>
+        <field name="next_payment_date" type="zope.schema.Date" sf:field="Opportunity.CloseDate">
+            <title>Next Payment Date</title>
+            <description>The date of the next recurring payment if applicable.</description>
             <required>False</required>
         </field>
         <field name="secret_key" type="zope.schema.TextLine" sf:field="Opportunity.Secret_Key__c">

@@ -15,26 +15,6 @@ function form_input_is_int(input){
   return !isNaN(input)&&parseInt(input)==input;
 }
 
-function setupRecurlyForm() {
-    // Do some mangling of the Recurly form to fit the same general form structure
-    var recurly_form = jQuery('#recurly-subscribe');
-    
-    if (recurly_form.length == 0) {
-        return false;
-    }
-
-    var address = recurly_form.find('div.address');
-    var accepted_cards = recurly_form.find('div.accepted_cards');
-    var names = recurly_form.find('.credit_card div.first_name, .credit_card div.last_name');
-    var card_cvv = recurly_form.find('div.card_cvv');
-
-    card_cvv.before(accepted_cards);
-    names.wrapAll('<div class="field compound name"></div>');
-
-    var button_submit = recurly_form.find('button.submit');
-    button_submit.text('Submit').after('<div class="discreet">Your card will be automatically charged every month</div>');
-}
-
 (function ($) {
 
 // Donation form logic
@@ -66,16 +46,6 @@ function processNewAmountValue() {
 
     showHideDonationForm(form)
 
-    // Recurly integration
-    if (form.hasClass('donation-form-recurly') == true) {
-        populateRecurlyQuantity($(this).val());
-    }
-
-    // Authorize.net DPM integration
-    if (form.hasClass('donation-form-authnet-dpm') == true) {
-        updateAuthnetDpmFingerprint(form);
-    }
-
 }
 
 function updateDonationProductTotal(form) {
@@ -99,8 +69,6 @@ function updateProductFormTotal(form) {
         }
     });
     form.find('input[name="x_amount"]').val(new_total);
-    updateAuthnetDpmFingerprint(form);
-    populateAuthnetDescription(form);
     
     if (new_total > 0) {
         form.find('a.button-checkout').addClass('available');
@@ -123,71 +91,6 @@ function updateProductFormItems(form) {
     });
     
     products_field.val(products.join(','));
-}
-
-function updateAuthnetDpmFingerprint(form) {
-    if (! form.hasClass('donation-form-authnet-dpm')) {
-        return;
-    }
-    
-    var fingerprint_url = form.find('#authnet_dpm_fingerprint_url').val();
-    fingerprint_url = fingerprint_url + '?amount='+ form.find('input[name="x_amount"]').val() +'&sequence='+form.find('input[name="x_fp_sequence"]').val()
-    
-    $.get(fingerprint_url, function (data) {
-        $('.donation-form-authnet-dpm input[name="x_fp_hash"]').val(data.x_fp_hash);
-        $('.donation-form-authnet-dpm input[name="x_fp_timestamp"]').val(data.x_fp_timestamp);
-    }, 'json');
-}
-
-function populateRecurlyQuantity(amount) {
-    // If there is a Recurly form on the page, set the quantity to amount
-    var form = $('#recurly-subscribe form');
-    if (form.length != 0) {
-        form.find('.field.quantity input').val(amount);
-    }
-}
-
-function setupAuthnetDpmForm() {
-    var forms = $('form.donation-form-authnet-dpm');
-    forms.each(function () {
-        var form = $(this);
-        if (form.length == 0) {
-            return;
-        }
-    
-        // Turn off AJAX request caching to ensure a stale fingerprint doesn't get cached
-        $.ajaxSetup({ cache: false });
-    
-        // Concatenate expiration month/year
-        var exp_month = form.find('select.card-expiration-month');
-        var exp_year = form.find('select.card-expiration-year');
-        var exp_full = form.find('input[name="x_exp_date"]');
-        exp_full.val(exp_month.val() + exp_year.val());
-        exp_month.change(function () {
-            exp_full.val(exp_month.val() + exp_year.val());
-        })
-        exp_year.change(function () {
-            exp_full.val(exp_month.val() + exp_year.val());
-        })
-    
-        // Setup populate of Authorize.net transaction description field
-        var first_name = form.find("input[name='x_first_name']").change(populateAuthnetDescription);
-        var last_name = form.find("input[name='x_last_name']").change(populateAuthnetDescription);
-        var amount = form.find("input[name='x_amount']").change(populateAuthnetDescription);
-        var description = form.find("input[name='x_description']").change(populateAuthnetDescription);
-    
-        // Require integer in account field
-        amount.change(function () {
-            if (form_input_is_int($(this).val()) == false) {
-                alert('Please enter a whole number for the Amount');
-            }
-        });
-    
-        // Setup the authnet dpm fingerprint to refresh every 10 minutes
-        var fingerprintRefresh = setInterval(function () {
-            updateAuthnetDpmFingerprint(form);
-        }, 600000);
-    });
 }
 
 function hideDonationErrorOnChange(form) {
@@ -235,8 +138,13 @@ function stripeDonationResponseHandler(status, response) {
             type: 'POST',
             success: function (data, textStatus) {
                 if (data['success'] == true) {
-                    window.location = data['redirect'];
-                    return false;
+                    //window.location = data['redirect'];
+                    //return false;
+
+                    var form = $('.donation-form-stripe').eq(0);
+                    form.attr('action', data['redirect']);
+                    // Write the charge_id field and value, then turn off submit handlers and submit the form
+                    form.append($('<input type="hidden" name="charge_id" />').val(data['charge_id'])).closest('form.donation-form-stripe').off('submit').submit();
                 } else {
                     var form = $('.donation-form-stripe').eq(0);
                     var form_error = form.find('.donation-form-error');
@@ -298,7 +206,7 @@ function setupStripeForm() {
 
 function handleHonoraryTypeChange() {
     var form = $(this).parents('form.donation-form-honorary');
-    if ($(this).attr('checked') == true) {
+    if ($(this).attr('checked') == 'checked') {
         var honorary_name = form.find('.field-honorary-name')
         var honorary_name_label = honorary_name.find('label')
         if ($(this).val() == 'Memorial') {
@@ -321,7 +229,7 @@ function handleHonoraryTypeChange() {
 function handleHonoraryNotificationChange() {
     var form = $(this).parents('form.donation-form-honorary');
 
-    if ($(this).attr('checked') == true) {
+    if ($(this).attr('checked') == 'checked') {
         var recipient = form.find('.field-recipient');
         var email = form.find('.field-email');
         var address = form.find('.field-address');
@@ -482,25 +390,6 @@ function setupProductForm() {
         fieldset.find('.product-fieldset-contents').slideDown(function () {fieldset.removeClass('collapsed')});
         return false;
     });
-}
-
-function populateAuthnetDescription() {
-    var field = $(this);
-    var form = field.parents('form.donation-form-authnet-dpm');
-    var amount_txt = form.find("input[name='x_amount']").val()
-
-    // If this is a product, put the product and quantity name in amount_txt instead of amount
-    if (form.hasClass('donation-form-product') == true) {
-        var product_name = form.find('.field-amount .product-name').text();
-        var quantity = form.find("input[name='c_quantity']").val();
-        amount_txt = quantity + ' ' + product_name;
-    }
-
-    // we could serialize, but then our javascript touches the cc info
-    var first_name = form.find("input[name='x_first_name']").val()
-    var last_name = form.find("input[name='x_last_name']").val()
-    var description = first_name + ' ' + last_name + ' - $' + amount_txt + ' Donation';
-    form.find("input[name='x_description']").val(description);
 }
 
 function stripPlaceholderValues() {
@@ -691,31 +580,19 @@ $(document).ready(function() {
         options.find('.option').removeClass('selected');
         option.addClass('selected');
         showHideDonationForm(form);
-        populateRecurlyQuantity(radio.val());
 
         if (form.hasClass('donation-form-product') == true) {
             updateDonationProductTotal(form);
         }
 
-        updateAuthnetDpmFingerprint(form);
-
     });
-
-    // Construct Authorize.net transaction description as inputs change
-    //var authnet_dpm_form = ($('.donation-form-authnet-dpm').length);
-    //if (authnet_dpm_form.length) {
-    //}
 
     $('form.donation-form').each(function () {
         var form = $(this);
         var handle_form = true;
         showHideDonationForm(form);
 
-        // If this is not a recurly form (which already handles client side validation), enable validation
-        if (form.hasClass('donation-form-recurly') == true) {
-            handle_form = false;
-        }
-
+        // Don't handle honorary/memorial donation forms with js validation
         if (form.hasClass('donation-form-honorary') == true) {
             handle_form = false;
         }
@@ -748,11 +625,6 @@ $(document).ready(function() {
                     //button.addClass('submitted');
                     button.addClass('submitting');
                     button.next('.button-loading-indicator').show();
-    
-                    // For Authorize.net DPM method, just submit the form normally
-                    if (form.hasClass('donation-form-authnet-dpm') == true) {
-                        return;
-                    }
     
                     // For Stripe, create the token and trigger the response handler
                     if (form.hasClass('donation-form-stripe') == true) {
@@ -787,11 +659,7 @@ $(document).ready(function() {
         input.keyup(processNewAmountValue);
     });
 
-    //$("form").validationEngine('attach');
-
-    setupAuthnetDpmForm();
     setupHonoraryForm();
-    //setupStripeForm();
     setupProductForm();
 
     // Handle Fundraising Seal More Info link
@@ -804,23 +672,6 @@ $(document).ready(function() {
 
     // Setup State/Country field linkage
     $('.subfield-country').change(linkStateAndCountryField);
-
-    // Show loading indicator after form button clicked and make validator play nicely with double submission logic
-    //$('.form-buttons input').click(function () {
-        // Remove the placeholder values before validating to avoid thinking the placeholder fulfills a field's requirements
-        //$(this).parents('form.donation-form').each(stripPlaceholderValues);
-/*
-        if ($(this).parents('form.donation-form').data('validator').checkValidity() == true) {
-            if ($(this).hasClass('submitted') == true) {
-                return false;
-            }
-            $(this).next('.button-loading-indicator').show();
-            $(this).addClass('submitted');
-        } else {
-            placeholder();
-        }
-*/
-    //});
 
     // If there was a donation form error on the page, select the tab with an error
     $('.donation-form-error').each(function () {

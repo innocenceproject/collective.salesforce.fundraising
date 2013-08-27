@@ -6,7 +6,7 @@
       <tr>
         <td>
        
-          Dear <span tal:replace="view/receipt_view/person/first_name" />,
+          Dear <span tal:replace="view/context/first_name" />,
   
           <p>Thank you for your generous gift of $<span tal:replace="python: int(view.context.amount)" />.</p>
   
