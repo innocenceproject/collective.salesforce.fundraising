@@ -1,5 +1,3 @@
-import locale
-
 from zope.interface import Interface
 from zope.interface import implements
 
@@ -72,9 +70,8 @@ class Renderer(base.Renderer):
 
     render = ViewPageTemplateFile('campaign_recent_donors.pt')
 
-    def addcommas(self, num):
-        locale.setlocale(locale.LC_ALL, 'en_US')
-        return locale.format('%d', number, grouping=True)
+    def addcommas(self, number):
+        return '{0:,}'.format(number)
 
 
 # NOTE: If this portlet does not have any configurable parameters, you can

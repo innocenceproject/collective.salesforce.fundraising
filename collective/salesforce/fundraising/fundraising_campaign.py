@@ -1,4 +1,3 @@
-import locale
 import random
 import smtplib
 from rwproperty import getproperty, setproperty
@@ -41,6 +40,7 @@ from plone.portlets.interfaces import IPortletAssignmentMapping
 from plone.portlets.interfaces import IPortletManager
 from plone.portlets.constants import CONTENT_TYPE_CATEGORY
 
+from Products.CMFPlone.interfaces import IPloneSiteRoot
 from Products.CMFCore.utils import getToolByName
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from Products.ATContentTypes.interfaces import IATDocument
@@ -566,9 +566,6 @@ class FundraisingCampaignPage(object):
 
             # Check if this is a personal campaign
             if hasattr(self, 'parent_sf_id'):
-                # Clear the cached list of donations for the personal campaign so a fresh list is fetched next time
-                self.clear_donations_from_cache()
-
                 # If this is a child campaign and its parent campaign is the parent
                 # in Plone, add the value to the parent's donations_total
                 parent = self.get_fundraising_campaign()
@@ -592,16 +589,6 @@ class FundraisingCampaignPage(object):
             # FIXME - don't hard code maxwidth
             return consumer.get_data(self.external_media_url, maxwidth=270).get('html')
            
-    def clear_donations_from_cache(self):
-        """ Clears the donations cache.  This should be called anytime a new donation comes in 
-            for the campaign so a fresh list is pulled after any changes """
-        if not hasattr(self, '_memojito_'):
-            return None
-        key = ('get_donations', (self), frozenset([]))
-        self._memojito_.clear()
-        if self._memojito_.has_key(key):
-            del self._memojito_[key] 
-
     def get_header_image_url(self):
         local_image = getattr(self, 'header_image', None)
         if local_image and local_image.filename:
@@ -827,8 +814,7 @@ class CampaignView(grok.View):
     grok.template('view')
 
     def addcommas(self, number):
-        locale.setlocale(locale.LC_ALL, 'en_US')
-        return locale.format('%d', number, grouping=True)
+        return '{0:,}'.format(number)
 
     def update(self):
         # Set a cookie with referrer as source_url if no cookie has yet been set for the session
@@ -970,15 +956,6 @@ class PostDonationErrorView(grok.View):
     grok.require('zope2.View')
     grok.template('post_donation_error')
 
-class ClearCache(grok.View):
-    grok.context(IFundraisingCampaignPage)
-    grok.require('cmf.ModifyPortalContent')
-    grok.name('clear-cache')
-    
-    def render(self):
-        self.context.clear_donations_from_cache()
-        self.request.response.redirect(self.context.absolute_url())
-
 # Pages added inside the campaign need to display the same portlets as the
 # campaign.
 @grok.subscribe(IATDocument, IObjectAddedEvent)
@@ -1074,3 +1051,63 @@ class PersonalLoginViewlet(grok.Viewlet):
             if res:
                 self.person = res[0].getObject()
 
+class CleanDonationCaches(grok.View):
+    grok.context(IPloneSiteRoot)
+    grok.name('clean-donation-caches')
+
+    def render(self):
+        pc = getToolByName(self.context, 'portal_catalog')
+        res = pc.searchResults(
+            object_provides='collective.salesforce.fundraising.fundraising_campaign.IFundraisingCampaignPage',
+        )
+        total = 0
+        cleaned = 0
+        skipped = 0
+        for b in res:
+            total += 1
+            page = b.getObject()
+            if not hasattr(page, '_memojito_'):
+                skipped += 1
+                continue
+            key = ('get_donations', (page), frozenset([]))
+            page._memojito_.clear()
+            if page._memojito_.has_key(key):
+                cleaned += 1
+                del page._memojito_[key] 
+            skipped += 1
+        return '%i objects processed, %i cleaned, %i skipped' % (total, cleaned, skipped)
+
+class CleanDonorOnlyUsers(grok.View):
+    grok.context(IPloneSiteRoot)
+    grok.name('clean-donor-only-users')
+
+    def render(self):
+        pc = getToolByName(self.context, 'portal_catalog')
+        res = pc.searchResults(
+            object_provides='collective.salesforce.fundraising.personal_campaign_page.IPersonalCampaignPage',
+        )
+        # Whitelist personal fundraisers
+        whitelist = []
+        for b in res:
+            page = b.getObject()
+            if page.person and page.person.to_id:
+                whitelist.append(page.person.to_object.email)
+
+        # Add Administrators
+        groups = getToolByName(self.context, 'portal_groups')
+        admin = groups.getGroupById('Administrators')
+        for member in admin.getGroupMembers():
+            whitelist.append(member.getProperty('email'))
+
+        to_delete = []
+        res = pc.searchResults(portal_type='collective.salesforce.fundraising.person')
+        for b in res:
+            person = b.getObject()
+            if person.email in whitelist:
+                continue
+            to_delete.append(person.id)
+    
+        if to_delete:
+            self.context.people.manage_delObjects(to_delete)
+
+        return '\n'.join(to_delete)

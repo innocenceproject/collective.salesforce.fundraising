@@ -9,7 +9,6 @@ from plone.registry.interfaces import IRegistry
 from collective.simplesalesforce.utils import ISalesforceUtility
 from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
 
-
 def get_settings():
     registry = getUtility(IRegistry)
     return registry.forInterface(IFundraisingSettings, False)
@@ -86,4 +85,6 @@ def get_person_brains_by_sf_id(context, sf_id):
     res = pc.searchResults(portal_type='collective.salesforce.fundraising', sf_object_id=sf_id)
     if res:
         return res[0]
-    
+   
+def addcommas(value):
+    return '{0:,}'.format(value) 

@@ -1,5 +1,3 @@
-import locale
-
 from zope.interface import implements
 
 from plone.app.portlets.portlets import base
@@ -76,10 +74,8 @@ class Renderer(base.Renderer):
         else:
             return self.context.aq_inner.aq_parent
 
-    def addcommas(self, num):
-        locale.setlocale(locale.LC_ALL, 'en_US')
-        return locale.format('%d', number, grouping=True)
-
+    def addcommas(self, number):
+        return '{0:,}'.format(number)
 
 # NOTE: If this portlet does not have any configurable parameters, you can
 # inherit from NullAddForm and remove the form_fields variable.

@@ -1,4 +1,3 @@
-import locale
 import random
 
 from zope.interface import Interface
