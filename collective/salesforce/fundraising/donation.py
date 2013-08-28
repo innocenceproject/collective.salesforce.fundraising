@@ -1172,8 +1172,8 @@ def mailchimpSendPersonalCampaignDonation(donation):
         return 'Skipping, offline donation'
     if uuid:
         template = uuidToObject(uuid)
+        donation.is_notification_sent = True
         return donation.send_chimpdrill_personal_page_donation(template)
-    donation.is_notification_sent = True
 
 @grok.subscribe(IDonation, IObjectModifiedEvent)
 def queueMailchimpSendPersonalCampaignDonation(donation, event):

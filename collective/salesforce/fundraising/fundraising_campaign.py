@@ -794,7 +794,7 @@ class CampaignView(grok.View):
 
         always looks for values on the fundraising campaign object only
         """
-        local_campaign = aq_base(self.context.get_fundraising_campaign())
+        local_campaign = self.context.get_fundraising_campaign()
         val = getattr(local_campaign, field, None)
         if not val:
             settings = get_settings()
