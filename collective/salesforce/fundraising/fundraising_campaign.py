@@ -1051,6 +1051,9 @@ class PersonalLoginViewlet(grok.Viewlet):
             if res:
                 self.person = res[0].getObject()
 
+# Temporary views used to do some migration from the old structure using Authorize.net and Recurly which were removed.
+# These views will be deleted once the IP site migration is done
+
 class CleanDonationCaches(grok.View):
     grok.context(IPloneSiteRoot)
     grok.name('clean-donation-caches')
@@ -1076,6 +1079,38 @@ class CleanDonationCaches(grok.View):
                 del page._memojito_[key] 
             skipped += 1
         return '%i objects processed, %i cleaned, %i skipped' % (total, cleaned, skipped)
+
+class SwitchToStripe(grok.View):
+    grok.context(IPloneSiteRoot)
+    grok.name('switch-to-stripe')
+
+    def render(self):
+        pc = getToolByName(self.context, 'portal_catalog')
+        res = pc.searchResults(
+            object_provides='collective.salesforce.fundraising.fundraising_campaign.IFundraisingCampaignPage',
+        )
+        total = 0
+        switched = 0
+        skipped = 0
+        for b in res:
+            total += 1
+            page = b.getObject()
+            new_forms = []
+            for form in page.donation_form_tabs:
+                # Keep product forms and donation products but ensure they use Stripe
+                form_parts = form.split('|')[0].split('/')
+                if len(form_parts) > 1:
+                    # Only product and donation forms use a path
+                    new_forms.append(form_parts[0] + '/donation_form_stripe')
+                    continue
+                # Skip all non-product forms
+                skipped += 1
+            if not new_forms:
+                new_forms.append('donation_form_stripe')
+            switched += 1
+            page.donation_form_tabs = new_forms
+        return '%i objects processed, %i switched, %i skipped' % (total, switched, skipped)
+            
 
 class CleanDonorOnlyUsers(grok.View):
     grok.context(IPloneSiteRoot)
