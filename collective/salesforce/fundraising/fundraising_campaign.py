@@ -1087,7 +1087,7 @@ class SwitchToStripe(grok.View):
     def render(self):
         pc = getToolByName(self.context, 'portal_catalog')
         res = pc.searchResults(
-            object_provides='collective.salesforce.fundraising.fundraising_campaign.IFundraisingCampaignPage',
+            object_provides='collective.salesforce.fundraising.fundraising_campaign.IFundraisingCampaign',
         )
         total = 0
         switched = 0
