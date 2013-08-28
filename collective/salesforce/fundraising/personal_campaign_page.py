@@ -150,8 +150,8 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         return getattr(aq_base(self), '_absolute_url', url)
 
     @property
-    def donation_form_tabs(self):
-        return self.get_fundraising_campaign().donation_form_tabs
+    def donation_form(self):
+        return self.get_fundraising_campaign().donation_form
 
     def is_personal(self):
         return True

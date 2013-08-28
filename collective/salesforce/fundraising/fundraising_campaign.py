@@ -66,81 +66,21 @@ from collective.chimpdrill.utils import IMailsnakeConnection
 
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
-def availableThankYouTemplates(context):
-    query = { "portal_type" : "collective.chimpdrill.template" }
+def availableDonationForms(context):
+    query = { 
+        "portal_type" : "collective.salesforce.fundraising.productform",
+        "path" : '/'.join(context.getPhysicalPath()),
+    }
     terms = []
-    pc = getToolByName(context, 'portal_catalog')
-    res = pc.searchResults(**query)
-    for template in res:
-        obj = template.getObject()
-        uuid = IUUID(obj)
-        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IThankYouEmail':
-            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
-    return SimpleVocabulary(terms)
+    settings = get_settings()
+    default = settings.default_donation_form
+    terms.append(SimpleVocabulary.createTerm(default, default, 'Stripe Donation Form'))
 
-@grok.provider(schema.interfaces.IContextSourceBinder)
-def availableHonoraryTemplates(context):
-    query = { "portal_type" : "collective.chimpdrill.template" }
-    terms = []
     pc = getToolByName(context, 'portal_catalog')
     res = pc.searchResults(**query)
-    for template in res:
-        obj = template.getObject()
-        uuid = IUUID(obj)
-        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IHonoraryEmail':
-            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
-    return SimpleVocabulary(terms)
-
-@grok.provider(schema.interfaces.IContextSourceBinder)
-def availableMemorialTemplates(context):
-    query = { "portal_type" : "collective.chimpdrill.template" }
-    terms = []
-    pc = getToolByName(context, 'portal_catalog')
-    res = pc.searchResults(**query)
-    for template in res:
-        obj = template.getObject()
-        uuid = IUUID(obj)
-        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IMemorialEmail':
-            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
-    return SimpleVocabulary(terms)
-
-@grok.provider(schema.interfaces.IContextSourceBinder)
-def availablePersonalPageCreatedTemplates(context):
-    query = { "portal_type" : "collective.chimpdrill.template" }
-    terms = []
-    pc = getToolByName(context, 'portal_catalog')
-    res = pc.searchResults(**query)
-    for template in res:
-        obj = template.getObject()
-        uuid = IUUID(obj)
-        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IPersonalPageCreated':
-            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
-    return SimpleVocabulary(terms)
-
-@grok.provider(schema.interfaces.IContextSourceBinder)
-def availablePersonalPageDonationTemplates(context):
-    query = { "portal_type" : "collective.chimpdrill.template" }
-    terms = []
-    pc = getToolByName(context, 'portal_catalog')
-    res = pc.searchResults(**query)
-    for template in res:
-        obj = template.getObject()
-        uuid = IUUID(obj)
-        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IPersonalPageDonation':
-            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
-    return SimpleVocabulary(terms)
-
-@grok.provider(schema.interfaces.IContextSourceBinder)
-def availableRecurringReceipt(context):
-    query = { "portal_type" : "collective.chimpdrill.template" }
-    terms = []
-    pc = getToolByName(context, 'portal_catalog')
-    res = pc.searchResults(**query)
-    for template in res:
-        obj = template.getObject()
-        uuid = IUUID(obj)
-        if obj.template_schema == 'collective.salesforce.fundraising.chimpdrill.IRecurringReceipt':
-            terms.append(SimpleVocabulary.createTerm(uuid, uuid, obj.title))
+    for form in res:
+        form_id = form.id + '/donation_form_stripe'
+        terms.append(SimpleVocabulary.createTerm(form_id, form_id, 'Product Form: ' + form.Title))
     return SimpleVocabulary(terms)
 
 class IFundraisingCampaign(model.Schema, IImageScaleTraversable):
@@ -248,12 +188,6 @@ class FundraisingCampaignPage(object):
         settings = get_settings()
         val = getattr(settings, 'default_%s' % field, None)
 
-        # Temporary hack to handle default_donation_form_tabs in controlpanel as
-        # a TextLine field while the local value is a List.  This will soon be replaced
-        # by a vocabulary listing available forms
-        if val is not None and field == 'donation_form_tabs':
-            val = val.split('\n')
-
         return val
 
             
@@ -316,12 +250,12 @@ class FundraisingCampaignPage(object):
             self._end_date = end_date
     
     @getproperty
-    def donation_form_tabs(self):
-        return self.get_local_or_default('donation_form_tabs')
+    def donation_form(self):
+        return self.get_local_or_default('donation_form')
     @setproperty
-    def donation_form_tabs(self, donation_form_tabs):
-        if donation_form_tabs != self.get_default('donation_form_tabs'):
-            self._donation_form_tabs = donation_form_tabs
+    def donation_form(self, donation_form):
+        if donation_form != self.get_default('donation_form'):
+            self._donation_form = donation_form
     
     @getproperty
     def stripe_recurring_plan(self):
@@ -830,22 +764,15 @@ class CampaignView(grok.View):
             self.request.response.setCookie('collective.salesforce.fundraising.source_campaign', self.source_campaign)
 
         tabs = []
-        donation_form_tabs = self.context.donation_form_tabs
-        if donation_form_tabs:
-            for tab in donation_form_tabs:
-                parts = tab.split('|')
-                if len(parts) == 1:
-                    label = parts[0]
-                else:
-                    label = parts[1]
-                view_name = parts[0]
-           
-                html = self.context.unrestrictedTraverse(view_name.split('/'))
-                tabs.append({
-                    'id': view_name,
-                    'label': label,
-                    'html': html,
-                })
+        donation_form = self.context.donation_form
+        if donation_form:
+            html = self.context.unrestrictedTraverse(donation_form.split('/'))
+            tabs.append({
+                'id': donation_form,
+                'label': u'Donate',
+                'html': html,
+            })
+
         self.donation_form_tabs = tabs
 
         # Handle form validation errors from 3rd party (right now only Authorize.net)

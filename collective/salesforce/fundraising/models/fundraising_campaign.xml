@@ -51,10 +51,11 @@
                 <description>The end date of the campaign</description>
                 <required>False</required>
             </field>
-            <field name="donation_form_tabs" type="zope.schema.List">
-                <title>Donation Form Tabs</title>
-                <description>Enter the view names for each tab you wish to display with this form.  You can provide a friendly name for the tab by using the format VIEWNAME|LABEL</description>
+            <field name="donation_form" type="zope.schema.Choice">
+                <title>Donation Form</title>
+                <description>Select the donation form to use</description>
                 <value_type type="zope.schema.TextLine" />
+                <source>collective.salesforce.fundraising.fundraising_campaign.availableDonationForms</source>
             </field>
             <field name="stripe_mode" type="zope.schema.Choice">
                 <title>Stripe Payment Processing Mode</title>

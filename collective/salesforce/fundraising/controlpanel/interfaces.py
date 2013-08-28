@@ -188,17 +188,9 @@ class IFundraisingSettings(Interface):
         default=True,
     )
 
-    available_form_views = schema.List(
-        title=_(u"Available form views"),
-        description=_(u"This is a list of views available on fundraising campaigns which will render the donation form for the campaign.  This list is used as the vocabulary when building new forms"),
-        required=True,
-        value_type=schema.TextLine(), 
-        default=[u'donation_form_stripe',],
-    )
-    
-    default_donation_form_tabs = schema.Text(
-        title=_(u"Default form view"),
-        description=_(u"The name of the form view to be used by default on a fundraising campaign to render the donation form.  This name must match an option in the Available form views field"),
+    default_donation_form = schema.Text(
+        title=_(u"Default donation form"),
+        description=_(u"The name of the form view to be used by default on a fundraising campaign to render the donation form.  This name must match a view's name on the campaign"),
         required=True,
         default=u'donation_form_stripe',
     )
