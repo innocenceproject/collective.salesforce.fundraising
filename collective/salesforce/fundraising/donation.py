@@ -1082,10 +1082,10 @@ class SalesforceDonationSync(grok.Adapter):
             product['Opportunity'] = {
                 'Success_Transaction_ID__c': self.context.transaction_id,
             }
-            res = self.sfconn.OpportunityLineItem.create(products)
+        res = self.sfconn.OpportunityLineItem.create(self.products)
 
-            if not res['success']:
-                raise Exception(res['errors'][0])
+        if not res['success']:
+            raise Exception(res['errors'][0])
 
         self.context.synced_products = True
 
