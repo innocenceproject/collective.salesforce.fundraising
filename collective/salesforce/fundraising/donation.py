@@ -15,7 +15,6 @@ from zope.interface import Interface
 from zope.component import getUtility
 from zope.component import getMultiAdapter
 from zope.component.hooks import getSite
-from zope.app.intid.interfaces import IIntIds
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
 from zope.event import notify
@@ -1164,7 +1163,7 @@ def queueMailchimpSubscribeDonor(donation, event):
 
 # Personal campaign donation notification
 def mailchimpSendPersonalCampaignDonation(donation):
-    if getattr(donation, 'is_notification_sent', False):
+    if getattr(donation, 'is_notification_sent', True):
         return 'Skipping: Donation notification already sent to fundraiser'
     campaign = donation.get_fundraising_campaign()
     uuid = getattr(campaign, 'chimpdrill_template_personal_page_donation', None)
