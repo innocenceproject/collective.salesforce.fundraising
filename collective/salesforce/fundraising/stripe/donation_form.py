@@ -22,8 +22,6 @@ from plone.dexterity.utils import createContentInContainer
 from plone.uuid.interfaces import IUUID
 from plone.app.uuid.utils import uuidToObject
 from plone.app.async.interfaces import IAsyncService
-from zope.app.intid.interfaces import IIntIds
-from z3c.relationfield import RelationValue
 
 from zope.event import notify
 from zope.lifecycleevent import ObjectModifiedEvent
@@ -316,10 +314,6 @@ class RecordStripeDonation(grok.View):
         country = self.request.form.get('country', None)
         amount = int(float(self.request.form.get('x_amount', None)))
 
-        # Create the Donation
-        intids = getUtility(IIntIds)
-        page_intid = intids.getId(page)
-
         data = {
             'first_name': first_name,
             'last_name': last_name,
@@ -332,7 +326,6 @@ class RecordStripeDonation(grok.View):
             'address_zip': zipcode,
             'address_country': zipcode,
             'secret_key': build_secret_key(),
-            'campaign': RelationValue(page_intid),
             'amount': amount,
             'stage': 'Posted',
             'products': [],

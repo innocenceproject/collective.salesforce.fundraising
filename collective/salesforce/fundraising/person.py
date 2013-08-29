@@ -251,14 +251,14 @@ class CleanupSalesforceIds(grok.View):
         mtool = getToolByName(self.context, 'portal_membership')
 
         for contact in res['records']:
-            person_res = get_brains_for_email(self.context, contact.Email)
+            person_res = get_brains_for_email(self.context, contact['Email'])
             if not person_res:
                 num_skipped += 1
                 continue
             person = person_res[0].getObject()
-            if person.sf_object_id != contact.Id:
+            if person.sf_object_id != contact['Id']:
                 num_person_updated += 1
-                person.sf_object_id = contact.Id
+                person.sf_object_id = contact['Id']
                 person.reindexObject(idxs=['sf_object_id'])
            
             member = mtool.getMemberById(person.email)

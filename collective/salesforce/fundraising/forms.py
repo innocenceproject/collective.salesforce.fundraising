@@ -13,10 +13,8 @@ from AccessControl.SecurityManagement import newSecurityManager
 from five import grok
 from plone.directives import form
 from zope.component import getUtility
-from zope.app.intid.interfaces import IIntIds
 from z3c.form import button, field
 from z3c.form.browser import radio
-from z3c.relationfield import RelationValue
 from plone.directives import dexterity
 from plone.dexterity.utils import createContentInContainer
 from Products.statusmessages.interfaces import IStatusMessage
@@ -101,16 +99,11 @@ class CreatePersonalCampaignPageForm(form.Form):
         member = mtool.getAuthenticatedMember()
         person_res = get_brains_for_email(self.context, member.getProperty('email'))
         person = None
-        if not person_res:
-            contact_id = None
-        else: 
+        contact_id = None
+        if person_res:
             person = person_res[0].getObject()
             contact_id = person.sf_object_id
         
-        if person:
-            intids = getUtility(IIntIds)
-            person_intid = intids.getId(person)
-
         settings = get_settings()
 
         # Add the campaign in Salesforce
@@ -137,9 +130,6 @@ class CreatePersonalCampaignPageForm(form.Form):
         campaign.parent_sf_id = parent_campaign.sf_object_id
         campaign.sf_object_id = res['id']
         campaign.contact_sf_id = contact_id
-        if person is not None:
-            campaign.person = RelationValue(person_intid)
-            
         campaign.reindexObject()
 
         # Send email confirmation and links.
@@ -533,12 +523,8 @@ class CreateOfflineDonation(form.Form):
             self.status = self.formErrorsMessage
             return
 
-        intids = getUtility(IIntIds)
-        page_intid = intids.getId(self.context)
-       
         data['title'] = '%s %s - One-time Offline Donation' % (data['first_name'], data['last_name'])
         data['secret_key'] = build_secret_key()
-        data['campaign'] = RelationValue(page_intid)
         data['stage'] = 'Pledged'
         data['products'] = []
         data['campaign_sf_id'] = self.context.sf_object_id

@@ -151,6 +151,7 @@ class RpxPostLogin(grok.View):
     def render(self):
         # Get the api key from registry
         settings = get_settings()
+
         # workaround for http://bugs.python.org/issue5285, map unicode to strings
         janrain_api_key = str(settings.janrain_api_key)
 
@@ -259,7 +260,8 @@ class RpxPostLogin(grok.View):
         # fix odd bug where came_from is a list of two values
         if came_from and isinstance(came_from, (list, tuple)):
             came_from = came_from[0]
-            self.request.form['came_from'] = came_from
+        if came_from:
+            return self.request.response.redirect(came_from)
 
         # merge in with standard plone login process.  
         login_next = self.context.restrictedTraverse('login_next')

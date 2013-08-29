@@ -53,6 +53,7 @@ from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import sanitize_soql
 from collective.salesforce.fundraising.utils import compare_sf_ids
+from collective.salesforce.fundraising.utils import get_person_by_sf_id
 from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 
@@ -174,24 +175,23 @@ class FundraisingCampaignPage(object):
         return self.get_default(field)
 
     def get_default(self, field):
-        # Try campaign if different from page (i.e. personal campaign page or campaign variation)
-        campaign = aq_base(self.get_fundraising_campaign())
-        if campaign != self.get_fundraising_campaign_page():
-            val = getattr(campaign, '_%s' % field, None)
-            # convert rich text objects, if present:
-            if isinstance(val, RichTextValue):
-                val = val.output
-            if val is not None:
-                return val
+        # Skip lookup if there is no id (i.e. object is still being created)
+        if self.id:
+            # Try campaign if different from page (i.e. personal campaign page or campaign variation)
+            campaign = self.get_fundraising_campaign()
+            if campaign != self.get_fundraising_campaign_page():
+                val = getattr(campaign, '_%s' % field, None)
+                # convert rich text objects, if present:
+                if isinstance(val, RichTextValue):
+                    val = val.output
+                if val is not None:
+                    return val
 
         # Try global using 'default_' as field name prefix for settings
         settings = get_settings()
         val = getattr(settings, 'default_%s' % field, None)
 
         return val
-
-            
-        
 
     @getproperty
     def external_media_url(self):
@@ -1052,8 +1052,9 @@ class CleanDonorOnlyUsers(grok.View):
         whitelist = []
         for b in res:
             page = b.getObject()
-            if page.person and page.person.to_id:
-                whitelist.append(page.person.to_object.email)
+            person = page.get_fundraiser()
+            if person is not None:
+                whitelist.append(person.email)
 
         # Add Administrators
         groups = getToolByName(self.context, 'portal_groups')

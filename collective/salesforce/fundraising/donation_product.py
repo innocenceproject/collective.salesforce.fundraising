@@ -1,5 +1,6 @@
 from Acquisition import aq_base, aq_inner, aq_parent
 from five import grok
+from zope.component import getUtility
 from zope.app.container.interfaces import IObjectAddedEvent
 from zope.interface import alsoProvides
 from zope.app.content.interfaces import IContentType

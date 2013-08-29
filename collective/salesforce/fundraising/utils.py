@@ -3,6 +3,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 from zope.component import getUtility
+from zope.component.hooks import getSite
 from Products.CMFCore.utils import getToolByName
 
 from plone.registry.interfaces import IRegistry
@@ -80,11 +81,12 @@ def send_confirmation_email(context, subject, mail_to, email_body):
             # fail silently so errors here don't freak out the donor about their transaction which was successful
             pass
 
-def get_person_brains_by_sf_id(context, sf_id):
-    pc = getToolByName(self, 'portal_catalog')
-    res = pc.searchResults(portal_type='collective.salesforce.fundraising', sf_object_id=sf_id)
+def get_person_by_sf_id(sf_id):
+    pc = getToolByName(getSite(), 'portal_catalog')
+    # If multiple person objects with same sf id, use the most recently modified one
+    res = pc.searchResults(portal_type='collective.salesforce.fundraising.person', sf_object_id=sf_id, sort_index='modified', sort_limit=1)
     if res:
-        return res[0]
+        return res[0].getObject()
    
 def addcommas(value):
     return '{0:,}'.format(value) 

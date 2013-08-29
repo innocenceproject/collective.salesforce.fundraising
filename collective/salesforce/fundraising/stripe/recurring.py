@@ -2,9 +2,7 @@ from five import grok
 from Acquisition import aq_parent
 from zope.component import getUtility
 from zope.component.hooks import getSite
-from zope.app.intid.interfaces import IIntIds
 from Products.CMFCore.utils import getToolByName
-from z3c.relationfield import RelationValue
 from plone.app.uuid.utils import uuidToObject
 from plone.dexterity.utils import createContentInContainer
 from collective.stripe.utils import IStripeUtility
@@ -59,8 +57,6 @@ def get_container_for_donation(invoice):
         
 
 def make_donation_from_invoice(invoice, container):
-    intids = getUtility(IIntIds)
-    container_intid = intids.getId(container)
     last_donation = get_last_donation_for_invoice(invoice)
 
     mode = 'live'
@@ -152,7 +148,6 @@ def make_donation_from_invoice(invoice, container):
     data['stripe_plan_id'] = plan['id']
     data['transaction_id'] = invoice['charge']
     data['is_test'] = is_test
-    data['campaign'] = RelationValue(container_intid)
     data['campaign_sf_id'] = container.sf_object_id
     data['secret_key'] = build_secret_key()
     data['stage'] = 'Posted'

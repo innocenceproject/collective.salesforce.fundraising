@@ -1,5 +1,6 @@
 import re
 from five import grok
+from Acquisition import aq_parent
 from zope.interface import alsoProvides
 from zope import schema
 from zope.component import getUtility
@@ -57,7 +58,7 @@ class ShareMessage(dexterity.Item):
 def createSalesforceCampaign(message, event):
     # Set the parent_sf_id using the parent
     if not message.parent_sf_id:
-        message.parent_sf_id = message.aq_parent.sf_object_id
+        message.parent_sf_id = aq_parent(message).sf_object_id
 
     # create Share Message campaign in Salesforce
     site = getSite()
@@ -108,7 +109,7 @@ class JanrainView(grok.View):
                 url = url + '?source_campaign=' + self.context.sf_object_id
             self.url = url
         else:
-            self.url = self.context.aq_parent.absolute_url() + '?source_campaign=' + self.context.sf_object_id
+            self.url = aq_parent(self.context).absolute_url() + '?source_campaign=' + self.context.sf_object_id
         self.url = self.url.replace("'","\\'")
         
 
@@ -153,7 +154,7 @@ class EmailForm(form.SchemaForm):
         fromname = portal.getProperty('email_from_name')
         mfrom = '%s <%s>' % (fromname, fromaddr)
 
-        campaign_url = self.context.aq_parent.absolute_url() + '?source_campaign=' + self.context.sf_object_id
+        campaign_url = aq_parent(self.context).absolute_url() + '?source_campaign=' + self.context.sf_object_id
         body = "%s\n\n%s\n\n%s" % (self.context.description, self.context.comment, campaign_url)
         return {'mfrom': mfrom, 'subject': self.context.title, 'body': body}
 

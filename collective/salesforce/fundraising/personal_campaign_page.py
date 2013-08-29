@@ -5,6 +5,7 @@ from plone.directives import dexterity, form
 from plone.supermodel import model
 
 from Acquisition import aq_base
+from Acquisition import aq_parent
 from zope.component import getUtility
 from zope.interface import alsoProvides
 from zope.interface import Interface
@@ -26,8 +27,6 @@ from plone.uuid.interfaces import IUUIDAware
 from plone.app.uuid.utils import uuidToObject
 from plone.app.async.interfaces import IAsyncService
 from plone.formwidget.contenttree.source import ObjPathSourceBinder
-from z3c.relationfield.schema import RelationChoice
-from z3c.relationfield import RelationValue
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from collective.chimpdrill.utils import IMailsnakeConnection
 from collective.stripe.interfaces import IStripeEnabledView
@@ -39,6 +38,7 @@ from collective.salesforce.fundraising.fundraising_campaign import CampaignView
 from collective.salesforce.fundraising.fundraising_campaign import ShareView
 
 from collective.salesforce.fundraising.utils import get_settings
+from collective.salesforce.fundraising.utils import get_person_by_sf_id
 from collective.salesforce.fundraising import MessageFactory as _
 
 import logging
@@ -73,12 +73,6 @@ class IPersonalCampaignPage(model.Schema, IImageScaleTraversable):
     image = namedfile.field.NamedBlobImage(
         title=_(u"Image"),
         description=_(u"Provide an image to use in promoting your campaign.  The image will show up on your page and also when someone shares your page on social networks."),
-    )
-    person = RelationChoice(
-        title=u"Fundraiser",
-        description=u"The user account of the fundraiser who created this page",
-        required=False,
-        source=availablePeople,
     )
     model.load("models/personal_campaign_page.xml")
 
@@ -116,15 +110,6 @@ class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
         description=u"This message will be shown to your donors after they donate.  You can use the default text or personalize your thank you message",
     )    
 
-#@form.default_value(field=IEditPersonalCampaignPage['title'])
-#def titleDefaultValue(data):
-#    mtool = getToolByName(data.context, 'portal_membership')
-#    member = mtool.getAuthenticatedMember()
-#    res = get_brains_for_email(data.context, member.id)
-#    if res:
-#        person = res[0].getObject()
-#        return "%s %s's Fundraising Page" % (person.first_name, person.last_name)
-    
 @form.default_value(field=IPersonalCampaignPage['personal_appeal'])
 def personalAppealDefaultValue(data):
     return data.context.get_fundraising_campaign().default_personal_appeal.output
@@ -167,15 +152,7 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         return res[0].getObject()
 
     def get_parent_sfid(self):
-        return self.aq_parent.sf_object_id
-
-    def populate_form_embed(self):
-        if self.aq_parent.form_embed:
-            form_embed = self.aq_parent.form_embed
-            form_embed = form_embed.replace('{{CAMPAIGN_ID}}', getattr(self, 'sf_object_id', ''))
-            form_embed = form_embed.replace('{{SOURCE_CAMPAIGN}}', self.get_source_campaign())
-            form_embed = form_embed.replace('{{SOURCE_URL}}', self.get_source_url())
-            return form_embed
+        return self.get_fundraising_campaign().sf_object_id
 
     def get_percent_goal(self):
         if self.goal and self.donations_total:
@@ -197,9 +174,11 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         return res
 
     def get_fundraiser(self):
-        person = getattr(self, 'person', None)
-        if person is not None:
-            return person.to_object
+        if not self.contact_sf_id:
+            return 
+
+        person = get_person_by_sf_id(self.contact_sf_id)
+        return person
 
     def send_chimpdrill_personal_page_created(self):
         campaign = self.get_fundraising_campaign()

@@ -27,6 +27,7 @@ from plone.app.async.interfaces import IAsyncService
 from plone.namedfile.field import NamedImage
 from Products.CMFCore.utils import getToolByName
 from Products.CMFCore.permissions import ModifyPortalContent
+from Products.CMFPlone.interfaces import IPloneSiteRoot
 from plone.i18n.locales.countries import CountryAvailability
 from plone.directives import dexterity, form
 from plone.supermodel import model
@@ -36,9 +37,6 @@ from plone.formwidget.contenttree.source import ObjPathSourceBinder
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from plone.z3cform.interfaces import IWrappedForm
 from z3c.form.browser.radio import RadioWidget
-#from z3c.relationfield import RelationList
-#from z3c.relationfield import RelationValue
-#from z3c.relationfield.schema import RelationChoice
 from plone.namedfile.interfaces import IImageScaleTraversable
 from collective.chimpdrill.utils import IMailsnakeConnection
 from collective.simplesalesforce.utils import ISalesforceUtility
@@ -134,16 +132,6 @@ class IDonation(model.Schema, IImageScaleTraversable):
         description=u"The Stripe card fingerprint",
         required=False,
     )
-
-#    campaign = RelationChoice(
-#        title=u"Campaign",
-#        description=u"The campaign this is related to",
-#        required=False,
-#        source=PathSourceBinder(portal_type=[
-#            'collective.salesforce.fundraising.fundraisingcampaign',
-#            'collective.salesforce.fundraising.personalcampaignpage',
-#        ])
-#    )
 
     products = schema.List(
         title=u"Products",
@@ -821,6 +809,28 @@ class SalesforceSyncView(grok.View):
             if not sm.checkPermission(ModifyPortalContent, self.context):
                 raise Unauthorized
 
+class MarkAllDonationEmailsSent(grok.View):
+    grok.context(IPloneSiteRoot)
+    grok.name('mark-all-donation-emails-sent')
+
+    def render(self):
+        pc = getToolByName(self.context, 'portal_catalog')
+        res = pc.searchResults(
+            portal_type = 'collective.salesforce.fundraising.donation',
+        )
+        for b in res:
+            donation = b.getObject()
+            changed = False
+            if not donation.is_receipt_sent:
+                donation.is_receipt_sent = True
+                changed = True
+            if not donation.is_notification_sent:
+                donation.is_notification_sent = True
+                changed = True
+            if changed:
+                donation.reindexObject()
+
+
 # Adapters
 
 class DonationReceipt(grok.Adapter):
@@ -1069,7 +1079,9 @@ class SalesforceDonationSync(grok.Adapter):
             return
 
         for product in self.products:
-            product['OpportunityId'] = self.opportunity_id
+            product['Opportunity'] = {
+                'Success_Transaction_ID__c': self.context.transaction_id,
+            }
             res = self.sfconn.OpportunityLineItem.create(products)
 
             if not res['success']:
@@ -1081,7 +1093,7 @@ class SalesforceDonationSync(grok.Adapter):
         # FIXME: change to upsert
         res = self.sfconn.OpportunityContactRole.create({
             'Opportunity': {
-                'Success_Transaction_ID__c': self.context.transaction_id
+                'Success_Transaction_ID__c': self.context.transaction_id,
             },
             'ContactId': self.context.contact_sf_id,
             'IsPrimary': True,
@@ -1186,7 +1198,7 @@ def queueMailchimpSendPersonalCampaignDonation(donation, event):
 
 # Add to campaign totals.  This is best to do async to properly handle conflict errors
 def addAmountToPage(donation):
-    if getattr(donation, 'is_added', False):
+    if getattr(donation, 'is_added', True):
         return 'Skipping: Donation already added to campaign'
     page = donation.get_fundraising_campaign_page()
     page.add_donation(donation.amount)
