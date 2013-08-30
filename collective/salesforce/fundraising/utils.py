@@ -7,7 +7,6 @@ from zope.component.hooks import getSite
 from Products.CMFCore.utils import getToolByName
 
 from plone.registry.interfaces import IRegistry
-from collective.simplesalesforce.utils import ISalesforceUtility
 from collective.salesforce.fundraising.controlpanel.interfaces import IFundraisingSettings
 
 def get_settings():

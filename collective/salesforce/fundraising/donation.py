@@ -975,7 +975,8 @@ class SalesforceDonationSync(grok.Adapter):
 
     def sync_to_salesforce(self):
         self.sfconn = getUtility(ISalesforceUtility).get_connection()
-        self.campaign = self.context.get_fundraising_campaign_page()
+        self.campaign = self.context.get_fundraising_campaign()
+        self.page = self.context.get_fundraising_campaign_page()
         self.pricebook_id = None
         self.settings = get_settings()
 
@@ -1111,11 +1112,13 @@ class SalesforceDonationSync(grok.Adapter):
             'Amount': self.context.amount,
             'Name': self.context.title,
             'StageName': self.context.stage,
-            'CampaignId': self.campaign.sf_object_id,
+            'CampaignId': self.page.sf_object_id,
             'Source_Campaign__c': self.context.source_campaign_sf_id,
             'Source_Url__c': self.context.source_url,
             'Payment_Method__c': self.context.payment_method,
             'Is_Test__c': self.context.is_test,
+            'Parent_Campaign__c': self.campaign.sf_object_id,
+            'Secret_Key__c': self.context.secret_key,
             'Honorary_Type__c': self.context.honorary_type,
             'Honorary_First_Name__c': self.context.honorary_first_name,
             'Honorary_Last_Name__c': self.context.honorary_last_name,
@@ -1187,7 +1190,7 @@ class SalesforceDonationSync(grok.Adapter):
             product['Opportunity'] = {
                 'Success_Transaction_ID__c': self.context.transaction_id,
             }
-            res = self.sfconn.OpportunityLineItem.create(self.products)
+            res = self.sfconn.OpportunityLineItem.create(product)
 
             if not res['success']:
                 raise Exception(res['errors'][0])
@@ -1218,7 +1221,7 @@ class SalesforceDonationSync(grok.Adapter):
         if self.settings.sf_create_campaign_member:
             try:
                 res = self.sfconn.CampaignMember.create({
-                    'CampaignId': self.campaign.sf_object_id,
+                    'CampaignId': self.page.sf_object_id,
                     'ContactId': self.context.contact_sf_id,
                     'Status': 'Responded',
                 })

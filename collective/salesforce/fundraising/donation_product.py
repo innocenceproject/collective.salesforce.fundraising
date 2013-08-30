@@ -12,7 +12,7 @@ from AccessControl import getSecurityManager
 from Products.CMFCore.permissions import ModifyPortalContent
 
 from plone.namedfile.interfaces import IImageScaleTraversable
-
+from collective.simplesalesforce.utils import ISalesforceUtility
 from collective.salesforce.fundraising.utils import get_standard_pricebook_id
 from collective.salesforce.fundraising.stripe.donation_form import DonationFormStripe as BaseDonationFormStripe
 from collective.salesforce.fundraising.stripe.donation_form import ProcessStripeDonation as BaseProcessStripeDonation
