@@ -180,9 +180,9 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
         person = get_person_by_sf_id(self.contact_sf_id)
         return person
 
-    def send_chimpdrill_personal_page_created(self):
+    def send_email_personal_page_created(self):
         campaign = self.get_fundraising_campaign()
-        uuid = getattr(campaign, 'chimpdrill_template_personal_page_created', None)
+        uuid = getattr(campaign, 'email_template_personal_page_created', None)
         if uuid is None:
             return
 
@@ -196,7 +196,7 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
             # Skip if we have no email to send to
             return
  
-        data = self.get_chimpdrill_campaign_data()
+        data = self.get_email_campaign_data()
 
         return template.send(email = person.email,
             merge_vars = data['merge_vars'],
@@ -378,7 +378,7 @@ class PromoteCampaignView(ShareView):
 
 def mailchimpSubscribeFundraiser(page):
     campaign = page.get_fundraising_campaign()
-    if not campaign.chimpdrill_list_fundraisers:
+    if not campaign.email_list_fundraisers:
         return
 
     logger.info("Mailchimp Subscribe: for Page %s" % page.title)
@@ -407,7 +407,7 @@ def mailchimpSubscribeFundraiser(page):
     logger.debug("collective.salesforce.fundraising: Mailchimp Subscribe: merge_vars = %s" % merge_vars)
     mc = getUtility(IMailsnakeConnection).get_mailchimp()
     res = mc.listSubscribe(
-        id = campaign.chimpdrill_list_fundraisers,
+        id = campaign.email_list_fundraisers,
         email_address = person.email,
         merge_vars = merge_vars,
         update_existing = True,

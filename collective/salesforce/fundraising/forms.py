@@ -133,21 +133,7 @@ class CreatePersonalCampaignPageForm(form.Form):
         campaign.reindexObject()
 
         # Send email confirmation and links.
-        # If the campaign is configured to use a chimpdrill template for this, use it instead
-        template_uuid = getattr(campaign, 'chimpdrill_template_personal_page_created', None)
-        if template_uuid is not None:
-            campaign.send_chimpdrill_personal_page_created()
-
-        else:
-            data['parent'] = parent_campaign
-            data['campaign'] = campaign
-            data['FirstName'] = member.getProperty('fullname', 'friend')
-            email_view = getMultiAdapter((campaign, self.request), name='page-confirmation-email')
-            email_view.set_page_values(data)
-            email_body = email_view()
-            email_to = member.getProperty('email')
-            subject = 'New Personal Campaign Page Created'
-            send_confirmation_email(campaign, subject, email_to, email_body)
+        campaign.send_email_personal_page_created()
 
         # Send the user to their new campaign.
         IStatusMessage(self.request).add(u'Welcome to your fundraising page!')
@@ -165,50 +151,6 @@ class EditPersonalCampaign(dexterity.EditForm):
     label = _(u"Edit My Fundraising Page")
     description = _(u"Use the form below to edit your fundraising page to create the most effective appeal to your friends and family.")
     schema = IEditPersonalCampaignPage
-
-#    @button.buttonAndHandler(_(u"Save Changes"))
-#    def handleSaveChanges(self, action):
-#        data, errors = self.extractData()
-#        if errors:
-#            self.status = self.formErrorsMessage
-#            return
-#
-#
-#        settings = get_settings()
-#
-#        changed = False
-#        if data['title'] != self.context.Title():
-#            changed = True
-#        if data['description'] != self.context.Description():
-#            changed = True
-#        if data['goal'] != self.context.goal:
-#            changed = True
-#
-#        if changed:
-#            # Update the campaign in Salesforce
-#            sfconn = getUtility(ISalesforceUtility).get_connection()
-#            data = {
-#                'Name': data['title'],
-#                'Description': data['description'],
-#                'Public_Name__c': data['title'],
-#                'ExpectedRevenue': data['goal'],
-#                }
-#
-#            res = sfconn.Campaign.update(self.context.sf_object_id, data)
-#            if not res['success']:
-#                raise Exception(res['errors'][0])
-#
-#        campaign.reindexObject()
-#
-#        # Send the user to their new campaign.
-#        IStatusMessage(self.request).add(u'Your changes have been saved.  You can see your changes below.!')
-#        self.request.response.redirect(self.context.absolute_url())
-#        return
-#
-#    @button.buttonAndHandler(_(u"Cancel"))
-#    def handleCancel(self, action):
-#        return
-
 
 class CreateDonorQuote(form.Form):
     grok.name('create-donor-quote')

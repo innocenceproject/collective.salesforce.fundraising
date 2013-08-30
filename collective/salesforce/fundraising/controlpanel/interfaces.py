@@ -105,70 +105,70 @@ class IFundraisingSettings(Interface):
         required=False,
     )
 
-    default_chimpdrill_template_thank_you = schema.Choice(
+    default_email_template_thank_you = schema.Choice(
         title=_(u"Email Template - Thank You Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for thank you emails."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.thank_you_templates',
     )
 
-    default_chimpdrill_honorary = schema.Choice(
+    default_email_honorary = schema.Choice(
         title=_(u"Email Template - Honorary Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for honorary notification emails."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.honorary_templates',
     )
 
-    default_chimpdrill_memorial = schema.Choice(
+    default_email_memorial = schema.Choice(
         title=_(u"Email Template - Memorial Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for memorial notification emails."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.memorial_templates',
     )
 
-    default_chimpdrill_personal_page_created = schema.Choice(
+    default_email_personal_page_created = schema.Choice(
         title=_(u"Email Template - Personal Page Created Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for personal page created emails."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.personal_page_created_templates',
     )
 
-    default_chimpdrill_personal_page_donation = schema.Choice(
+    default_email_personal_page_donation = schema.Choice(
         title=_(u"Email Template - Personal Page Donation Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for personal page donation emails."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.personal_page_donation_templates',
     )
 
-    chimpdrill_recurring_receipt = schema.Choice(
+    email_recurring_receipt = schema.Choice(
         title=_(u"Email Template - Recurring Donation Receipt"),
         description=_(u"For recurring donations, the email template used to send receipts on recurring charges.  The first charge is sent the normal thank you email."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
     )
 
-    chimpdrill_recurring_failed_first = schema.Choice(
+    email_recurring_failed_first = schema.Choice(
         title=_(u"Email Template - Recurring Payment Failed, First Time"),
         description=_(u"For recurring donations, the email template used to notify a donor that their recurring payment failed to process for the first time."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
     )
 
-    chimpdrill_recurring_failed_second = schema.Choice(
+    email_recurring_failed_second = schema.Choice(
         title=_(u"Email Template - Recurring Payment Failed, Second Time"),
         description=_(u"For recurring donations, the email template used to notify a donor that their recurring payment failed to process for the second time."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
     )
 
-    chimpdrill_recurring_failed_third = schema.Choice(
+    email_recurring_failed_third = schema.Choice(
         title=_(u"Email Template - Recurring Payment Failed, Third Time"),
         description=_(u"For recurring donations, the email template used to notify a donor that their recurring payment failed to process for the third time."),
         required=False,
         vocabulary=u'collective.salesforce.fundraising.recurring_receipt_templates',
     )
 
-    chimpdrill_recurring_cancelled = schema.Choice(
+    email_recurring_cancelled = schema.Choice(
         title=_(u"Email Template - Recurring Donation Cancelled"),
         description=_(u"For recurring donations, the email template used to notify a donor that their recurring donation has been cancelled."),
         required=False,

@@ -11,50 +11,65 @@ from collective.stripe.interfaces import IInvoicePaymentFailedEvent
 from collective.stripe.interfaces import ICustomerSubscriptionDeletedEvent
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.donation import build_secret_key
+from collective.salesforce.fundraising.stripe.donation_form import stripe_timestamp_to_date
 
 def get_last_donation_for_invoice(invoice):
-    # Look for another donation with the same Stripe customer and plan
+    # Look for another donation with the same Stripe customer
     pc = getToolByName(getSite(), 'portal_catalog')
-    customer_id = invoice['customer']
-    plan_id = invoice['lines']['data'][0]['plan']['id']
     res = pc.searchResults(
         portal_type='collective.salesforce.fundraising.donation',
         stripe_customer_id = invoice['customer'],
-        stripe_plan_id = invoice['customer'],
         sort_on = 'created',
-        sort_order = 'descending',
+        sort_order = 'reverse',
     )
 
     if res:
-        # Return the parent object of the first donation in the list
-        return aq_parent(res[0].getObject())
+        return res[0].getObject()
 
-def get_container_for_donation(invoice):
-    last_donation = get_last_donation_for_invoice(invoice)
-    container = None
 
-    if last_donation:
-        container = aq_parent(last_donation)
-    else:
-        # Find the site default
-        settings = get_settings()
-        if settings.default_campaign:
-            container = uuidToObject(settings.default_campaign)
+def get_container_for_invoice(invoice):
+    """ Get the container where a donation for the invoice should be created """
+
+    mode = 'live'
+    if invoice['livemode'] == False:
+        mode = 'test'
+    stripe_util = getUtility(IStripeUtility)
+    stripe_api = stripe_util.get_stripe_api(mode=mode)
+    customer = stripe_api.Customer.retrieve(invoice['customer'])
+
+    if customer['description']:
+        # container's sf_id is in the third column of a pipe delimited string
+        desc_parts = customer['description'].split('|')
+        if len(desc_parts) >= 3:
+            container_id = desc_parts[2]
+            if container_id:
+                pc = getToolByName(getSite(), 'portal_catalog')
+                res = pc.searchResults(
+                    object_provides='collective.salesforce.fundraising.fundraising_campaign.IFundraisingCampaignPage',
+                    sf_object_id = container_id,
+                    sort_index = 'created',
+                    sort_limit = 1,
+                )
+                if res:
+                    return res[0].getObject()
+
+    # Find the site default
+    settings = get_settings()
+    if settings.default_campaign:
+        container = uuidToObject(settings.default_campaign)
         if container:
             return container
 
-    if container is None:
-        # This is the ultimate fallback.  Find the campaign with the most donations and assume it is the default campaign.
-        pc = getToolByName(getSite(), 'portal_catalog')
-        res = pc.searchResults(
-            portal_type='collective.salesforce.fundraising.fundraisingcampaign',
-            sort_on='donations_count',
-            sort_order='descending',
-        )
-        if res:
-            return res[0].getObject()
-            
-        
+    # This is the ultimate fallback.  Find the campaign with the most donations and assume it is the default campaign.
+    pc = getToolByName(getSite(), 'portal_catalog')
+    res = pc.searchResults(
+        portal_type='collective.salesforce.fundraising.fundraisingcampaign',
+        sort_on='donations_count',
+        sort_order='descending',
+    )
+    if res:
+        return res[0].getObject()
+
 
 def make_donation_from_invoice(invoice, container):
     last_donation = get_last_donation_for_invoice(invoice)
@@ -80,7 +95,6 @@ def make_donation_from_invoice(invoice, container):
     if last_donation is not None:
         # Found last donation, get contact data from it
         data = {
-            
             'title': '%s %s - $%i per %s' % (
                 last_donation.first_name, 
                 last_donation.last_name, 
@@ -152,12 +166,13 @@ def make_donation_from_invoice(invoice, container):
     data['secret_key'] = build_secret_key()
     data['stage'] = 'Posted'
     data['payment_method'] = 'Stripe'
+    data['payment_date'] = stripe_timestamp_to_date(invoice['date'])
 
     # Suppress sending an email receipt
     data['is_receipt_sent'] = True
 
-    # Send the Stripe monthly email receipt
-    # FIXME: Implement me
+    # Suppress sending a notification of the donation to a personal fundraiser
+    data['is_notification_sent'] = True
 
     donation = createContentInContainer(
         container,
@@ -166,7 +181,173 @@ def make_donation_from_invoice(invoice, container):
         **data
     )
 
+    # Send the Stripe monthly email receipt
+    donation.send_email_recurring_receipt()
+
     return donation
+
+
+def update_donation_from_invoice(donation, invoice):
+    mode = 'live'
+    is_test = invoice['livemode'] is False
+
+    if invoice['livemode'] == False:
+        mode = 'test'
+
+    # For recurring invoices, there should only be one line item
+    line_item = invoice['lines']['data'][0]
+    plan = line_item['plan']
+
+    # The full charge is needed to determine if a refund was issued
+    mode = 'live'
+    if invoice['livemode'] == False:
+        mode = 'test'
+    stripe_util = getUtility(IStripeUtility)
+    stripe_api = stripe_util.get_stripe_api(mode=mode)
+    charge = stripe_api.Charge.retrieve(invoice['charge'])
+
+    # Stripe handles amounts as cents
+    amount = (plan['amount'] * line_item['quantity']) / 100
+
+    # Stripe amounts are in cents
+    donation.amount = amount
+    donation.stripe_customer_id = invoice['customer']
+    donation.stripe_plan_id = plan['id']
+    donation.transaction_id = invoice['charge']
+    donation.is_test = is_test
+    if charge['paid'] and not charge['refunded']:
+        donation.stage = 'Posted'
+    else:
+        donation.stage = 'Withdrawn'
+
+    donation.payment_method = 'Stripe'
+    donation.payment_date = stripe_timestamp_to_date(invoice['date'])
+    
+    # Ensure no emails get set out from the update
+    donation.is_receipt_sent = True
+    donation.is_notification_sent = True
+
+    donation.reindexObject()
+
+    return donation
+
+
+def get_donation_for_invoice(invoice):
+    pc = getToolByName(getSite(), 'portal_catalog')
+
+    # Look for a donation with the invoice's successful payment as its transaction_id
+    res = pc.searchResults(
+        portal_type='collective.salesforce.fundraising.donation',
+        transaction_id = invoice['charge'],
+        sort_limit = 1,
+    )
+    
+    if res:
+        return res[0].getObject()
+
+def get_email_recurring_receipt_data(invoice):
+    page = get_container_for_invoice(invoice)
+
+    thank_you_message = None
+    if page.thank_you_message:
+        thank_you_message = page.thank_you_message.output
+
+    update_url = '%s/@@update-recurring-donation?id=%s' % (getSite().absolute_url(), invoice['customer'])
+
+    description_parts = customer['description'].split('|')
+    first_name = ''
+    last_name = ''
+    campaign_sf_id = None
+    if len(description_parts) >= 1:
+        first_name = description_parts[0]
+    if len(description_parts) >= 2:
+        last_name = description_parts[1]
+
+    data = {
+        'merge_vars': [
+            {'name': 'first_name', 'content': first_name},
+            {'name': 'last_name', 'content': last_name},
+            {'name': 'amount', 'content': amount},
+            {'name': 'update_url', 'content': update_url},
+        ],
+        'blocks': [
+            {'name': 'campaign_thank_you', 'content': page_thank_you},
+        ],
+    }
+
+    campaign_data = page.get_email_campaign_data()
+    data['merge_vars'].extend(campaign_data['merge_vars'])
+    data['blocks'].extend(campaign_data['blocks'])
+
+    return data
+    
+
+def get_email_recurring_template(field):
+    """ Looks for value of field in settings and tries to look up a template using the value as uuid """
+    settings = get_settings()
+    uuid = getattr(settings, field, None)
+    if not uuid:
+        logger.warning('collective.salesforce.fundraising: get_email_recurring_template: No template configured for %s' % field)
+        return
+
+    template = uuidToObject(uuid)
+    if not template:
+        logger.warning('collective.salesforce.fundraising: get_email_recurring_template: No template found for %s' % field)
+        return
+
+    return template
+
+def get_customer_email_for_invoice(invoice):
+    mode = 'live'
+    if invoice['livemode'] == False:
+        mode = 'test'
+    stripe_util = getUtility(IStripeUtility)
+    stripe_api = stripe_util.get_stripe_api(mode=mode)
+    customer = stripe_api.Customer.retrieve(invoice['customer'])
+    return customer['email']
+
+def send_email_recurring_failed(invoice):
+    template = None
+
+    if invoice['attempt_count'] == 0:
+        template = get_email_recurring_template('email_recurring_failed_first')
+    elif invoice['attempt_count'] == 1:
+        template = get_email_recurring_template('email_recurring_failed_second')
+    elif invoice['attempt_count'] == 2:
+        template = get_email_recurring_template('email_recurring_failed_third')
+
+    if not template:
+        return
+
+    mail_to = get_customer_email_for_invoice(invoice)
+    if not mail_to:
+        logger.warning('collective.salesforce.fundraising: Email Recurring Payment Failed: no email address')
+        return
+
+    data = get_email_recurring_receipt_data(invoice)
+
+    return template.send(email = mail_to,
+        merge_vars = data['merge_vars'],
+        blocks = data['blocks'],
+    )
+
+def send_email_recurring_cancelled(invoice):
+    template = get_email_recurring_template('email_recurring_cancelled')
+
+    if not template:
+        return
+
+    mail_to = get_customer_email_for_invoice(invoice)
+    if not mail_to:
+        logger.warning('collective.salesforce.fundraising: Email Recurring Cancelled: no email address')
+        return
+
+    data = get_email_recurring_receipt_data(invoice)
+
+    return template.send(email = mail_to,
+        merge_vars = data['merge_vars'],
+        blocks = data['blocks'],
+    )
 
 
 @grok.subscribe(IInvoicePaymentSucceededEvent)
@@ -177,37 +358,26 @@ def recurring_payment_succeeded(event):
     if invoice['charge'] is None:
         return
 
-    pc = getToolByName(getSite(), 'portal_catalog')
+    donation = get_donation_for_invoice(invoice)
 
-    # Look for a donation with the invoice's successful payment as its transaction_id
-    transaction_id = invoice['charge']
-    res = pc.searchResults(
-        portal_type='collective.salesforce.fundraising.donation',
-        transaction_id = transaction_id,
-        sort_limit = 1,
-    )
-    
-    if res:
-        # Existing donation found, do nothing
-        return
+    if donation:
+        # If the donation exists, update it with data from the invoice
+        res = update_donation_from_invoice(donation, invoice)
+        return res
 
-    # Look for a previous donation for the stripe customer id
-    res = pc.searchResults(
-        portal_type = 'collective.salesforce.fundraising.donation',
-        stripe_customer_id = invoice['customer'],
-        sort_index = 'created',
-        sort_order = 'reverse',
-        sort_limit = 1,
-    )
-    if not res:
-        # This handler ignores the first donation in the series and assumes the first
-        # donation successfully created a donation object
-        return
-
-    container = get_container_for_donation(invoice)
+    container = get_container_for_invoice(invoice)
     if not container:
         raise ValueError('cannot find container for donation for the invoice')
 
-    donation = make_donation_from_invoice(invoice, container)
-        
+    return make_donation_from_invoice(invoice, container)
 
+
+@grok.subscribe(IInvoicePaymentFailedEvent)
+def recurring_payment_failed(event):
+    invoice = event.data['data']['object']
+    return send_recurring_failed(invoice)    
+
+@grok.subscribe(ICustomerSubscriptionDeletedEvent)
+def recurring_subscription_cancelled(event):
+    invoice = event.data['data']['object']
+    return send_recurring_cancelled(invoice)    

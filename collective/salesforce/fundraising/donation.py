@@ -201,6 +201,11 @@ class IDonation(model.Schema, IImageScaleTraversable):
         required=False,
         default=False,
     )
+    subscribed_donor = schema.Bool(
+        title=u"Subscribed to Donors List",
+        required=False,
+        default=False,
+    )
 
 
     model.load("models/donation.xml")
@@ -310,23 +315,17 @@ class Donation(dexterity.Container):
     def send_donation_receipt(self):
         settings = get_settings()
 
-        campaign = self.get_fundraising_campaign()
-        uuid = getattr(campaign, 'chimpdrill_template_thank_you', None)
-        if uuid:
-            template = uuidToObject(uuid)
-            if not template:
-                return
-            res = self.send_chimpdrill_thank_you(template)
-            self.is_receipt_sent = True
-            return res
+        res = self.send_email_thank_you()
+        self.is_receipt_sent = True
+        return res
 
         logger.warning('collective.salesforce.fundraising: Send Donation Receipt: No template found')
 
-    def get_chimpdrill_campaign_data(self):
+    def get_email_campaign_data(self):
         page = self.get_fundraising_campaign_page()
-        return page.get_chimpdrill_campaign_data()
+        return page.get_email_campaign_data()
 
-    def get_chimpdrill_thank_you_data(self):
+    def get_email_thank_you_data(self):
         receipt = IDonationReceipt(self)()
 
         campaign = self.get_fundraising_campaign_page()
@@ -346,13 +345,13 @@ class Donation(dexterity.Container):
             ],
         }
 
-        campaign_data = self.get_chimpdrill_campaign_data()
+        campaign_data = self.get_email_campaign_data()
         data['merge_vars'].extend(campaign_data['merge_vars'])
         data['blocks'].extend(campaign_data['blocks'])
 
         return data
 
-    def get_chimpdrill_honorary_data(self):
+    def get_email_honorary_data(self):
         # Use default values if none provided, useful for preview rendering
         honorary_first_name = self.honorary_first_name
         if not honorary_first_name:
@@ -384,13 +383,13 @@ class Donation(dexterity.Container):
             'blocks': [],
         }
 
-        campaign_data = self.get_chimpdrill_campaign_data()
+        campaign_data = self.get_email_campaign_data()
         data['merge_vars'].extend(campaign_data['merge_vars'])
         data['blocks'].extend(campaign_data['blocks'])
 
         return data
 
-    def get_chimpdrill_personal_page_donation_data(self):
+    def get_email_personal_page_donation_data(self):
         data = {
             'merge_vars': [
                 {'name': 'amount', 'content': self.amount},
@@ -401,18 +400,17 @@ class Donation(dexterity.Container):
             'blocks': [],
         }
         
-        campaign_data = self.get_chimpdrill_campaign_data()
+        campaign_data = self.get_email_campaign_data()
         data['merge_vars'].extend(campaign_data['merge_vars'])
         data['blocks'].extend(campaign_data['blocks'])
 
         return data
 
-    def get_chimpdrill_recurring_receipt_data(self):
+    def get_email_recurring_receipt_data(self):
         campaign = self.get_fundraising_campaign_page()
         campaign_thank_you = None
         if campaign.thank_you_message:
             campaign_thank_you = campaign.thank_you_message.output
-
         
         update_url = '%s/@@stripe-update-customer-info?customer=%s' % (getSite().absolute_url(), self.stripe_customer_id)
 
@@ -421,57 +419,95 @@ class Donation(dexterity.Container):
                 {'name': 'first_name', 'content': self.first_name},
                 {'name': 'last_name', 'content': self.last_name},
                 {'name': 'amount', 'content': self.amount},
-                {'name': 'update_url', 'content': update_url()},
+                {'name': 'update_url', 'content': update_url},
             ],
             'blocks': [
                 {'name': 'campaign_thank_you', 'content': campaign_thank_you},
             ],
         }
 
-        campaign_data = self.get_chimpdrill_campaign_data()
+        campaign_data = self.get_email_campaign_data()
         data['merge_vars'].extend(campaign_data['merge_vars'])
         data['blocks'].extend(campaign_data['blocks'])
 
         return data
 
-    def send_chimpdrill_thank_you(self, template):
+    def get_email_template(self, field):
+        campaign = self.get_fundraising_campaign()
+        uuid = getattr(campaign, field, None)
+        if not uuid:
+            logger.warning('collective.salesforce.fundraising: get_email_template: No template configured for %s' % field)
+            return
+    
+        template = uuidToObject(uuid)
+        if not template:
+            logger.warning('collective.salesforce.fundraising: get_email_template: No template found for %s' % field)
+            return
+
+        return template
+
+    def send_email_thank_you(self):
+        # Mark the receipt as sent so if the transaction commits, no receipt should be sent again
+        self.is_receipt_sent = True
+
+        template = self.get_email_template('email_thank_you')
+        if not template:
+            return
+
         mail_to = self.email
-        data = self.get_chimpdrill_thank_you_data()
+        if not mail_to:
+            logger.warning('collective.salesforce.fundraising: Send Thank You: No mail_to found')
+
+        data = self.get_email_thank_you_data()
 
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def render_chimpdrill_thank_you(self, template):
-        data = self.get_chimpdrill_thank_you_data()
+    def render_email_thank_you(self):
+        template = self.get_email_template('email_thank_you')
+        if not template:
+            return
+
+        data = self.get_email_thank_you_data()
 
         return template.render(
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def send_chimpdrill_honorary(self, template):
-        if not self.honorary_email:
+    def send_email_honorary(self):
+        if not self.honorary_email or self.honorary_notification_type != 'email':
             # Skip if we have no email to send to
             return
 
-        mail_to = self.honorary_email
-        data = self.get_chimpdrill_honorary_data()
+        template = self.get_email_template('email_honorary')
+        if not template:
+            return
 
+        mail_to = self.honorary_email
+        data = self.get_email_honorary_data()
+
+        # Send to the honorary notification email address
         template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
+        # Send a copy to the donor
         template.send(email = self.email,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
             
         
-    def render_chimpdrill_honorary(self, template):
-        data = self.get_chimpdrill_honorary_data()
+    def render_email_honorary(self):
+        data = self.get_email_honorary_data()
+
+        template = self.get_email_template('email_honorary')
+        if not template:
+            return
 
         return template.render(
             merge_vars = data['merge_vars'],
@@ -479,45 +515,65 @@ class Donation(dexterity.Container):
         )
 
 
-    def send_chimpdrill_memorial(self, template):
-        if not self.honorary_email:
+    def send_email_memorial(self):
+        if not self.honorary_email or self.honorary_notification_type != 'email':
             # Skip if we have no email to send to
             return
 
-        mail_to = self.honorary_email
-        data = self.get_chimpdrill_honorary_data()
+        if not self.honorary_type == 'memorial':
+            logger.warning('collective.salesforce.fundraising: Send Email Memorial: honorary_type is not memorial')
 
+        template = self.get_email_template('email_memorial')
+        if not template:
+            return
+
+        mail_to = self.honorary_email
+        data = self.get_email_honorary_data()
+
+        # Send to the honorary notification email address
         template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
+        # Send a copy to the donor
         template.send(email = self.email,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
-
         
-    def render_chimpdrill_memorial(self, template):
-        data = self.get_chimpdrill_honorary_data()
+    def render_email_memorial(self):
+        template = self.get_email_template('email_memorial')
+        if not template:
+            return
+
+        data = self.get_email_honorary_data()
 
         return template.render(
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def render_chimpdrill_personal_page_donation(self, template):
-        data = self.get_chimpdrill_personal_page_donation_data()
+    def render_email_personal_page_donation(self):
+        data = self.get_email_personal_page_donation_data()
+
+        template = self.get_email_template('email_personal_page_donation')
+        if not template:
+            return
 
         return template.render(
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def send_chimpdrill_personal_page_donation(self, template):
+    def send_email_personal_page_donation(self):
         page = self.get_fundraising_campaign_page()
         if not page.is_personal():
             # Skip if the donation was not to a personal campaign page
+            return
+
+        template = self.get_email_template('email_personal_page_donation')
+        if not template:
             return
 
         person = page.get_fundraiser()
@@ -527,97 +583,163 @@ class Donation(dexterity.Container):
             return
 
         mail_to = person.email
-        data = self.get_chimpdrill_personal_page_donation_data()
+        data = self.get_email_personal_page_donation_data()
 
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def render_chimpdrill_recurring_receipt(self, template):
-        data = self.get_chimpdrill_recurring_receipt_data()
+    def get_email_recurring_template(self, field):
+        settings = get_settings()
+        uuid = getattr(settings, field, None)
+        if not uuid:
+            logger.warning('collective.salesforce.fundraising: get_email_recurring_template: No template configured for %s' % field)
+            return
+    
+        template = uuidToObject(uuid)
+        if not template:
+            logger.warning('collective.salesforce.fundraising: get_email_recurring_template: No template found for %s' % field)
+            return
+
+        return template
+
+    def render_email_recurring_receipt(self):
+        template = self.get_email_recurring_template('email_recurring_receipt')
+        if not template:
+            return
+
+        data = self.get_email_recurring_receipt_data()
         return template.render(
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def send_chimpdrill_recurring_receipt(self, template):
+    def send_email_recurring_receipt(self):
+        template = self.get_email_recurring_template('email_recurring_receipt')
+        if not template:
+            return
+
         mail_to = self.email
-        data = self.get_chimpdrill_recurring_receipt_data()
+        if not mail_to:
+            logger.warning('collective.salesforce.fundraising: Email Recurring Receipt: no email address')
+            return
+
+        data = self.get_email_recurring_receipt_data()
+
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-        logger.warning('collective.salesforce.fundraising: Send Donation Receipt: No template found')
+    def render_email_recurring_failed_first(self):
+        template = self.get_email_recurring_template('email_recurring_failed_first')
+        if not template:
+            return
 
-    def render_chimpdrill_recurring_failed_first(self, template):
-        data = self.get_chimpdrill_recurring_receipt_data()
+        data = self.get_email_recurring_receipt_data()
         return template.render(
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def send_chimpdrill_recurring_failed_first(self, template):
+    def send_email_recurring_failed_first(self):
+        template = self.get_email_recurring_template('email_recurring_failed_first')
+        if not template:
+            return
+
         mail_to = self.email
-        data = self.get_chimpdrill_recurring_receipt_data()
+        if not mail_to:
+            logger.warning('collective.salesforce.fundraising: Email Failed First: no email address')
+            return
+
+        data = self.get_email_recurring_receipt_data()
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-        logger.warning('collective.salesforce.fundraising: Send Recurring Failed - First: No template found')
+    def render_email_recurring_failed_second(self):
+        template = self.get_email_recurring_template('email_recurring_failed_second')
+        if not template:
+            return
 
-    def render_chimpdrill_recurring_failed_second(self, template):
-        data = self.get_chimpdrill_recurring_receipt_data()
+        data = self.get_email_recurring_receipt_data()
+
         return template.render(
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def send_chimpdrill_recurring_failed_second(self, template):
+    def send_email_recurring_failed_second(self):
+        template = self.get_email_recurring_template('email_recurring_failed_second')
+        if not template:
+            return
+
         mail_to = self.email
-        data = self.get_chimpdrill_recurring_receipt_data()
+        if not mail_to:
+            logger.warning('collective.salesforce.fundraising: Email Failed Second: no email address')
+            return
+
+        data = self.get_email_recurring_receipt_data()
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-        logger.warning('collective.salesforce.fundraising: Send Recurring Failed - Second: No template found')
+    def render_email_recurring_failed_third(self):
+        template = self.get_email_recurring_template('email_recurring_failed_third')
+        if not template:
+            return
 
-    def render_chimpdrill_recurring_failed_third(self, template):
-        data = self.get_chimpdrill_recurring_receipt_data()
+        data = self.get_email_recurring_receipt_data()
         return template.render(
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def send_chimpdrill_recurring_failed_third(self, template):
+    def send_email_recurring_failed_third(self):
+        template = self.get_email_recurring_template('email_recurring_failed_third')
+        if not template:
+            return
+
         mail_to = self.email
-        data = self.get_chimpdrill_recurring_receipt_data()
+        if not mail_to:
+            logger.warning('collective.salesforce.fundraising: Email Failed Third: no email address')
+            return
+
+        data = self.get_email_recurring_receipt_data()
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-        logger.warning('collective.salesforce.fundraising: Send Recurring Failed - First: No template found')
+    def render_email_recurring_cancelled(self):
+        template = self.get_email_recurring_template('email_recurring_cancelled')
+        if not template:
+            return
 
-    def render_chimpdrill_recurring_cancelled(self, template):
-        data = self.get_chimpdrill_recurring_receipt_data()
+        data = self.get_email_recurring_receipt_data()
         return template.render(
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
 
-    def send_chimpdrill_recurring_cancelled(self, template):
+    def send_email_recurring_cancelled(self):
+        template = self.get_email_recurring_template('email_recurring_cancelled')
+        if not template:
+            return
+
         mail_to = self.email
-        data = self.get_chimpdrill_recurring_receipt_data()
+        if not mail_to:
+            logger.warning('collective.salesforce.fundraising: Subscription Cancelled: no email address')
+            return
+
+        data = self.get_email_recurring_receipt_data()
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
-
-        logger.warning('collective.salesforce.fundraising: Send Donation Receipt: No template found')
 
 
 class ThankYouView(grok.View):
@@ -688,21 +810,10 @@ class HonoraryMemorialView(grok.View):
     form_template = ViewPageTemplateFile('donation_templates/honorary-memorial-donation.pt')
 
     def send_email(self):
-        campaign = self.context.get_fundraising_campaign()
         if self.context.honorary_type == 'Memorial':
-            template_uid = getattr(campaign, 'chimpdrill_memorial')
-            if template_uid:
-                template = uuidToObject(template_uid)
-                if template:
-                    return self.context.send_chimpdrill_memorial(template)
+            return self.context.send_email_memorial()
         else:
-            template_uid = getattr(campaign, 'chimpdrill_honorary')
-            if template_uid:
-                template = uuidToObject(template_uid)
-                if template:
-                    return self.context.send_chimpdrill_honorary(template)
-
-        logger.warning('collective.salesforce.fundraising: Send Honorary/Memorial Email: No template found')
+            return self.context.send_email_honorary()
 
     def render(self):
         # check that either the secret_key was passed in the request or the user has modify rights
@@ -754,13 +865,7 @@ class HonoraryEmailView(grok.View):
     grok.name('honorary-email')
     
     def render(self):
-        campaign = self.context.get_fundraising_campaign()
-        uuid = getattr(campaign, 'chimpdrill_honorary', None)
-        if uuid:
-            template = uuidToObject(uuid)
-            if template:
-                return self.context.render_chimpdrill_honorary(template)
-        return 'No template found'
+        return self.context.render_email_honorary()
 
     def update(self):
         # check that either the secret_key was passed in the request or the user has modify rights
@@ -775,13 +880,7 @@ class MemorialEmailView(grok.View):
     grok.name('memorial-email')
     
     def render(self):
-        campaign = self.context.get_fundraising_campaign()
-        uuid = getattr(campaign, 'chimpdrill_memorial', None)
-        if uuid:
-            template = uuidToObject(uuid)
-            if template:
-                return self.context.render_chimpdrill_memorial(template)
-        return 'No template found'
+        return self.context.render_email_memorial()
 
     def update(self):
         # check that either the secret_key was passed in the request or the user has modify rights
@@ -880,16 +979,19 @@ class SalesforceDonationSync(grok.Adapter):
         self.pricebook_id = None
         self.settings = get_settings()
 
-        self.sync_contact()
-        transaction.commit()
+        if not self.context.synced_contact:
+            self.sync_contact()
+            transaction.commit()
 
         self.get_products()
 
-        self.upsert_recurring()
-        transaction.commit()
+        if not self.context.synced_recurring:
+            self.upsert_recurring()
+            transaction.commit()
 
-        self.upsert_opportunity()
-        transaction.commit()
+        if not self.context.synced_opportunity:
+            self.upsert_opportunity()
+            transaction.commit()
 
         # The following are only synced on the initial sync.  Logic needs to be added to query then
         # update as there is no external key that can be used for these.
@@ -1009,7 +1111,6 @@ class SalesforceDonationSync(grok.Adapter):
             'Amount': self.context.amount,
             'Name': self.context.title,
             'StageName': self.context.stage,
-            'CloseDate': self.context.payment_date.isoformat(),
             'CampaignId': self.campaign.sf_object_id,
             'Source_Campaign__c': self.context.source_campaign_sf_id,
             'Source_Url__c': self.context.source_url,
@@ -1030,6 +1131,10 @@ class SalesforceDonationSync(grok.Adapter):
             'Honorary_Zip__c': self.context.honorary_zip,
             'Honorary_Country__c': self.context.honorary_country,
         }
+
+        # Add dates formatted in isoformat if they exist
+        if self.context.payment_date:
+            data['CloseDate'] = self.context.payment_date.isoformat()
 
         if self.context.stripe_customer_id:
             data['npe03__Recurring_Donation__r'] = {
@@ -1082,10 +1187,10 @@ class SalesforceDonationSync(grok.Adapter):
             product['Opportunity'] = {
                 'Success_Transaction_ID__c': self.context.transaction_id,
             }
-        res = self.sfconn.OpportunityLineItem.create(self.products)
+            res = self.sfconn.OpportunityLineItem.create(self.products)
 
-        if not res['success']:
-            raise Exception(res['errors'][0])
+            if not res['success']:
+                raise Exception(res['errors'][0])
 
         self.context.synced_products = True
 
@@ -1128,7 +1233,12 @@ def async_salesforce_sync(donation):
     return ISalesforceDonationSync(donation).sync_to_salesforce()
 
 @grok.subscribe(IDonation, IObjectAddedEvent)
-def queueSalesforceSync(donation, event):
+def queueSalesforceSyncAdded(donation, event):
+    async = getUtility(IAsyncService)
+    async.queueJob(async_salesforce_sync, donation)
+
+@grok.subscribe(IDonation, IObjectModifiedEvent)
+def queueSalesforceSyncModified(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(async_salesforce_sync, donation)
 
@@ -1139,12 +1249,19 @@ def sendDonationReceipt(donation):
     return donation.send_donation_receipt()
 
 @grok.subscribe(IDonation, IObjectAddedEvent)
-def queueDonationReceipt(donation, event):
+def queueDonationReceiptAdded(donation, event):
+    async = getUtility(IAsyncService)
+    async.queueJob(sendDonationReceipt, donation)
+
+@grok.subscribe(IDonation, IObjectModifiedEvent)
+def queueDonationReceiptModified(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(sendDonationReceipt, donation)
 
 # Subscribe donor to list
 def mailchimpSubscribeDonor(donation):
+    if donation.subscribed_donor:
+        return 'Skipping, donor has already been subscribed to donors list'
     campaign = donation.get_fundraising_campaign()
 
     merge_vars = {
@@ -1155,19 +1272,38 @@ def mailchimpSubscribeDonor(donation):
         'L_RECEIPT': '%s?key=%s' % (donation.absolute_url(), donation.secret_key),
     }
     mc = getUtility(IMailsnakeConnection).get_mailchimp()
-    return mc.listSubscribe(
-        id = campaign.chimpdrill_list_donors,
+    
+    res = mc.listSubscribe(
+        id = campaign.email_list_donors,
         email_address = donation.email,
         merge_vars = merge_vars,
         update_existing = True,
         double_optin = False,
         send_welcome = False,
     )
+    donation.subscribed_donor = True
+
+    return res
+
+@grok.subscribe(IDonation, IObjectAddedEvent)
+def queueMailchimpSubscribeDonorAdded(donation, event):
+    campaign = donation.get_fundraising_campaign()
+    if not campaign.email_list_donors:
+        # If no list is configured for donors, still mark that the step has been done
+        # so it doesn't retry with every donation edit
+        donation.subscribed_donor = True
+        return 'Skipping, no donors list specified for campaign'
+
+    async = getUtility(IAsyncService)
+    async.queueJob(mailchimpSubscribeDonor, donation)
 
 @grok.subscribe(IDonation, IObjectModifiedEvent)
-def queueMailchimpSubscribeDonor(donation, event):
+def queueMailchimpSubscribeDonorModified(donation, event):
     campaign = donation.get_fundraising_campaign()
-    if not campaign.chimpdrill_list_donors:
+    if not campaign.email_list_donors:
+        # If no list is configured for donors, still mark that the step has been done
+        # so it doesn't retry with every donation edit
+        donation.subscribed_donor = True
         return 'Skipping, no donors list specified for campaign'
 
     async = getUtility(IAsyncService)
@@ -1178,16 +1314,23 @@ def mailchimpSendPersonalCampaignDonation(donation):
     if getattr(donation, 'is_notification_sent', True):
         return 'Skipping: Donation notification already sent to fundraiser'
     campaign = donation.get_fundraising_campaign()
-    uuid = getattr(campaign, 'chimpdrill_template_personal_page_donation', None)
+    uuid = getattr(campaign, 'email_personal_page_donation', None)
     if donation.offline:
         return 'Skipping, offline donation'
-    if uuid:
-        template = uuidToObject(uuid)
-        donation.is_notification_sent = True
-        return donation.send_chimpdrill_personal_page_donation(template)
+    return donation.send_email_personal_page_donation()
+
+@grok.subscribe(IDonation, IObjectAddedEvent)
+def queueMailchimpSendPersonalCampaignDonationAdded(donation, event):
+    page = donation.get_fundraising_campaign_page()
+    if not page.is_personal():
+        # Skip if not a personal page
+        return 'Skipping, not a personal page'
+
+    async = getUtility(IAsyncService)
+    async.queueJob(mailchimpSendPersonalCampaignDonation, donation)
 
 @grok.subscribe(IDonation, IObjectModifiedEvent)
-def queueMailchimpSendPersonalCampaignDonation(donation, event):
+def queueMailchimpSendPersonalCampaignDonationModified(donation, event):
     page = donation.get_fundraising_campaign_page()
     if not page.is_personal():
         # Skip if not a personal page

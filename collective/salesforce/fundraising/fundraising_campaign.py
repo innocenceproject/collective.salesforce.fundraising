@@ -274,60 +274,60 @@ class FundraisingCampaignPage(object):
             self._fundraising_seals = fundraising_seals
     
     @getproperty
-    def chimpdrill_template_thank_you(self):
-        return self.get_local_or_default('chimpdrill_template_thank_you')
+    def email_template_thank_you(self):
+        return self.get_local_or_default('email_template_thank_you')
     @setproperty
-    def chimpdrill_template_thank_you(self, chimpdrill_template_thank_you):
-        if chimpdrill_template_thank_you != self.get_default('chimpdrill_template_thank_you'):
-            self._chimpdrill_template_thank_you = chimpdrill_template_thank_you
+    def email_template_thank_you(self, email_template_thank_you):
+        if email_template_thank_you != self.get_default('email_template_thank_you'):
+            self._email_template_thank_you = email_template_thank_you
     
     @getproperty
-    def chimpdrill_honorary(self):
-        return self.get_local_or_default('chimpdrill_honorary')
+    def email_honorary(self):
+        return self.get_local_or_default('email_honorary')
     @setproperty
-    def chimpdrill_honorary(self, chimpdrill_honorary):
-        if chimpdrill_honorary != self.get_default('chimpdrill_honorary'):
-            self._chimpdrill_honorary = chimpdrill_honorary
+    def email_honorary(self, email_honorary):
+        if email_honorary != self.get_default('email_honorary'):
+            self._email_honorary = email_honorary
     
     @getproperty
-    def chimpdrill_memorial(self):
-        return self.get_local_or_default('chimpdrill_memorial')
+    def email_memorial(self):
+        return self.get_local_or_default('email_memorial')
     @setproperty
-    def chimpdrill_memorial(self, chimpdrill_memorial):
-        if chimpdrill_memorial != self.get_default('chimpdrill_memorial'):
-            self._chimpdrill_memorial = chimpdrill_memorial
+    def email_memorial(self, email_memorial):
+        if email_memorial != self.get_default('email_memorial'):
+            self._email_memorial = email_memorial
     
     @getproperty
-    def chimpdrill_personal_page_created(self):
-        return self.get_local_or_default('chimpdrill_personal_page_created')
+    def email_personal_page_created(self):
+        return self.get_local_or_default('email_personal_page_created')
     @setproperty
-    def chimpdrill_personal_page_created(self, chimpdrill_personal_page_created):
-        if chimpdrill_personal_page_created != self.get_default('chimpdrill_personal_page_created'):
-            self._chimpdrill_personal_page_created = chimpdrill_personal_page_created
+    def email_personal_page_created(self, email_personal_page_created):
+        if email_personal_page_created != self.get_default('email_personal_page_created'):
+            self._email_personal_page_created = email_personal_page_created
     
     @getproperty
-    def chimpdrill_personal_page_donation(self):
-        return self.get_local_or_default('chimpdrill_personal_page_donation')
+    def email_personal_page_donation(self):
+        return self.get_local_or_default('email_personal_page_donation')
     @setproperty
-    def chimpdrill_personal_page_donation(self, chimpdrill_personal_page_donation):
-        if chimpdrill_personal_page_donation != self.get_default('chimpdrill_personal_page_donation'):
-            self._chimpdrill_personal_page_donation = chimpdrill_personal_page_donation
+    def email_personal_page_donation(self, email_personal_page_donation):
+        if email_personal_page_donation != self.get_default('email_personal_page_donation'):
+            self._email_personal_page_donation = email_personal_page_donation
     
     @getproperty
-    def chimpdrill_list_donors(self):
-        return self.get_local_or_default('chimpdrill_list_donors')
+    def email_list_donors(self):
+        return self.get_local_or_default('email_list_donors')
     @setproperty
-    def chimpdrill_list_donors(self, chimpdrill_list_donors):
-        if chimpdrill_list_donors != self.get_default('chimpdrill_list_donors'):
-            self._chimpdrill_list_donors = chimpdrill_list_donors
+    def email_list_donors(self, email_list_donors):
+        if email_list_donors != self.get_default('email_list_donors'):
+            self._email_list_donors = email_list_donors
     
     @getproperty
-    def chimpdrill_list_fundraisers(self):
-        return self.get_local_or_default('chimpdrill_list_fundraisers')
+    def email_list_fundraisers(self):
+        return self.get_local_or_default('email_list_fundraisers')
     @setproperty
-    def chimpdrill_list_fundraisers(self, chimpdrill_list_fundraisers):
-        if chimpdrill_list_fundraisers != self.get_default('chimpdrill_list_fundraisers'):
-            self._chimpdrill_list_fundraisers = chimpdrill_list_fundraisers
+    def email_list_fundraisers(self, email_list_fundraisers):
+        if email_list_fundraisers != self.get_default('email_list_fundraisers'):
+            self._email_list_fundraisers = email_list_fundraisers
    
     # FIXME: Control panel default for this field only has a url, need to interact properly with NamedBlobImage field 
     @getproperty
@@ -540,7 +540,7 @@ class FundraisingCampaignPage(object):
         """ Returns the fundraising campaign page instance, either a Fundraising Campaign or a Personal Campaign Page """
         return self
 
-    def get_chimpdrill_campaign_data(self):
+    def get_email_campaign_data(self):
         campaign = self.get_fundraising_campaign()
 
         campaign_image_url = None
@@ -632,7 +632,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
         return getUtility(IMailsnakeConnection).get_mailchimp()
 
     def setup_mailchimp_list_donors(self, mc=None):
-        list_id = self.chimpdrill_list_donors
+        list_id = self.email_list_donors
         if not list_id:
             return
 
@@ -681,9 +681,8 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
             if not existing.has_key(var['tag']):
                 mc.listMergeVarAdd(id=list_id, tag=var['tag'], name=var['name'], options=var['options'])
 
-
     def setup_mailchimp_list_fundraisers(self, mc=None):
-        list_id = self.chimpdrill_list_fundraisers
+        list_id = self.email_list_fundraisers
         if not list_id:
             return
 
@@ -731,8 +730,8 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
         for var in merge_vars:
             if not existing.has_key(var['tag']):
                 mc.listMergeVarAdd(id=list_id, tag=var['tag'], name=var['name'], options=var['options'])
-
-        
+       
+ 
 @grok.subscribe(IFundraisingCampaign, IObjectModifiedEvent)
 def setupMailchimpLists(campaign, event):
     campaign.setup_mailchimp_list_donors()
