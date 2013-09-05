@@ -112,11 +112,23 @@ class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
 
 @form.default_value(field=IPersonalCampaignPage['personal_appeal'])
 def personalAppealDefaultValue(data):
-    return data.context.get_fundraising_campaign().default_personal_appeal.output
+    campaign = data.context.get_fundraising_campaign()
+    if not campaign:
+        return
+    appeal = getattr(campaign, 'default_personal_appeal', None)
+    if appeal is None:
+        return
+    return appeal.output
         
 @form.default_value(field=IPersonalCampaignPage['thank_you_message'])
 def thankYouDefaultValue(data):
-    return data.context.get_fundraising_campaign().default_personal_thank_you.output
+    campaign = data.context.get_fundraising_campaign()
+    if not campaign:
+        return
+    message = getattr(campaign, 'default_personal_thank_you', None)
+    if message is None:
+        return
+    return message.output
         
 
 class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):

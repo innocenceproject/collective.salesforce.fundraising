@@ -8,10 +8,15 @@ from plone.dexterity.utils import createContentInContainer
 from collective.stripe.utils import IStripeUtility
 from collective.stripe.interfaces import IInvoicePaymentSucceededEvent
 from collective.stripe.interfaces import IInvoicePaymentFailedEvent
+from collective.stripe.interfaces import ICustomerSubscriptionUpdatedEvent
 from collective.stripe.interfaces import ICustomerSubscriptionDeletedEvent
+from collective.simplesalesforce.utils import ISalesforceUtility
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.donation import build_secret_key
 from collective.salesforce.fundraising.stripe.donation_form import stripe_timestamp_to_date
+
+import logging
+logger = logging.getLogger("Plone")
 
 def get_last_donation_for_invoice(invoice):
     # Look for another donation with the same Stripe customer
@@ -246,7 +251,18 @@ def get_donation_for_invoice(invoice):
         return res[0].getObject()
 
 def get_email_recurring_receipt_data(invoice):
+    line_item = invoice['lines']['data'][0]
+    plan = line_item['plan']
+
     page = get_container_for_invoice(invoice)
+
+    # Query the api to get the customer
+    mode = 'live'
+    if invoice['livemode'] == False:
+        mode = 'test'
+    stripe_util = getUtility(IStripeUtility)
+    stripe_api = stripe_util.get_stripe_api(mode=mode)
+    customer = stripe_api.Customer.retrieve(invoice['customer'])
 
     thank_you_message = None
     if page.thank_you_message:
@@ -263,6 +279,9 @@ def get_email_recurring_receipt_data(invoice):
     if len(description_parts) >= 2:
         last_name = description_parts[1]
 
+    # Stripe handles amounts as cents
+    amount = (plan['amount'] * line_item['quantity']) / 100
+
     data = {
         'merge_vars': [
             {'name': 'first_name', 'content': first_name},
@@ -271,7 +290,7 @@ def get_email_recurring_receipt_data(invoice):
             {'name': 'update_url', 'content': update_url},
         ],
         'blocks': [
-            {'name': 'campaign_thank_you', 'content': page_thank_you},
+            {'name': 'campaign_thank_you', 'content': thank_you_message},
         ],
     }
 
@@ -309,11 +328,11 @@ def get_customer_email_for_invoice(invoice):
 def send_email_recurring_failed(invoice):
     template = None
 
-    if invoice['attempt_count'] == 0:
+    if invoice['attempt_count'] == 1:
         template = get_email_recurring_template('email_recurring_failed_first')
-    elif invoice['attempt_count'] == 1:
-        template = get_email_recurring_template('email_recurring_failed_second')
     elif invoice['attempt_count'] == 2:
+        template = get_email_recurring_template('email_recurring_failed_second')
+    elif invoice['attempt_count'] == 3:
         template = get_email_recurring_template('email_recurring_failed_third')
 
     if not template:
@@ -375,9 +394,72 @@ def recurring_payment_succeeded(event):
 @grok.subscribe(IInvoicePaymentFailedEvent)
 def recurring_payment_failed(event):
     invoice = event.data['data']['object']
-    return send_recurring_failed(invoice)    
+    return send_email_recurring_failed(invoice)    
+
+@grok.subscribe(ICustomerSubscriptionUpdatedEvent)
+def recurring_subscription_updated(event):
+    subscription = event.data['data']['object']
+    plan = subscription['plan']
+
+    # Fetch the recurring profile from Salesforce
+    sfconn = getUtility(ISalesforceUtility).get_connection()
+    res = sfconn.query("select Id, npe03__Amount__c, npe03__Next_Payment_Date__c, npe03__Open_Ended_Status__c from npe03__Recurring_Donation__c where Stripe_Customer_ID__c = '%s'" % subscription['customer'])
+    
+    # If not found, ignore the change.  The recurring profile will be created by a successful invoice payment
+    if res['totalSize'] == 0:
+        return "No recurring donation found in Salesforce to be updated"
+
+    data = {}
+    recurring = res['records'][0]
+
+    # Check if the amount has changed, if so add to data for change
+    # Stripe handles amounts as cents
+    amount = (plan['amount'] * subscription['quantity']) / 100
+    if recurring['npe03__Amount__c'] != amount:
+        data['npe03__Amount__c'] = amount
+
+    # Check if the next billing date has changed, if so add to data for change
+    if recurring['npe03__Next_Payment_Date__c'] != subscription['current_period_end']:
+        data['npe03__Next_Payment_Date__c'] = subscription['current_period_end']
+
+    # Assume that updated subscriptions are active otherwise the would be deleted
+    if recurring['npe03__Open_Ended_Status__c'] != 'Open': 
+        data['npe03__Open_Ended_Status__c'] = 'Open'
+
+    # If there are no changes, exit
+    if not data:
+        return "No changes to update in Salesforce"
+
+    # Submit the changes to Salesforce and return the result
+    return sfconn.npe03__Recurring_Donation__c.update(recurring['id'], data)
+    
 
 @grok.subscribe(ICustomerSubscriptionDeletedEvent)
-def recurring_subscription_cancelled(event):
-    invoice = event.data['data']['object']
-    return send_recurring_cancelled(invoice)    
+def recurring_subscription_deleted(event):
+    subscription = event.data['data']['object']
+
+    # Fetch the recurring profile from Salesforce
+    sfconn = getUtility(ISalesforceUtility).get_connection()
+    res = sfconn.query("select Id, npe03__Open_Ended_Status__c from npe03__Recurring_Donation__c where Stripe_Customer_ID__c = '%s'" % subscription['customer'])
+
+    # If not found in Salesforce, do nothing
+    if res['totalSize'] == 0:
+        return "No recurring donation found in Salesforce to be cancelled"
+    
+    # Do nothing if the recurring donation is already marked as Closed in Salesforce
+    recurring_id = res['records'][0]['Id']
+    if res['records'][0]['npe03__Open_Ended_Status__c'] == 'Closed':
+        return "Recurring donation is already closed in Salesforce"
+
+    # Mark the recurring donation as closed in Salesforce
+    res = sfconn.npe03__Recurring_Donation__c.update(recurring_id, {'npe03__Open_Ended_Status__c': 'Closed'})
+
+    # FIXME: The email for cancel needs to be implemented but this involves reworking the send_email_recurring_cancelled method to accept a subscription
+    #mode = 'live'
+    #if plan['livemode'] == False:
+        #mode = 'test'
+    #stripe_util = getUtility(IStripeUtility)
+    #stripe_api = stripe_util.get_stripe_api(mode=mode)
+    #invoice = stripe_api.Customer.retrieve(invoice['customer'])
+#
+    #return send_email_recurring_cancelled(invoice)    

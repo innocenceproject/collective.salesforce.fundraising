@@ -97,7 +97,7 @@
            <label>Recipient's Address</label>
            <div class="field-inputs">
              <div class="subfield subfield-address">
-               <input type="text" name="honorary_address" placeholder="Street Address" />
+               <input type="text" name="honorary_street_address" placeholder="Street Address" />
              </div>
              <div class="subfield subfield-city">
                <input type="text" name="honorary_city" placeholder="City" />

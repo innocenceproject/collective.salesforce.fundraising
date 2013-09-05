@@ -450,7 +450,7 @@ class Donation(dexterity.Container):
         # Mark the receipt as sent so if the transaction commits, no receipt should be sent again
         self.is_receipt_sent = True
 
-        template = self.get_email_template('email_thank_you')
+        template = self.get_email_template('email_template_thank_you')
         if not template:
             return
 
@@ -466,7 +466,7 @@ class Donation(dexterity.Container):
         )
 
     def render_email_thank_you(self):
-        template = self.get_email_template('email_thank_you')
+        template = self.get_email_template('email_template_thank_you')
         if not template:
             return
 
@@ -478,7 +478,7 @@ class Donation(dexterity.Container):
         )
 
     def send_email_honorary(self):
-        if not self.honorary_email or self.honorary_notification_type != 'email':
+        if not self.honorary_email or self.honorary_notification_type != 'Email':
             # Skip if we have no email to send to
             return
 
@@ -516,12 +516,12 @@ class Donation(dexterity.Container):
 
 
     def send_email_memorial(self):
-        if not self.honorary_email or self.honorary_notification_type != 'email':
+        if not self.honorary_email or self.honorary_notification_type != 'Email':
             # Skip if we have no email to send to
             return
 
-        if not self.honorary_type == 'memorial':
-            logger.warning('collective.salesforce.fundraising: Send Email Memorial: honorary_type is not memorial')
+        if not self.honorary_type == 'Memorial':
+            logger.warning('collective.salesforce.fundraising: Send Email Memorial: honorary_type is not Memorial')
 
         template = self.get_email_template('email_memorial')
         if not template:
@@ -835,7 +835,7 @@ class HonoraryMemorialView(grok.View):
             self.context.honorary_recipient_first_name = self.request.form.get('honorary_recipient_first_name', None)
             self.context.honorary_recipient_last_name = self.request.form.get('honorary_recipient_last_name', None)
             self.context.honorary_email = self.request.form.get('honorary_email', None)
-            self.context.honorary_address = self.request.form.get('honorary_address', None)
+            self.context.honorary_street_address = self.request.form.get('honorary_street_address', None)
             self.context.honorary_city = self.request.form.get('honorary_city', None)
             self.context.honorary_state = self.request.form.get('honorary_state', None)
             self.context.honorary_zip = self.request.form.get('honorary_zip', None)
