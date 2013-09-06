@@ -194,7 +194,7 @@ class PersonalCampaignPage(dexterity.Container, FundraisingCampaignPage):
 
     def send_email_personal_page_created(self):
         campaign = self.get_fundraising_campaign()
-        uuid = getattr(campaign, 'email_template_personal_page_created', None)
+        uuid = getattr(campaign, 'email_personal_page_created', None)
         if uuid is None:
             return
 

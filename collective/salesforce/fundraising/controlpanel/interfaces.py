@@ -105,7 +105,7 @@ class IFundraisingSettings(Interface):
         required=False,
     )
 
-    default_email_template_thank_you = schema.Choice(
+    default_email_thank_you = schema.Choice(
         title=_(u"Email Template - Thank You Email"),
         description=_(u"Provide the path to the chimpdrill template to use by default for thank you emails."),
         required=False,

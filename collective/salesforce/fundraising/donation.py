@@ -450,7 +450,7 @@ class Donation(dexterity.Container):
         # Mark the receipt as sent so if the transaction commits, no receipt should be sent again
         self.is_receipt_sent = True
 
-        template = self.get_email_template('email_template_thank_you')
+        template = self.get_email_template('email_thank_you')
         if not template:
             return
 
@@ -466,7 +466,7 @@ class Donation(dexterity.Container):
         )
 
     def render_email_thank_you(self):
-        template = self.get_email_template('email_template_thank_you')
+        template = self.get_email_template('email_thank_you')
         if not template:
             return
 
@@ -1116,7 +1116,7 @@ class SalesforceDonationSync(grok.Adapter):
             'Source_Campaign__c': self.context.source_campaign_sf_id,
             'Source_Url__c': self.context.source_url,
             'Payment_Method__c': self.context.payment_method,
-            'Is_Test__c': self.context.is_test,
+            'Is_Test__c': self.context.is_test == True,
             'Parent_Campaign__c': self.campaign.sf_object_id,
             'Secret_Key__c': self.context.secret_key,
             'Honorary_Type__c': self.context.honorary_type,

@@ -178,7 +178,12 @@ class FundraisingCampaignPage(object):
         # Skip lookup if there is no id (i.e. object is still being created)
         if self.id:
             # Try campaign if different from page (i.e. personal campaign page or campaign variation)
-            campaign = self.get_fundraising_campaign()
+            try:
+                campaign = self.get_fundraising_campaign()
+            except AttributeError:
+                # FIXME: For some reason sometimes there is no __parent__ set at this point.
+                # This seems to occur after edit of a personal campaign page
+                return None
             if campaign != self.get_fundraising_campaign_page():
                 val = getattr(campaign, '_%s' % field, None)
                 # convert rich text objects, if present:
@@ -274,12 +279,12 @@ class FundraisingCampaignPage(object):
             self._fundraising_seals = fundraising_seals
     
     @getproperty
-    def email_template_thank_you(self):
-        return self.get_local_or_default('email_template_thank_you')
+    def email_thank_you(self):
+        return self.get_local_or_default('email_thank_you')
     @setproperty
-    def email_template_thank_you(self, email_template_thank_you):
-        if email_template_thank_you != self.get_default('email_template_thank_you'):
-            self._email_template_thank_you = email_template_thank_you
+    def email_thank_you(self, email_thank_you):
+        if email_thank_you != self.get_default('email_thank_you'):
+            self._email_thank_you = email_thank_you
     
     @getproperty
     def email_honorary(self):
@@ -511,8 +516,8 @@ class FundraisingCampaignPage(object):
                     parent_count = 0
                     if parent.donations_count:
                         parent_count = int(parent.donations_count)
-                    parent.donations_total = parent.donations_total + amount
-                    parent.donations_count = parent.donations_count + 1
+                    parent.donations_total = parent_total + amount
+                    parent.donations_count = parent_count + 1
 
                 parent.reindexObject(idxs=['get_goal_percent', 'donations_total', 'donations_count'])
 
