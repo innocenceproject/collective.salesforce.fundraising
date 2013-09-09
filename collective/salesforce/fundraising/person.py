@@ -161,14 +161,27 @@ def upsertPersonToSalesforceContact(person):
     # upsert Contact in Salesforce
     return person.upsertToSalesforce()
 
+# Since we are no longer creating a Person for each donor, Person objects are really
+# just for personal fundraisers (and site admins).  The creation of a personal campaign page
+# requires the Person to have a its sf_object_id populated which means the Salesforce
+# sync needs to happen when a new Person is created rather than asynchronously
+# run synchronously o
+#@grok.subscribe(IPerson, IObjectAddedEvent)
+#def queueUpsertNewSalesforceContact(person, event):
+#    # abort if this site doesn't have this product installed
+#    mdata = getToolByName(person, 'portal_memberdata')
+#    if 'sf_object_id' not in mdata.propertyIds():
+#        return
+#    async = getUtility(IAsyncService)
+#    async.queueJob(upsertPersonToSalesforceContact, person)
+
 @grok.subscribe(IPerson, IObjectAddedEvent)
 def queueUpsertNewSalesforceContact(person, event):
     # abort if this site doesn't have this product installed
     mdata = getToolByName(person, 'portal_memberdata')
     if 'sf_object_id' not in mdata.propertyIds():
         return
-    async = getUtility(IAsyncService)
-    async.queueJob(upsertPersonToSalesforceContact, person)
+    upsertPersonToSalesforceContact(person)
 
 @grok.subscribe(IPerson, IObjectModifiedEvent)
 def queueUpsertModifiedSalesforceContact(person, event):

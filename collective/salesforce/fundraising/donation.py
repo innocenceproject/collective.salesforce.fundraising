@@ -585,6 +585,9 @@ class Donation(dexterity.Container):
         mail_to = person.email
         data = self.get_email_personal_page_donation_data()
 
+        # Record that the notification was sent
+        self.is_notification_sent = True
+
         return template.send(email = mail_to,
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
@@ -1332,15 +1335,15 @@ def queueMailchimpSendPersonalCampaignDonationAdded(donation, event):
     async = getUtility(IAsyncService)
     async.queueJob(mailchimpSendPersonalCampaignDonation, donation)
 
-@grok.subscribe(IDonation, IObjectModifiedEvent)
-def queueMailchimpSendPersonalCampaignDonationModified(donation, event):
-    page = donation.get_fundraising_campaign_page()
-    if not page.is_personal():
-        # Skip if not a personal page
-        return 'Skipping, not a personal page'
-
-    async = getUtility(IAsyncService)
-    async.queueJob(mailchimpSendPersonalCampaignDonation, donation)
+#@grok.subscribe(IDonation, IObjectModifiedEvent)
+#def queueMailchimpSendPersonalCampaignDonationModified(donation, event):
+#    page = donation.get_fundraising_campaign_page()
+#    if not page.is_personal():
+#        # Skip if not a personal page
+#        return 'Skipping, not a personal page'
+#
+#    async = getUtility(IAsyncService)
+#    async.queueJob(mailchimpSendPersonalCampaignDonation, donation)
 
 # Add to campaign totals.  This is best to do async to properly handle conflict errors
 def addAmountToPage(donation):

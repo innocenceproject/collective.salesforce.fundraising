@@ -1,4 +1,5 @@
 import copy
+import datetime
 
 from zope import schema
 from zope.component import getMultiAdapter
@@ -470,6 +471,7 @@ class CreateOfflineDonation(form.Form):
         data['stage'] = 'Pledged'
         data['products'] = []
         data['campaign_sf_id'] = self.context.sf_object_id
+        data['payment_date'] = datetime.date.today()
         data['offline'] = True
  
         # Add a donation in the current context,

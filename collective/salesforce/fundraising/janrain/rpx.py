@@ -156,12 +156,12 @@ class RpxPostLogin(grok.View):
         janrain_api_key = str(settings.janrain_api_key)
 
         if not janrain_api_key:
-            return None
+            return 'No Janrain API key configured'
 
         # Get the token
         token = self.request.form.get('token', None)
         if not token:
-            return None
+            return 'No token passed in request'
 
         # Get the user profile from Janrain
         auth_info_url = '%s/auth_info?apiKey=%s&token=%s' % (
