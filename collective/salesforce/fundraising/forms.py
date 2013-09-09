@@ -472,6 +472,7 @@ class CreateOfflineDonation(form.Form):
         data['products'] = []
         data['campaign_sf_id'] = self.context.sf_object_id
         data['payment_date'] = datetime.date.today()
+        data['transaction_id'] = 'offline:' + data['secret_key']
         data['offline'] = True
  
         # Add a donation in the current context,
