@@ -199,36 +199,12 @@ class FundraisingCampaignPage(object):
         return val
 
     @getproperty
-    def external_media_url(self):
-        return self.get_local_or_default('external_media_url')
-    @setproperty
-    def external_media_url(self, external_media_url):
-        if external_media_url != self.get_default('external_media_url'):
-            self._external_media_url = external_media_url
-    
-    @getproperty
-    def body(self):
-        return self.get_local_or_default('body')
-    @setproperty
-    def body(self, body):
-        if body != self.get_default('body'):
-            self._body = body
-    
-    @getproperty
     def thank_you_message(self):
         return self.get_local_or_default('thank_you_message')
     @setproperty
     def thank_you_message(self, thank_you_message):
         if thank_you_message != self.get_default('thank_you_message'):
             self._thank_you_message = thank_you_message
-    
-    @getproperty
-    def donation_receipt_legal(self):
-        return self.get_local_or_default('donation_receipt_legal')
-    @setproperty
-    def donation_receipt_legal(self, donation_receipt_legal):
-        if donation_receipt_legal != self.get_default('donation_receipt_legal'):
-            self._donation_receipt_legal = donation_receipt_legal
     
     @getproperty
     def goal(self):
@@ -254,159 +230,6 @@ class FundraisingCampaignPage(object):
         if end_date != self.get_default('end_date'):
             self._end_date = end_date
     
-    @getproperty
-    def donation_form(self):
-        return self.get_local_or_default('donation_form')
-    @setproperty
-    def donation_form(self, donation_form):
-        if donation_form != self.get_default('donation_form'):
-            self._donation_form = donation_form
-    
-    @getproperty
-    def stripe_recurring_plan(self):
-        return self.get_local_or_default('stripe_recurring_plan')
-    @setproperty
-    def stripe_recurring_plan(self, stripe_recurring_plan):
-        if stripe_recurring_plan != self.get_default('stripe_recurring_plan'):
-            self._stripe_recurring_plan = stripe_recurring_plan
-    
-    @getproperty
-    def fundraising_seals(self):
-        return self.get_local_or_default('fundraising_seals')
-    @setproperty
-    def fundraising_seals(self, fundraising_seals):
-        if fundraising_seals != self.get_default('fundraising_seals'):
-            self._fundraising_seals = fundraising_seals
-    
-    @getproperty
-    def email_thank_you(self):
-        return self.get_local_or_default('email_thank_you')
-    @setproperty
-    def email_thank_you(self, email_thank_you):
-        if email_thank_you != self.get_default('email_thank_you'):
-            self._email_thank_you = email_thank_you
-    
-    @getproperty
-    def email_honorary(self):
-        return self.get_local_or_default('email_honorary')
-    @setproperty
-    def email_honorary(self, email_honorary):
-        if email_honorary != self.get_default('email_honorary'):
-            self._email_honorary = email_honorary
-    
-    @getproperty
-    def email_memorial(self):
-        return self.get_local_or_default('email_memorial')
-    @setproperty
-    def email_memorial(self, email_memorial):
-        if email_memorial != self.get_default('email_memorial'):
-            self._email_memorial = email_memorial
-    
-    @getproperty
-    def email_personal_page_created(self):
-        return self.get_local_or_default('email_personal_page_created')
-    @setproperty
-    def email_personal_page_created(self, email_personal_page_created):
-        if email_personal_page_created != self.get_default('email_personal_page_created'):
-            self._email_personal_page_created = email_personal_page_created
-    
-    @getproperty
-    def email_personal_page_donation(self):
-        return self.get_local_or_default('email_personal_page_donation')
-    @setproperty
-    def email_personal_page_donation(self, email_personal_page_donation):
-        if email_personal_page_donation != self.get_default('email_personal_page_donation'):
-            self._email_personal_page_donation = email_personal_page_donation
-    
-    @getproperty
-    def email_list_donors(self):
-        return self.get_local_or_default('email_list_donors')
-    @setproperty
-    def email_list_donors(self, email_list_donors):
-        if email_list_donors != self.get_default('email_list_donors'):
-            self._email_list_donors = email_list_donors
-    
-    @getproperty
-    def email_list_fundraisers(self):
-        return self.get_local_or_default('email_list_fundraisers')
-    @setproperty
-    def email_list_fundraisers(self, email_list_fundraisers):
-        if email_list_fundraisers != self.get_default('email_list_fundraisers'):
-            self._email_list_fundraisers = email_list_fundraisers
-   
-    # FIXME: Control panel default for this field only has a url, need to interact properly with NamedBlobImage field 
-    @getproperty
-    def header_image(self):
-        return self.get_local_or_default('header_image')
-    @setproperty
-    def header_image(self, header_image):
-        if header_image != self.get_default('header_image'):
-            self._header_image = header_image
-    
-    @getproperty
-    def hide_title_and_description(self):
-        return self.get_local_or_default('hide_title_and_description')
-    @setproperty
-    def hide_title_and_description(self, hide_title_and_description):
-        if hide_title_and_description != self.get_default('hide_title_and_description'):
-            self._hide_title_and_description = hide_title_and_description
-    
-    @getproperty
-    def donation_form_header(self):
-        return self.get_local_or_default('donation_form_header')
-    @setproperty
-    def donation_form_header(self, donation_form_header):
-        if donation_form_header != self.get_default('donation_form_header'):
-            self._donation_form_header = donation_form_header
-    
-    @getproperty
-    def donation_form_description(self):
-        return self.get_local_or_default('donation_form_description')
-    @setproperty
-    def donation_form_description(self, donation_form_description):
-        if donation_form_description != self.get_default('donation_form_description'):
-            self._donation_form_description = donation_form_description
-    
-    @getproperty
-    def show_media_portlet(self):
-        return self.get_local_or_default('show_media_portlet')
-    @setproperty
-    def show_media_portlet(self, show_media_portlet):
-        if show_media_portlet != self.get_default('show_media_portlet'):
-            self._show_media_portlet = show_media_portlet
-    
-    @getproperty
-    def allow_personal(self):
-        return self.get_local_or_default('allow_personal')
-    @setproperty
-    def allow_personal(self, allow_personal):
-        if allow_personal != self.get_default('allow_personal'):
-            self._allow_personal = allow_personal
-    
-    @getproperty
-    def personal_only(self):
-        return self.get_local_or_default('personal_only')
-    @setproperty
-    def personal_only(self, personal_only):
-        if personal_only != self.get_default('personal_only'):
-            self._personal_only = personal_only
-    
-    @getproperty
-    def default_personal_appeal(self):
-        return self.get_local_or_default('default_personal_appeal')
-    @setproperty
-    def default_personal_appeal(self, default_personal_appeal):
-        if default_personal_appeal != self.get_default('default_personal_appeal'):
-            self._default_personal_appeal = default_personal_appeal
-    
-    @getproperty
-    def default_personal_thank_you(self):
-        return self.get_local_or_default('default_personal_thank_you')
-    @setproperty
-    def default_personal_thank_you(self, default_personal_thank_you):
-        if default_personal_thank_you != self.get_default('external_media_url'):
-            self._default_personal_thank_you = default_personal_thank_you
-
 
     # Fundraising Campaign Page methods
     def is_personal(self):
@@ -586,6 +409,183 @@ class FundraisingCampaignPage(object):
 
 class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     grok.implements(IFundraisingCampaign, IFundraisingCampaignPage)
+
+    @getproperty
+    def body(self):
+        return self.get_local_or_default('body')
+    @setproperty
+    def body(self, body):
+        if body != self.get_default('body'):
+            self._body = body
+    
+    @getproperty
+    def external_media_url(self):
+        return self.get_local_or_default('external_media_url')
+    @setproperty
+    def external_media_url(self, external_media_url):
+        if external_media_url != self.get_default('external_media_url'):
+            self._external_media_url = external_media_url
+    
+    @getproperty
+    def donation_receipt_legal(self):
+        return self.get_local_or_default('donation_receipt_legal')
+    @setproperty
+    def donation_receipt_legal(self, donation_receipt_legal):
+        if donation_receipt_legal != self.get_default('donation_receipt_legal'):
+            self._donation_receipt_legal = donation_receipt_legal
+    
+    @getproperty
+    def donation_form(self):
+        return self.get_local_or_default('donation_form')
+    @setproperty
+    def donation_form(self, donation_form):
+        if donation_form != self.get_default('donation_form'):
+            self._donation_form = donation_form
+    
+    @getproperty
+    def stripe_recurring_plan(self):
+        return self.get_local_or_default('stripe_recurring_plan')
+    @setproperty
+    def stripe_recurring_plan(self, stripe_recurring_plan):
+        if stripe_recurring_plan != self.get_default('stripe_recurring_plan'):
+            self._stripe_recurring_plan = stripe_recurring_plan
+    
+    @getproperty
+    def fundraising_seals(self):
+        return self.get_local_or_default('fundraising_seals')
+    @setproperty
+    def fundraising_seals(self, fundraising_seals):
+        if fundraising_seals != self.get_default('fundraising_seals'):
+            self._fundraising_seals = fundraising_seals
+    
+    @getproperty
+    def email_thank_you(self):
+        return self.get_local_or_default('email_thank_you')
+    @setproperty
+    def email_thank_you(self, email_thank_you):
+        if email_thank_you != self.get_default('email_thank_you'):
+            self._email_thank_you = email_thank_you
+    
+    @getproperty
+    def email_honorary(self):
+        return self.get_local_or_default('email_honorary')
+    @setproperty
+    def email_honorary(self, email_honorary):
+        if email_honorary != self.get_default('email_honorary'):
+            self._email_honorary = email_honorary
+    
+    @getproperty
+    def email_memorial(self):
+        return self.get_local_or_default('email_memorial')
+    @setproperty
+    def email_memorial(self, email_memorial):
+        if email_memorial != self.get_default('email_memorial'):
+            self._email_memorial = email_memorial
+    
+    @getproperty
+    def email_personal_page_created(self):
+        return self.get_local_or_default('email_personal_page_created')
+    @setproperty
+    def email_personal_page_created(self, email_personal_page_created):
+        if email_personal_page_created != self.get_default('email_personal_page_created'):
+            self._email_personal_page_created = email_personal_page_created
+    
+    @getproperty
+    def email_personal_page_donation(self):
+        return self.get_local_or_default('email_personal_page_donation')
+    @setproperty
+    def email_personal_page_donation(self, email_personal_page_donation):
+        if email_personal_page_donation != self.get_default('email_personal_page_donation'):
+            self._email_personal_page_donation = email_personal_page_donation
+    
+    @getproperty
+    def email_list_donors(self):
+        return self.get_local_or_default('email_list_donors')
+    @setproperty
+    def email_list_donors(self, email_list_donors):
+        if email_list_donors != self.get_default('email_list_donors'):
+            self._email_list_donors = email_list_donors
+    
+    @getproperty
+    def email_list_fundraisers(self):
+        return self.get_local_or_default('email_list_fundraisers')
+    @setproperty
+    def email_list_fundraisers(self, email_list_fundraisers):
+        if email_list_fundraisers != self.get_default('email_list_fundraisers'):
+            self._email_list_fundraisers = email_list_fundraisers
+   
+    # FIXME: Control panel default for this field only has a url, need to interact properly with NamedBlobImage field 
+    @getproperty
+    def header_image(self):
+        return self.get_local_or_default('header_image')
+    @setproperty
+    def header_image(self, header_image):
+        if header_image != self.get_default('header_image'):
+            self._header_image = header_image
+    
+    @getproperty
+    def hide_title_and_description(self):
+        return self.get_local_or_default('hide_title_and_description')
+    @setproperty
+    def hide_title_and_description(self, hide_title_and_description):
+        if hide_title_and_description != self.get_default('hide_title_and_description'):
+            self._hide_title_and_description = hide_title_and_description
+    
+    @getproperty
+    def donation_form_header(self):
+        return self.get_local_or_default('donation_form_header')
+    @setproperty
+    def donation_form_header(self, donation_form_header):
+        if donation_form_header != self.get_default('donation_form_header'):
+            self._donation_form_header = donation_form_header
+    
+    @getproperty
+    def donation_form_description(self):
+        return self.get_local_or_default('donation_form_description')
+    @setproperty
+    def donation_form_description(self, donation_form_description):
+        if donation_form_description != self.get_default('donation_form_description'):
+            self._donation_form_description = donation_form_description
+    
+    @getproperty
+    def show_media_portlet(self):
+        return self.get_local_or_default('show_media_portlet')
+    @setproperty
+    def show_media_portlet(self, show_media_portlet):
+        if show_media_portlet != self.get_default('show_media_portlet'):
+            self._show_media_portlet = show_media_portlet
+    
+    @getproperty
+    def allow_personal(self):
+        return self.get_local_or_default('allow_personal')
+    @setproperty
+    def allow_personal(self, allow_personal):
+        if allow_personal != self.get_default('allow_personal'):
+            self._allow_personal = allow_personal
+    
+    @getproperty
+    def personal_only(self):
+        return self.get_local_or_default('personal_only')
+    @setproperty
+    def personal_only(self, personal_only):
+        if personal_only != self.get_default('personal_only'):
+            self._personal_only = personal_only
+    
+    @getproperty
+    def default_personal_appeal(self):
+        return self.get_local_or_default('default_personal_appeal')
+    @setproperty
+    def default_personal_appeal(self, default_personal_appeal):
+        if default_personal_appeal != self.get_default('default_personal_appeal'):
+            self._default_personal_appeal = default_personal_appeal
+    
+    @getproperty
+    def default_personal_thank_you(self):
+        return self.get_local_or_default('default_personal_thank_you')
+    @setproperty
+    def default_personal_thank_you(self, default_personal_thank_you):
+        if default_personal_thank_you != self.get_default('external_media_url'):
+            self._default_personal_thank_you = default_personal_thank_you
 
     def absolute_url(self, do_not_cache=False):
         """ Fallback to cached value if no REQUEST available """

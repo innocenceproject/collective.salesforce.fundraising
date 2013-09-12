@@ -66,7 +66,7 @@ class Renderer(base.Renderer):
 
     render = ViewPageTemplateFile('campaign_media.pt')
 
-    def get_campaign(self):
+    def get_page(self):
         from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
 
         if IFundraisingCampaignPage.providedBy(self.context):
