@@ -96,14 +96,14 @@ def make_donation_from_invoice(invoice, container):
     # In theory, there should never be a case where a previous donation
     # for the same customer and plan does not already exist.  In practice,
     # it happens so try to handle the exception by parsing contact data from
-    # card info 
+    # card info
     if last_donation is not None:
         # Found last donation, get contact data from it
         data = {
             'title': '%s %s - $%i per %s' % (
-                last_donation.first_name, 
-                last_donation.last_name, 
-                amount, 
+                last_donation.first_name,
+                last_donation.last_name,
+                amount,
                 plan['interval'],
             ),
             'first_name': last_donation.first_name,
@@ -143,12 +143,12 @@ def make_donation_from_invoice(invoice, container):
             address_parts.append(card['address_line1'])
         if card['address_line2']:
             address_parts.append(card['address_line2'])
-            
+
         data = {
             'title': '%s %s - $%i per %s' % (
-                first_name, 
-                last_name, 
-                amount, 
+                first_name,
+                last_name,
+                amount,
                 plan['interval'],
             ),
             'first_name': first_name,
@@ -160,7 +160,7 @@ def make_donation_from_invoice(invoice, container):
             'address_zip': card['address_zip'],
             'address_country': card['address_country'],
         }
-       
+
     # Stripe amounts are in cents
     data['amount'] = amount
     data['stripe_customer_id'] = invoice['customer']
@@ -227,7 +227,7 @@ def update_donation_from_invoice(donation, invoice):
 
     donation.payment_method = 'Stripe'
     donation.payment_date = stripe_timestamp_to_date(invoice['date'])
-    
+
     # Ensure no emails get set out from the update
     donation.is_receipt_sent = True
     donation.is_notification_sent = True
@@ -246,7 +246,7 @@ def get_donation_for_invoice(invoice):
         transaction_id = invoice['charge'],
         sort_limit = 1,
     )
-    
+
     if res:
         return res[0].getObject()
 
@@ -299,7 +299,7 @@ def get_email_recurring_receipt_data(invoice):
     data['blocks'].extend(campaign_data['blocks'])
 
     return data
-    
+
 
 def get_email_recurring_template(field):
     """ Looks for value of field in settings and tries to look up a template using the value as uuid """
@@ -372,7 +372,7 @@ def send_email_recurring_cancelled(invoice):
 @grok.subscribe(IInvoicePaymentSucceededEvent)
 def recurring_payment_succeeded(event):
     invoice = event.data['data']['object']
-    
+
     # Ignore if there is no charge
     if invoice['charge'] is None:
         return
@@ -394,7 +394,7 @@ def recurring_payment_succeeded(event):
 @grok.subscribe(IInvoicePaymentFailedEvent)
 def recurring_payment_failed(event):
     invoice = event.data['data']['object']
-    return send_email_recurring_failed(invoice)    
+    return send_email_recurring_failed(invoice)
 
 @grok.subscribe(ICustomerSubscriptionUpdatedEvent)
 def recurring_subscription_updated(event):
@@ -404,7 +404,7 @@ def recurring_subscription_updated(event):
     # Fetch the recurring profile from Salesforce
     sfconn = getUtility(ISalesforceUtility).get_connection()
     res = sfconn.query("select Id, npe03__Amount__c, npe03__Next_Payment_Date__c, npe03__Open_Ended_Status__c from npe03__Recurring_Donation__c where Stripe_Customer_ID__c = '%s'" % subscription['customer'])
-    
+
     # If not found, ignore the change.  The recurring profile will be created by a successful invoice payment
     if res['totalSize'] == 0:
         return "No recurring donation found in Salesforce to be updated"
@@ -423,7 +423,7 @@ def recurring_subscription_updated(event):
         data['npe03__Next_Payment_Date__c'] = subscription['current_period_end']
 
     # Assume that updated subscriptions are active otherwise the would be deleted
-    if recurring['npe03__Open_Ended_Status__c'] != 'Open': 
+    if recurring['npe03__Open_Ended_Status__c'] != 'Open':
         data['npe03__Open_Ended_Status__c'] = 'Open'
 
     # If there are no changes, exit
@@ -445,7 +445,7 @@ def recurring_subscription_deleted(event):
     # If not found in Salesforce, do nothing
     if res['totalSize'] == 0:
         return "No recurring donation found in Salesforce to be cancelled"
-    
+
     # Do nothing if the recurring donation is already marked as Closed in Salesforce
     recurring_id = res['records'][0]['Id']
     if res['records'][0]['npe03__Open_Ended_Status__c'] == 'Closed':
@@ -462,4 +462,4 @@ def recurring_subscription_deleted(event):
     #stripe_api = stripe_util.get_stripe_api(mode=mode)
     #invoice = stripe_api.Customer.retrieve(invoice['customer'])
 #
-    #return send_email_recurring_cancelled(invoice)    
+    #return send_email_recurring_cancelled(invoice)
