@@ -431,8 +431,8 @@ def recurring_subscription_updated(event):
         return "No changes to update in Salesforce"
 
     # Submit the changes to Salesforce and return the result
-    return sfconn.npe03__Recurring_Donation__c.update(recurring['id'], data)
-    
+    return sfconn.npe03__Recurring_Donation__c.update(recurring['Id'], data)
+
 
 @grok.subscribe(ICustomerSubscriptionDeletedEvent)
 def recurring_subscription_deleted(event):

@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.0.1 (unreleased)
+------------------
+
+- Fix error where ``Id`` was incorrectly accessed on recurring payments.
+  [claytron]
+
 1.0 (2013-09-11)
 ----------------
 
