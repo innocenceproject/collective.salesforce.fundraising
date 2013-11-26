@@ -85,10 +85,11 @@ class IDonation(model.Schema, IImageScaleTraversable):
         required=False,
     )
 
-    email_opt_in = schema.TextLine(
+    email_opt_in = schema.Bool(
         title=u"Email Opt In",
         description=u"The donor's selection for email opt in submitted in the donation form",
-        required=False,
+        required=True,
+        default=False,
     )
 
     phone = schema.TextLine(
