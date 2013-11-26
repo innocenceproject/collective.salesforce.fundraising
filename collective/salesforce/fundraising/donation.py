@@ -76,7 +76,7 @@ class IDonation(model.Schema, IImageScaleTraversable):
     last_name = schema.TextLine(
         title=u"Last Name",
         description=u"The donor's last name as submitted in the donation form",
-        required=False,
+        required=True,
     )
 
     email = schema.TextLine(
