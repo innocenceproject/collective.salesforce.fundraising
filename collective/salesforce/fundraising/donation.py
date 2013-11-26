@@ -170,7 +170,7 @@ class IDonation(model.Schema, IImageScaleTraversable):
         required=False,
         default=False,
     )
-    
+
     synced_contact = schema.Bool(
         title=u"Salesforce Contact Synced?",
         required=False,
@@ -206,7 +206,12 @@ class IDonation(model.Schema, IImageScaleTraversable):
         required=False,
         default=False,
     )
-
+    sf_honorary_type = schema.TextLine(
+        title=u"Salesforce Honorary Type",
+        description=u"The Honorary Type stored in Salesforce",
+        required=False,
+        default=u"",
+    )
 
     model.load("models/donation.xml")
 alsoProvides(IDonation, IContentType)
@@ -302,7 +307,7 @@ class Donation(dexterity.Container):
         site = getSite()
         pc = getToolByName(site, 'portal_catalog')
         res = pc.searchResults(
-            sf_object_id=self.campaign_sf_id, 
+            sf_object_id=self.campaign_sf_id,
             portal_type = ['collective.salesforce.fundraising.fundraisingcampaign','collective.salesforce.fundraising.personalcampaignpage'],
         )
         if not res:
@@ -368,7 +373,7 @@ class Donation(dexterity.Container):
         honorary_recipient_last_name = self.honorary_recipient_last_name
         if not honorary_recipient_last_name:
             honorary_recipient_last_name = "LAST_NAME"
-        
+
         data = {
             'merge_vars': [
                 {'name': 'donor_first_name', 'content': self.first_name},
@@ -389,6 +394,13 @@ class Donation(dexterity.Container):
 
         return data
 
+    def synced_honorary_data(self):
+        """
+        Whether the Donation's honorary data is synced in Salesforce and Plone.
+
+        """
+        return self.sf_honorary_type == self.honorary_type
+
     def get_email_personal_page_donation_data(self):
         data = {
             'merge_vars': [
@@ -399,7 +411,7 @@ class Donation(dexterity.Container):
             ],
             'blocks': [],
         }
-        
+
         campaign_data = self.get_email_campaign_data()
         data['merge_vars'].extend(campaign_data['merge_vars'])
         data['blocks'].extend(campaign_data['blocks'])
@@ -411,7 +423,7 @@ class Donation(dexterity.Container):
         campaign_thank_you = None
         if campaign.thank_you_message:
             campaign_thank_you = campaign.thank_you_message.output
-        
+
         update_url = '%s/@@stripe-update-customer-info?customer=%s' % (getSite().absolute_url(), self.stripe_customer_id)
 
         data = {
@@ -438,7 +450,7 @@ class Donation(dexterity.Container):
         if not uuid:
             logger.warning('collective.salesforce.fundraising: get_email_template: No template configured for %s' % field)
             return
-    
+
         template = uuidToObject(uuid)
         if not template:
             logger.warning('collective.salesforce.fundraising: get_email_template: No template found for %s' % field)
@@ -500,8 +512,8 @@ class Donation(dexterity.Container):
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
-            
-        
+
+
     def render_email_honorary(self):
         data = self.get_email_honorary_data()
 
@@ -541,7 +553,7 @@ class Donation(dexterity.Container):
             merge_vars = data['merge_vars'],
             blocks = data['blocks'],
         )
-        
+
     def render_email_memorial(self):
         template = self.get_email_template('email_memorial')
         if not template:
@@ -599,7 +611,7 @@ class Donation(dexterity.Container):
         if not uuid:
             logger.warning('collective.salesforce.fundraising: get_email_recurring_template: No template configured for %s' % field)
             return
-    
+
         template = uuidToObject(uuid)
         if not template:
             logger.warning('collective.salesforce.fundraising: get_email_recurring_template: No template found for %s' % field)
@@ -794,7 +806,7 @@ class ThankYouView(grok.View):
         campaign = self.context.get_fundraising_campaign_page()
         if not campaign:
             return ''
-        
+
         return SHARE_JS_TEMPLATE % {
             'link_id': 'share-message-thank-you',
             'url': campaign.absolute_url() + '?SOURCE_CODE=thank_you_share',
@@ -866,7 +878,7 @@ class HonoraryMemorialView(grok.View):
 class HonoraryEmailView(grok.View):
     grok.context(IDonation)
     grok.name('honorary-email')
-    
+
     def render(self):
         return self.context.render_email_honorary()
 
@@ -881,7 +893,7 @@ class HonoraryEmailView(grok.View):
 class MemorialEmailView(grok.View):
     grok.context(IDonation)
     grok.name('memorial-email')
-    
+
     def render(self):
         return self.context.render_email_memorial()
 
@@ -971,7 +983,7 @@ class DonationReceipt(grok.Adapter):
 
         pt = PageTemplateFile('donation_templates/receipt.pt')
         return pt.pt_render({'view': self})
-    
+
 class SalesforceDonationSync(grok.Adapter):
     grok.provides(ISalesforceDonationSync)
     grok.context(IDonation)
@@ -993,7 +1005,8 @@ class SalesforceDonationSync(grok.Adapter):
             self.upsert_recurring()
             transaction.commit()
 
-        if not self.context.synced_opportunity:
+        if not self.context.synced_opportunity or \
+                not self.context.synced_honorary_data:
             self.upsert_opportunity()
             transaction.commit()
 
@@ -1011,12 +1024,12 @@ class SalesforceDonationSync(grok.Adapter):
         if not self.context.synced_campaign_member:
             self.create_campaign_member()
             transaction.commit()
-    
+
         self.context.reindexObject()
         return 'Successfully synced donation %s' % self.context.absolute_url()
 
     def sync_contact(self):
-        # only upsert values that are non-empty to Salesforce to avoid overwritting existing values with null 
+        # only upsert values that are non-empty to Salesforce to avoid overwritting existing values with null
         data = {
             'FirstName': self.context.first_name,
             'LastName': self.context.last_name,
@@ -1148,7 +1161,7 @@ class SalesforceDonationSync(grok.Adapter):
             }
 
         if self.products:
-            products_configured = False 
+            products_configured = False
             for product in self.products:
                 product_obj = self.product_objs.get(product['PricebookEntryId'])
                 parent_form = product_obj.get_parent_product_form()
@@ -1164,11 +1177,11 @@ class SalesforceDonationSync(grok.Adapter):
 
                     # Set the pricebook on the Opportunity to the standard pricebook
                     data['Pricebook2Id'] = self.pricebook_id
-        
+
                     # Set amount to 0 since the amount is incremented automatically by Salesforce
                     # when an OpportunityLineItem is created against the Opportunity
                     data['Amount'] = 0
-        
+
                     products_configured = True
 
         else:
@@ -1182,6 +1195,7 @@ class SalesforceDonationSync(grok.Adapter):
         if res not in [201,204]:
             raise Exception('Upsert opportunity failed with status %s' % res)
 
+        self.context.sf_honorary_type = self.context.honorary_type
         self.context.synced_opportunity = True
 
     def create_products(self):
@@ -1278,7 +1292,7 @@ def mailchimpSubscribeDonor(donation):
         'L_RECEIPT': '%s?key=%s' % (donation.absolute_url(), donation.secret_key),
     }
     mc = getUtility(IMailsnakeConnection).get_mailchimp()
-    
+
     res = mc.listSubscribe(
         id = campaign.email_list_donors,
         email_address = donation.email,
