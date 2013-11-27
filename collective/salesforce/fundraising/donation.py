@@ -394,6 +394,7 @@ class Donation(dexterity.Container):
 
         return data
 
+    @property
     def synced_honorary_data(self):
         """
         Whether the Donation's honorary data is synced in Salesforce and Plone.
