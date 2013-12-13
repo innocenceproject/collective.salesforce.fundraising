@@ -400,7 +400,11 @@ class Donation(dexterity.Container):
         Whether the Donation's honorary data is synced in Salesforce and Plone.
 
         """
-        return self.sf_honorary_type == self.honorary_type
+        honor_type = self.honorary_type
+        if honor_type is None:
+            # If there is nothing to sync, it is synced
+            return True
+        return self.sf_honorary_type == honor_type
 
     def get_email_personal_page_donation_data(self):
         data = {
