@@ -337,6 +337,7 @@ class RecordStripeDonation(grok.View):
         zipcode = self.request.form.get('zip', None)
         country = self.request.form.get('country', None)
         amount = int(float(self.request.form.get('x_amount', None)))
+        source_url = self.request.form.get('source_url', '')
 
         data = {
             'first_name': first_name,
@@ -355,7 +356,7 @@ class RecordStripeDonation(grok.View):
             'products': [],
             'campaign_sf_id': page.sf_object_id,
             'source_campaign_sf_id': page.get_source_campaign(),
-            'source_url': page.get_source_url(),
+            'source_url': source_url,
             'payment_method': 'Stripe',
         }
 
