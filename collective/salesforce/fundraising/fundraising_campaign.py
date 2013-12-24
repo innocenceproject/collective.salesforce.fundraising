@@ -68,7 +68,7 @@ from collective.chimpdrill.utils import IMailsnakeConnection
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
 def availableDonationForms(context):
-    query = { 
+    query = {
         "portal_type" : "collective.salesforce.fundraising.productform",
         "path" : '/'.join(context.getPhysicalPath()),
     }
@@ -205,7 +205,7 @@ class FundraisingCampaignPage(object):
     def thank_you_message(self, thank_you_message):
         if thank_you_message != self.get_default('thank_you_message'):
             self._thank_you_message = thank_you_message
-    
+
     @getproperty
     def goal(self):
         return self.get_local_or_default('goal')
@@ -213,7 +213,7 @@ class FundraisingCampaignPage(object):
     def goal(self, goal):
         if goal != self.get_default('goal'):
             self._goal = goal
-    
+
     @getproperty
     def start_date(self):
         return self.get_local_or_default('start_date')
@@ -221,7 +221,7 @@ class FundraisingCampaignPage(object):
     def start_date(self, start_date):
         if start_date != self.get_default('start_date'):
             self._start_date = start_date
-    
+
     @getproperty
     def end_date(self):
         return self.get_local_or_default('end_date')
@@ -229,7 +229,7 @@ class FundraisingCampaignPage(object):
     def end_date(self, end_date):
         if end_date != self.get_default('end_date'):
             self._end_date = end_date
-    
+
 
     # Fundraising Campaign Page methods
     def is_personal(self):
@@ -275,8 +275,10 @@ class FundraisingCampaignPage(object):
         return source_campaign
 
     def get_source_url(self):
-        # Check if there is a cookie that captures the referrer of first entry for the session
-        source_url = self.REQUEST.get('collective.salesforce.fundraising.source_url', None)
+        # Check if there is a cookie that captures the referrer of first entry
+        # for the session
+        source_url = self.REQUEST.get(
+            'collective.salesforce.fundraising.source_url', None)
         if source_url:
             return source_url
         # If not, use the current request's HTTP_REFERER
@@ -288,7 +290,8 @@ class FundraisingCampaignPage(object):
         return self.absolute_url()
 
     def can_create_donor_quote(self):
-        # FIXME: make sure the donor just donated (check session) and that they don't already have a quote for this campaign
+        # FIXME: make sure the donor just donated (check session) and that
+        # they don't already have a quote for this campaign
         return True
 
     def show_employer_matching(self):
@@ -350,7 +353,7 @@ class FundraisingCampaignPage(object):
             consumer = getUtility(IConsumer)
             # FIXME - don't hard code maxwidth
             return consumer.get_data(self.external_media_url, maxwidth=270).get('html')
-           
+
     def get_header_image_url(self):
         local_image = getattr(self, 'header_image', None)
         if local_image and local_image.filename:
@@ -417,7 +420,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def body(self, body):
         if body != self.get_default('body'):
             self._body = body
-    
+
     @getproperty
     def external_media_url(self):
         return self.get_local_or_default('external_media_url')
@@ -425,7 +428,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def external_media_url(self, external_media_url):
         if external_media_url != self.get_default('external_media_url'):
             self._external_media_url = external_media_url
-    
+
     @getproperty
     def donation_receipt_legal(self):
         return self.get_local_or_default('donation_receipt_legal')
@@ -433,7 +436,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def donation_receipt_legal(self, donation_receipt_legal):
         if donation_receipt_legal != self.get_default('donation_receipt_legal'):
             self._donation_receipt_legal = donation_receipt_legal
-    
+
     @getproperty
     def donation_form(self):
         return self.get_local_or_default('donation_form')
@@ -441,7 +444,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def donation_form(self, donation_form):
         if donation_form != self.get_default('donation_form'):
             self._donation_form = donation_form
-    
+
     @getproperty
     def stripe_recurring_plan(self):
         return self.get_local_or_default('stripe_recurring_plan')
@@ -449,7 +452,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def stripe_recurring_plan(self, stripe_recurring_plan):
         if stripe_recurring_plan != self.get_default('stripe_recurring_plan'):
             self._stripe_recurring_plan = stripe_recurring_plan
-    
+
     @getproperty
     def fundraising_seals(self):
         return self.get_local_or_default('fundraising_seals')
@@ -457,7 +460,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def fundraising_seals(self, fundraising_seals):
         if fundraising_seals != self.get_default('fundraising_seals'):
             self._fundraising_seals = fundraising_seals
-    
+
     @getproperty
     def email_thank_you(self):
         return self.get_local_or_default('email_thank_you')
@@ -465,7 +468,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def email_thank_you(self, email_thank_you):
         if email_thank_you != self.get_default('email_thank_you'):
             self._email_thank_you = email_thank_you
-    
+
     @getproperty
     def email_honorary(self):
         return self.get_local_or_default('email_honorary')
@@ -473,7 +476,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def email_honorary(self, email_honorary):
         if email_honorary != self.get_default('email_honorary'):
             self._email_honorary = email_honorary
-    
+
     @getproperty
     def email_memorial(self):
         return self.get_local_or_default('email_memorial')
@@ -481,7 +484,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def email_memorial(self, email_memorial):
         if email_memorial != self.get_default('email_memorial'):
             self._email_memorial = email_memorial
-    
+
     @getproperty
     def email_personal_page_created(self):
         return self.get_local_or_default('email_personal_page_created')
@@ -489,7 +492,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def email_personal_page_created(self, email_personal_page_created):
         if email_personal_page_created != self.get_default('email_personal_page_created'):
             self._email_personal_page_created = email_personal_page_created
-    
+
     @getproperty
     def email_personal_page_donation(self):
         return self.get_local_or_default('email_personal_page_donation')
@@ -497,7 +500,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def email_personal_page_donation(self, email_personal_page_donation):
         if email_personal_page_donation != self.get_default('email_personal_page_donation'):
             self._email_personal_page_donation = email_personal_page_donation
-    
+
     @getproperty
     def email_list_donors(self):
         return self.get_local_or_default('email_list_donors')
@@ -505,7 +508,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def email_list_donors(self, email_list_donors):
         if email_list_donors != self.get_default('email_list_donors'):
             self._email_list_donors = email_list_donors
-    
+
     @getproperty
     def email_list_fundraisers(self):
         return self.get_local_or_default('email_list_fundraisers')
@@ -513,8 +516,8 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def email_list_fundraisers(self, email_list_fundraisers):
         if email_list_fundraisers != self.get_default('email_list_fundraisers'):
             self._email_list_fundraisers = email_list_fundraisers
-   
-    # FIXME: Control panel default for this field only has a url, need to interact properly with NamedBlobImage field 
+
+    # FIXME: Control panel default for this field only has a url, need to interact properly with NamedBlobImage field
     @getproperty
     def header_image(self):
         return self.get_local_or_default('header_image')
@@ -522,7 +525,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def header_image(self, header_image):
         if header_image != self.get_default('header_image'):
             self._header_image = header_image
-    
+
     @getproperty
     def hide_title_and_description(self):
         return self.get_local_or_default('hide_title_and_description')
@@ -530,7 +533,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def hide_title_and_description(self, hide_title_and_description):
         if hide_title_and_description != self.get_default('hide_title_and_description'):
             self._hide_title_and_description = hide_title_and_description
-    
+
     @getproperty
     def donation_form_header(self):
         return self.get_local_or_default('donation_form_header')
@@ -538,7 +541,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def donation_form_header(self, donation_form_header):
         if donation_form_header != self.get_default('donation_form_header'):
             self._donation_form_header = donation_form_header
-    
+
     @getproperty
     def donation_form_description(self):
         return self.get_local_or_default('donation_form_description')
@@ -546,7 +549,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def donation_form_description(self, donation_form_description):
         if donation_form_description != self.get_default('donation_form_description'):
             self._donation_form_description = donation_form_description
-    
+
     @getproperty
     def show_media_portlet(self):
         return self.get_local_or_default('show_media_portlet')
@@ -554,7 +557,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def show_media_portlet(self, show_media_portlet):
         if show_media_portlet != self.get_default('show_media_portlet'):
             self._show_media_portlet = show_media_portlet
-    
+
     @getproperty
     def allow_personal(self):
         return self.get_local_or_default('allow_personal')
@@ -562,7 +565,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def allow_personal(self, allow_personal):
         if allow_personal != self.get_default('allow_personal'):
             self._allow_personal = allow_personal
-    
+
     @getproperty
     def personal_only(self):
         return self.get_local_or_default('personal_only')
@@ -570,7 +573,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def personal_only(self, personal_only):
         if personal_only != self.get_default('personal_only'):
             self._personal_only = personal_only
-    
+
     @getproperty
     def default_personal_appeal(self):
         return self.get_local_or_default('default_personal_appeal')
@@ -578,7 +581,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
     def default_personal_appeal(self, default_personal_appeal):
         if default_personal_appeal != self.get_default('default_personal_appeal'):
             self._default_personal_appeal = default_personal_appeal
-    
+
     @getproperty
     def default_personal_thank_you(self):
         return self.get_local_or_default('default_personal_thank_you')
@@ -596,7 +599,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
         if url.startswith('http'):
             if cached is None or cached != url:
                 self._absolute_url = url
-            
+
         return getattr(aq_base(self), '_absolute_url', url)
 
     def get_parent_sfid(self):
@@ -626,7 +629,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
         member = mtool.getAuthenticatedMember()
         catalog = getToolByName(self, 'portal_catalog')
         res = catalog.searchResults(
-            portal_type = 'collective.salesforce.fundraising.personalcampaignpage', 
+            portal_type = 'collective.salesforce.fundraising.personalcampaignpage',
             path = '/'.join(self.getPhysicalPath()),
             Creator = member.getId()
         )
@@ -646,38 +649,38 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
 
         merge_vars = [
             {
-                'tag': 'L_AMOUNT', 
-                'name': 'Last Donation Amount', 
+                'tag': 'L_AMOUNT',
+                'name': 'Last Donation Amount',
                 'options': {'field_type': 'number'},
             },
             {
-                'tag': 'L_DATE', 
-                'name': 'Last Donation Date', 
+                'tag': 'L_DATE',
+                'name': 'Last Donation Date',
                 'options': {'field_type': 'date'},
             },
             {
-                'tag': 'L_RECEIPT', 
-                'name': 'Last Donation Receipt URL', 
+                'tag': 'L_RECEIPT',
+                'name': 'Last Donation Receipt URL',
                 'options': {'field_type': 'url'},
             },
             {
-                'tag': 'REC_START', 
-                'name': 'Recurring Start Date', 
+                'tag': 'REC_START',
+                'name': 'Recurring Start Date',
                 'options': {'field_type': 'date'},
             },
             {
-                'tag': 'REC_LAST', 
-                'name': 'Recurring Last Donation Date', 
+                'tag': 'REC_LAST',
+                'name': 'Recurring Last Donation Date',
                 'options': {'field_type': 'date'},
             },
             {
-                'tag': 'REC_AMOUNT', 
-                'name': 'Recurring Amount', 
+                'tag': 'REC_AMOUNT',
+                'name': 'Recurring Amount',
                 'options': {'field_type': 'number'},
             },
         ]
-       
-        existing = {} 
+
+        existing = {}
         for var in mc.listMergeVars(id=list_id):
             existing[var['tag']] = var
 
@@ -693,41 +696,41 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
 
         if not mc:
             mc = self.get_mailchimp_connection()
-       
+
         merge_vars = [
             {
-                'tag': 'PF_GOAL', 
-                'name': 'Personal Fundraising Goal', 
+                'tag': 'PF_GOAL',
+                'name': 'Personal Fundraising Goal',
                 'options': {'field_type': 'number'},
             },
             {
-                'tag': 'PF_COUNT', 
-                'name': 'Personal Fundraising - Number of Donations', 
+                'tag': 'PF_COUNT',
+                'name': 'Personal Fundraising - Number of Donations',
                 'options': {'field_type': 'number'},
             },
             {
-                'tag': 'PF_RAISED', 
-                'name': 'Personal Fundraising - Total Raised', 
+                'tag': 'PF_RAISED',
+                'name': 'Personal Fundraising - Total Raised',
                 'options': {'field_type': 'number'},
             },
             {
-                'tag': 'PF_PERCENT', 
-                'name': 'Personal Fundraising - Percent of Goal Raised', 
+                'tag': 'PF_PERCENT',
+                'name': 'Personal Fundraising - Percent of Goal Raised',
                 'options': {'field_type': 'number'},
             },
             {
-                'tag': 'PF_REMAIN', 
-                'name': 'Personal Fundraising - Percent of Goal Remaining', 
+                'tag': 'PF_REMAIN',
+                'name': 'Personal Fundraising - Percent of Goal Remaining',
                 'options': {'field_type': 'number'},
             },
             {
-                'tag': 'PF_URL', 
-                'name': 'Personal Fundraising - Page URL', 
+                'tag': 'PF_URL',
+                'name': 'Personal Fundraising - Page URL',
                 'options': {'field_type': 'url'},
             },
         ]
 
-        existing = {} 
+        existing = {}
         for var in mc.listMergeVars(id=list_id):
             existing[var['tag']] = var
 
@@ -735,8 +738,8 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
         for var in merge_vars:
             if not existing.has_key(var['tag']):
                 mc.listMergeVarAdd(id=list_id, tag=var['tag'], name=var['name'], options=var['options'])
-       
- 
+
+
 @grok.subscribe(IFundraisingCampaign, IObjectModifiedEvent)
 def setupMailchimpLists(campaign, event):
     campaign.setup_mailchimp_list_donors()
@@ -790,10 +793,10 @@ class CampaignView(grok.View):
 
         for name in ['donation_form_header', 'donation_form_description']:
             setattr(self, name, self.get_local_or_default(name))
-    
+
     def get_local_or_default(self, field):
-        """for fields of the context object with both local and site-wide 
-        default values. Return the local value if provided, else return the 
+        """for fields of the context object with both local and site-wide
+        default values. Return the local value if provided, else return the
         setting, else return None
 
         always looks for values on the fundraising campaign object only
@@ -812,7 +815,7 @@ class CampaignView(grok.View):
 class ShareView(grok.View):
     grok.context(IFundraisingCampaignPage)
     grok.require('zope2.View')
-    
+
     grok.name('share-campaign')
     grok.template('share-campaign')
 
@@ -850,7 +853,7 @@ class CreateOrViewPersonalCampaignView(grok.View):
     grok.require('collective.salesforce.fundraising.AddPersonalCampaign')
 
     grok.name('create-or-view-personal-campaign')
-    
+
     def render(self):
         mt = getToolByName(self.context, 'portal_membership')
         create_url = self.context.absolute_url() + '/@@create-personal-campaign-page'
@@ -866,7 +869,7 @@ class CreateOrViewPersonalCampaignView(grok.View):
 class PersonalCampaignPagesList(grok.View):
     grok.context(IFundraisingCampaign)
     grok.require('zope2.View')
-    
+
     grok.name('personal-fundraisers')
     grok.template('personal-fundraisers')
 
@@ -874,12 +877,12 @@ class PersonalCampaignPagesList(grok.View):
         # fetch the list
         pc = getToolByName(self.context, 'portal_catalog')
         query = {
-            'portal_type': 'collective.salesforce.fundraising.personalcampaignpage', 
+            'portal_type': 'collective.salesforce.fundraising.personalcampaignpage',
             'path': '/'.join(self.context.getPhysicalPath()),
         }
         query['sort_on'] = self.request.get('sort_on', 'donations_total')
         query['sort_order'] = 'descending'
-        self.campaigns = pc.searchResults(**query) 
+        self.campaigns = pc.searchResults(**query)
 
 class PostDonationErrorView(grok.View):
     grok.context(IFundraisingCampaignPage)
@@ -969,7 +972,7 @@ class PersonalLoginViewlet(grok.Viewlet):
             self.enabled = True
         else:
             self.enabled = self.context.get_fundraising_campaign().allow_personal
-    
+
         if self.is_personal_page:
             self.enabled = True
 
@@ -1007,7 +1010,7 @@ class CleanDonationCaches(grok.View):
             page._memojito_.clear()
             if page._memojito_.has_key(key):
                 cleaned += 1
-                del page._memojito_[key] 
+                del page._memojito_[key]
             skipped += 1
         return '%i objects processed, %i cleaned, %i skipped' % (total, cleaned, skipped)
 
@@ -1041,7 +1044,7 @@ class SwitchToStripe(grok.View):
             switched += 1
             page.donation_form_tabs = new_forms
         return '%i objects processed, %i switched, %i skipped' % (total, switched, skipped)
-            
+
 
 class CleanDonorOnlyUsers(grok.View):
     grok.context(IPloneSiteRoot)
@@ -1073,7 +1076,7 @@ class CleanDonorOnlyUsers(grok.View):
             if person.email in whitelist:
                 continue
             to_delete.append(person.id)
-    
+
         if to_delete:
             self.context.people.manage_delObjects(to_delete)
 

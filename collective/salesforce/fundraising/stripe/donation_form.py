@@ -157,21 +157,21 @@ class ProcessStripeDonation(grok.View):
             else:
                 # Embed data in the description field: first|last|campaign_sf_id
                 description_parts = [
-                    self.request.form.get('first_name').strip(), 
+                    self.request.form.get('first_name').strip(),
                     self.request.form.get('last_name').strip(),
                     self.context.get_fundraising_campaign_page().sf_object_id,
                 ]
                 # Create the customer
                 self.customer_result = stripe_util.create_customer(
                     token = self.request.form.get('stripeToken'),
-                    
+
                     context = self.context,
                     description = '|'.join(description_parts),
                     **{'email': self.request.form['email'].lower()}
                 )
                 self.customer_id = self.customer_result['id']
-               
-                # Subscribe the customer to the plan 
+
+                # Subscribe the customer to the plan
                 self.subscribe_result = stripe_util.subscribe_customer(
                     customer_id = self.customer_id,
                     plan = self.recurring_plan_id,
@@ -182,9 +182,9 @@ class ProcessStripeDonation(grok.View):
                 # Since we are creating a new customer for each subscription, assume there is only
                 # one invoice and one successful charge to get transaction_id
                 self.transaction_id = stripe_api.Invoice.all(customer=self.subscribe_result['customer'])['data'][0]['charge']
-                
+
             response['success'] = True
-            
+
         except stripe_api.CardError, e:
             body = e.json_body
             err  = body['error']
@@ -213,16 +213,16 @@ class ProcessStripeDonation(grok.View):
 
         except Exception, e:
             response['message'] = 'There was an error with your payment.  Please try again later or contact us to report the issue'
-            logger.warning('collective.salesforce.fundraising: Stripe Payment Other Error: %s' % e) 
+            logger.warning('collective.salesforce.fundraising: Stripe Payment Other Error: %s' % e)
 
         if response['success']:
             try:
                 response['redirect'] = self.context.get_fundraising_campaign_page().absolute_url(do_not_cache=True) + '/@@record_stripe_donation'
                 response['charge_id'] = self.transaction_id
-            except Exception, e: 
+            except Exception, e:
                 response['redirect'] = self.context.get_fundraising_campaign_page().absolute_url() + '/@@post_donation_error'
                 logger.warning('collective.salesforce.fundraising: Stripe Post Payment Error: %s' % e)
-            
+
         return json.dumps(response)
 
 
@@ -235,38 +235,50 @@ class RecordStripeDonation(grok.View):
         page = self.context.get_fundraising_campaign_page()
 
         if not charge_id:
-            logger.warning('collective.salesforce.fundraising: Record Stripe Donation Error: no charge_id passed in request')
-            return self.request.response.redirect(page.absolute_url() + '/@@post_donation_error')
+            logger.warning(
+                'collective.salesforce.fundraising: Record Stripe Donation '
+                'Error: no charge_id passed in request')
+            url = page.absolute_url() + '/@@post_donation_error'
+            return self.request.response.redirect(url)
 
-        # Check to make sure a donation does not already exist for this transaction.  If it does, redirect to it.
+        # Check to make sure a donation does not already exist for this
+        # transaction.  If it does, redirect to it.
         pc = getToolByName(self.context, 'portal_catalog')
         res = pc.searchResults(
-            portal_type='collective.salesforce.fundraising.donation', 
-            transaction_id=charge_id, 
+            portal_type='collective.salesforce.fundraising.donation',
+            transaction_id=charge_id,
             sort_limit=1
         )
         if len(res) == 1:
             # Redirect to the donation or the honorary-memorial form if needed
             donation = res[0].getObject()
 
-            # If this is an honorary or memorial donation, redirect to the form to provide details
+            # If this is an honorary or memorial donation, redirect to the
+            # form to provide details
             is_honorary = self.request.form.get('is_honorary', None)
             if is_honorary == 'true' and donation.honorary_type is None:
-                redirect_url = '%s/honorary-memorial-donation?key=%s' % (donation.absolute_url(), donation.secret_key)
+                redirect_url = '%s/honorary-memorial-donation?key=%s' % (
+                    donation.absolute_url(), donation.secret_key)
             else:
-                redirect_url = '%s?key=%s' % (donation.absolute_url(), donation.secret_key)
-    
+                redirect_url = '%s?key=%s' % (
+                    donation.absolute_url(), donation.secret_key)
+
             return self.request.response.redirect(redirect_url)
 
         stripe_util = getUtility(IStripeUtility)
         stripe_api = stripe_util.get_stripe_api(page)
 
-        charge = stripe_api.Charge.retrieve(charge_id, expand=['customer.subscription','invoice'])
+        charge = stripe_api.Charge.retrieve(
+            charge_id,
+            expand=['customer.subscription', 'invoice']
+        )
         # What happens if there is no charge_id passed or no charge was found?
         if not charge:
-            logger.warning('collective.salesforce.fundraising: Record Stripe Donation Error: charge_id %s was not found' % charge_id)
-            return self.request.response.redirect(page.absolute_url() + '/@@post_donation_error')
-
+            logger.warning(
+                'collective.salesforce.fundraising: Record Stripe Donation '
+                'Error: charge_id %s was not found' % charge_id)
+            url = page.absolute_url() + '/@@post_donation_error'
+            return self.request.response.redirect(url)
 
         pc = getToolByName(self.context, 'portal_catalog')
 
@@ -276,29 +288,41 @@ class RecordStripeDonation(grok.View):
         c_products = self.request.form.get('c_products', None)
         quantity = self.request.form.get('c_quantity', None)
         pricebook_id = None
+        type_name = 'collective.salesforce.fundraising.donationproduct'
+        msg = (
+            'collective.salesforce.fundraising: Stripe Post Payment Error: '
+            'Product with ID %s not found'
+        )
         if product_id:
-            res = pc.searchResults(sf_object_id=product_id, portal_type='collective.salesforce.fundraising.donationproduct')
+            res = pc.searchResults(
+                sf_object_id=product_id, portal_type=type_name)
             if not res:
-                raise ValueError('collective.salesforce.fundraising: Stripe Post Payment Error: Product with ID %s not found' % product_id)
+                raise ValueError(msg % product_id)
             product = res[0].getObject()
 
         if product_id or c_products:
-            sfbc = getToolByName(self.context, 'portal_salesforcebaseconnector')
+            sfbc = getToolByName(
+                self.context, 'portal_salesforcebaseconnector')
             pricebook_id = get_standard_pricebook_id(sfbc)
 
-        # Handle Product Forms with multiple products, each with their own quantity
+        # Handle Product Forms with multiple products, each with their own
+        # quantity
         products = []
         if c_products:
             for item in c_products.split(','):
                 item_id, item_quantity = item.split(':')
-                product_res = pc.searchResults(sf_object_id = item_id, portal_type='collective.salesforce.fundraising.donationproduct')
+                product_res = pc.searchResults(
+                    sf_object_id=item_id, portal_type=type_name)
                 if not product_res:
-                    raise ValueError('collective.salesforce.fundraising: Stripe Post Payment Error: Product with ID %s not found' % item_id)
-                products.append({'id': item_id, 'quantity': item_quantity, 'product': product_res[0].getObject()})
+                    raise ValueError(msg % item_id)
+                products.append({
+                    'id': item_id,
+                    'quantity': item_quantity,
+                    'product': product_res[0].getObject()
+                })
 
-        settings = get_settings()
-
-        # lowercase all email addresses to avoid lookup errors if typed with different caps
+        # lowercase all email addresses to avoid lookup errors if typed with
+        # different caps
         email = self.request.form.get('email', None)
         if email:
             email = email.lower()
@@ -334,14 +358,15 @@ class RecordStripeDonation(grok.View):
             'source_url': page.get_source_url(),
             'payment_method': 'Stripe',
         }
-      
-        # Stripe invoices are only used for recurring so if there is an invoice.
+
+        # Stripe invoices are only used for recurring so if there is an
+        # invoice.
         if charge['invoice']:
             invoice = charge['invoice']
             customer = charge['customer']
             subscription = customer['subscription']
             plan = invoice['lines']['data'][0]['plan']
-                
+
             data['stripe_customer_id'] = customer['id']
             data['stripe_plan_id'] = plan['id']
             data['transaction_id'] = charge['id']
@@ -367,7 +392,7 @@ class RecordStripeDonation(grok.View):
             if parent_form:
                 title = parent_form.title
             data['title'] = '%s %s - %s' % (first_name, last_name, title)
-            
+
         if product_id and product is not None:
             data['products'].append('%s|%s|%s' % product.price, quantity, IUUID(product))
 
