@@ -349,7 +349,7 @@ class RecordStripeDonation(grok.View):
             'address_city': city,
             'address_state': state,
             'address_zip': zipcode,
-            'address_country': zipcode,
+            'address_country': country,
             'secret_key': build_secret_key(),
             'amount': amount,
             'stage': 'Posted',
