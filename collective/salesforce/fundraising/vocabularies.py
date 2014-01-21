@@ -1,9 +1,13 @@
 from five import grok
 from zope.component.hooks import getSite
+from zope import schema
 from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleVocabulary
 from Products.CMFCore.utils import getToolByName
 from plone.uuid.interfaces import IUUID
+
+from collective.salesforce.fundraising.utils import get_settings
+
 
 class ThankYouTemplates(object):
     grok.implements(IVocabularyFactory)
@@ -125,3 +129,23 @@ class RecurringReceiptTemplates(object):
 
 grok.global_utility(RecurringReceiptTemplates, name=u'collective.salesforce.fundraising.recurring_receipt_templates')
 
+
+@grok.provider(schema.interfaces.IContextSourceBinder)
+def availableDonationForms(context):
+    query = {
+        "portal_type": "collective.salesforce.fundraising.productform",
+        "path": '/'.join(context.getPhysicalPath()),
+    }
+    terms = []
+    settings = get_settings()
+    default = settings.default_donation_form
+    terms.append(SimpleVocabulary.createTerm(
+        default, default, 'Stripe Donation Form'))
+
+    pc = getToolByName(context, 'portal_catalog')
+    res = pc.searchResults(**query)
+    for form in res:
+        form_id = form.id + '/donation_form_stripe'
+        terms.append(SimpleVocabulary.createTerm(
+            form_id, form_id, 'Product Form: ' + form.Title))
+    return SimpleVocabulary(terms)
