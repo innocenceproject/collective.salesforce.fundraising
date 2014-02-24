@@ -861,7 +861,7 @@ class HonoraryMemorialView(grok.View):
             self.context.honorary_state = self.request.form.get('honorary_state', None)
             self.context.honorary_zip = self.request.form.get('honorary_zip', None)
             self.context.honorary_country = self.request.form.get('honorary_country', None)
-            self.context.honorary_message = self.request.form.get('honorary_message', None)
+            self.context.honorary_message = unicode(self.request.form.get('honorary_message', None), 'utf-8')
 
             # If there was an email passed and we're supposed to send an email, send the email
             if self.context.honorary_notification_type == 'Email' and self.context.honorary_email:
