@@ -1129,6 +1129,9 @@ class SalesforceDonationSync(grok.Adapter):
 
     def upsert_opportunity(self):
         # Create the Opportunity object and Opportunity Contact Role (2 API calls)
+        source_url = self.context.source_url
+        if source_url is None:
+                source_url = ''
         data = {
             'AccountId': self.settings.sf_individual_account_id,
             'Amount': self.context.amount,
