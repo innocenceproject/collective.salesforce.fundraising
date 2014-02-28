@@ -56,6 +56,8 @@ js_template = """<script type="text/javascript">
 
 <script type="text/javascript">
 window.onload = function() {
+
+    janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
     
     if (typeof window.janrain !== 'object') window.janrain = {};
     if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
@@ -65,7 +67,6 @@ window.onload = function() {
 
     function isReady() { 
         janrain.ready = true;
-        janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
     };
     if (document.addEventListener) {
         document.addEventListener("DOMContentLoaded", isReady, false);
