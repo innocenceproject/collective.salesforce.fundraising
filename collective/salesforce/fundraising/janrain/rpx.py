@@ -27,11 +27,11 @@ js_template = """<script type="text/javascript">
     if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
     
     janrain.settings.tokenUrl = '%(token_url)s';
-
+    
     function isReady() {
         janrain.ready = true;
-        janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
     };
+
     if (document.addEventListener) {
       document.addEventListener("DOMContentLoaded", isReady, false);
     } else {
@@ -41,13 +41,13 @@ js_template = """<script type="text/javascript">
     var e = document.createElement('script');
     e.type = 'text/javascript';
     e.id = 'janrainAuthWidget';
-
+    
     if (document.location.protocol === 'https:') {
       e.src = 'https://rpxnow.com/js/lib/%(site_id)s/engage.js';
     } else {
       e.src = 'http://widget-cdn.rpxnow.com/js/lib/%(site_id)s/engage.js';
     }
-
+    
     var s = document.getElementsByTagName('script')[0];
     s.parentNode.insertBefore(e, s);
 
@@ -56,13 +56,17 @@ js_template = """<script type="text/javascript">
 
 <script type="text/javascript">
 window.onload = function() {
+    
     if (typeof window.janrain !== 'object') window.janrain = {};
     if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
     if (typeof window.janrain.settings.share !== 'object') window.janrain.settings.share = {};
     if (typeof window.janrain.settings.packages !== 'object') janrain.settings.packages = [];
     janrain.settings.packages.push('share');
 
-    function isReady() { janrain.ready = true; };
+    function isReady() { 
+        janrain.ready = true;
+        janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
+    };
     if (document.addEventListener) {
         document.addEventListener("DOMContentLoaded", isReady, false);
     } else {
