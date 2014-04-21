@@ -110,7 +110,11 @@ class ProcessStripeDonation(grok.View):
     grok.name('process_stripe_donation')
 
     def render(self):
-        """ Attempts to process the donation throught Stripe.  Returns nothing if failure """
+        """ 
+        Attempts to process the donation throught Stripe.  
+
+        Returns nothing if failure.
+        """
         settings = get_stripe_settings()
         stripe_util = getUtility(IStripeUtility)
 
