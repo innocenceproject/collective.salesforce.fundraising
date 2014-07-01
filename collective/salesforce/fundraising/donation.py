@@ -1019,7 +1019,7 @@ class SalesforceDonationSync(grok.Adapter):
         # The following are only synced on the initial sync.  Logic needs to be added to query then
         # update as there is no external key that can be used for these.
 
-        if not self.context.synced_products:
+        if self.context.honorary_type or not self.context.synced_products:
             self.create_products()
             transaction.commit()
 
