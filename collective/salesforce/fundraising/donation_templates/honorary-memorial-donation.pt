@@ -90,7 +90,7 @@
         </div>
         
         <div class="field field-email">
-           <input type="text" name="honorary_email" placeholder="Recipient's Email" />
+           <input type="email" name="honorary_email" placeholder="Recipient's Email" />
         </div>
 
         <div class="field field-address">
