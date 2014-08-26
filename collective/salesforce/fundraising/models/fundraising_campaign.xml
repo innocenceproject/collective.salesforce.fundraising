@@ -57,6 +57,15 @@
                 <value_type type="zope.schema.TextLine" />
                 <source>collective.salesforce.fundraising.fundraising_campaign.availableDonationForms</source>
             </field>
+            <field name="default_gift_type" type="zope.schema.Choice">
+                <title>Default Gift Type</title>
+                <description>Select the default gift type to show on the campaign form</description>
+                <values>
+                    <element>One time gift</element>
+                    <element>Monthly recurring gift</element>
+                </values>
+                <default>onetime</default>
+            </field>
             <field name="stripe_mode" type="zope.schema.Choice">
                 <title>Stripe Payment Processing Mode</title>
                 <description>Stripe can either run in test or live mode.  Test mode allows you to successfully process donations using a dummy card number.  Real cards will fail in test mode.  Live mode is the full production mode which only accepts valid cards</description>

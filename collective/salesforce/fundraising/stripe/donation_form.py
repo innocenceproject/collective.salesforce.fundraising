@@ -78,6 +78,7 @@ class DonationFormStripe(grok.View):
         self.recurring_id = None
         self.recurring_title = None
         campaign = self.context.get_fundraising_campaign()
+        self.default_gift_type = campaign.default_gift_type
         if campaign.stripe_recurring_plan:
             self.recurring = True
             self.recurring_id = campaign.stripe_recurring_plan

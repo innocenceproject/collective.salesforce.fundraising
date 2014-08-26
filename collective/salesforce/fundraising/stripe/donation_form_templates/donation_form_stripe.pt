@@ -35,9 +35,11 @@
       <fieldset class="fieldset-recurring-plan" tal:condition="view/recurring">
         <legend>Select a Gift Type</legend>
         <div class="field field-recurring-plan">
-          <input id="field-option-recurring_plan-none" type="radio" name="recurring_plan" value="" checked="checked" />
+          <input id="field-option-recurring_plan-none" type="radio" name="recurring_plan" value="" tal:attributes="checked python:view.default_gift_type=='One time gift' or None" />
           <label for="field-option-recurring_plan-none">One time gift</label>
-          <input id="field-option-recurring_plan-1" type="radio" name="recurring_plan" tal:attributes="value view/recurring_id" />
+          <input id="field-option-recurring_plan-1" type="radio" name="recurring_plan"
+                  tal:attributes="value view/recurring_id; 
+                                  checked python:view.default_gift_type=='Monthly recurring gift' or None" />
           <label for="field-option-recurring_plan-1" tal:content="view/recurring_title">Monthly recurring gift</label>
           <div class="clear"></div>
         </div>
