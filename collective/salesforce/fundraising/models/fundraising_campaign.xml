@@ -64,7 +64,7 @@
                     <element>One time gift</element>
                     <element>Monthly recurring gift</element>
                 </values>
-                <default>onetime</default>
+                <default>One time gift</default>
             </field>
             <field name="stripe_mode" type="zope.schema.Choice">
                 <title>Stripe Payment Processing Mode</title>
