@@ -381,6 +381,8 @@ def recurring_payment_succeeded(event):
 
     if donation:
         # If the donation exists, update it with data from the invoice
+        # This is also how we distinguish between a recurring donation's first
+        # and subsequent charges.
         res = update_donation_from_invoice(donation, invoice)
         return res
 

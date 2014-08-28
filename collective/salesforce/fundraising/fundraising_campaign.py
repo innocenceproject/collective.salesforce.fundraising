@@ -19,7 +19,6 @@ from plone.i18n.locales.countries import CountryAvailability
 
 from zope.interface import Interface
 from zope.interface import alsoProvides
-from zope import schema
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.app.content.interfaces import IContentType
 from zope.app.container.interfaces import IObjectAddedEvent
@@ -65,24 +64,6 @@ from collective.stripe.interfaces import IStripeModeChooser
 
 from collective.chimpdrill.utils import IMailsnakeConnection
 
-
-@grok.provider(schema.interfaces.IContextSourceBinder)
-def availableDonationForms(context):
-    query = {
-        "portal_type" : "collective.salesforce.fundraising.productform",
-        "path" : '/'.join(context.getPhysicalPath()),
-    }
-    terms = []
-    settings = get_settings()
-    default = settings.default_donation_form
-    terms.append(SimpleVocabulary.createTerm(default, default, 'Stripe Donation Form'))
-
-    pc = getToolByName(context, 'portal_catalog')
-    res = pc.searchResults(**query)
-    for form in res:
-        form_id = form.id + '/donation_form_stripe'
-        terms.append(SimpleVocabulary.createTerm(form_id, form_id, 'Product Form: ' + form.Title))
-    return SimpleVocabulary(terms)
 
 class IFundraisingCampaign(model.Schema, IImageScaleTraversable):
     """
