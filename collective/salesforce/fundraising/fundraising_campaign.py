@@ -798,6 +798,8 @@ class CampaignView(grok.View):
         # template
         if IFundraisingTributeCampaignPage.providedBy(self.context):
             self.is_tribute = True
+        else:
+            self.is_tribute = False
         # Set a cookie with referrer as source_url if no cookie has yet been
         # set for the session
         source_url = self.request.get(
