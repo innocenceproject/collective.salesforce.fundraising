@@ -446,6 +446,12 @@ function getPosition(trigger, el, conf) {
     return {top: top, left: left};
 }
 
+function setupTributeForm() {
+    honorary = $('.fieldset-honorary').detach();
+    $('.fieldset-recurring-plan').after(honorary);
+    $('.fieldset-honorary').show();
+}
+
 $(document).ready(function() {
     // Replace the default login form overlay with a custom one that initialized the Janrain widget after load
     $('#portal-personaltools a[href$="/login"], #portal-personaltools a[href$="/login_form"], .discussion a[href$="/login"], .discussion a[href$="/login_form"]').each(function () {
@@ -584,6 +590,7 @@ $(document).ready(function() {
         if (form.hasClass('donation-form-product') == true) {
             updateDonationProductTotal(form);
         }
+        
 
     });
 
@@ -723,5 +730,7 @@ $(document).ready(function() {
             }   
         }
     });
+
+    if ($('.donation-form-wrapper').hasClass('tribute-form')) setupTributeForm()
     
 });})(jQuery);

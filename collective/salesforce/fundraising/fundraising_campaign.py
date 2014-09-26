@@ -77,6 +77,12 @@ class IFundraisingCampaignPage(Interface):
     """ Marker interface for campaigns that act like a fundraising campaign """
 
 
+class IFundraisingTributeCampaignPage(Interface):
+    """ Marker interface for campaigns that are a
+        tribute fundraising campaign
+    """
+
+
 @grok.subscribe(IFundraisingCampaign, IObjectAddedEvent)
 def handleFundraisingCampaignCreated(campaign, event):
     # Add campaign in Salesforce if it doesn't have a Salesforce id yet
@@ -788,6 +794,10 @@ class CampaignView(grok.View):
         return '{0:,}'.format(number)
 
     def update(self):
+        # if we are a Tribute Campaign, set a value to be picked up by the
+        # template
+        if IFundraisingTributeCampaignPage.providedBy(self.context):
+            self.is_tribute = True
         # Set a cookie with referrer as source_url if no cookie has yet been
         # set for the session
         source_url = self.request.get(

@@ -110,8 +110,7 @@
   <!-- Grok the package to initialise schema interfaces and content classes -->
   <grok:grok package="." />
 
-
-
-  
+  <!-- Marker interface so we can denote a campaign is tribute focused -->
+  <interface interface="collective.salesforce.fundraising.fundraising_campaign.IFundraisingTributeCampaignPage"/>
 
 </configure>
