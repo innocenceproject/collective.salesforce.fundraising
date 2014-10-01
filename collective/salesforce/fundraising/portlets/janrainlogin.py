@@ -38,10 +38,7 @@ class Renderer(login.Renderer):
     def email_login_next_link(self):
         site = getSite()
         url = site.absolute_url() + '/@@email-login-redirect'
-        came_from = self.request.form.get('came_from',None)
-        if came_from:
-            url = url + '?came_from=%s' % quote(came_from)
-        return url 
+        return url
 
 #    @property
 #    def set_password_form(self):
