@@ -449,6 +449,7 @@ function getPosition(trigger, el, conf) {
 function setupTributeForm() {
     honorary = $('.fieldset-honorary').detach();
     $('.fieldset-recurring-plan').after(honorary);
+    $('#stripe-is-honorary').prop('checked', true);
     $('.fieldset-honorary').show();
 }
 
