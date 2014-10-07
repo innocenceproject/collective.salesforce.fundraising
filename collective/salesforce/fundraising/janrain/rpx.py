@@ -1,18 +1,13 @@
-import os, random, string
 import simplejson
 import urllib2
-from urllib import quote
 from zope.interface import Interface
-from zope.event import notify
 from five import grok
 from Acquisition import aq_inner
 from AccessControl.SecurityManagement import newSecurityManager
 from zope.component import getMultiAdapter
 from Products.CMFCore.utils import getToolByName
 from Products.CMFPlone.interfaces import IPloneSiteRoot
-from Products.statusmessages.interfaces import IStatusMessage
 from plone.app.layout.viewlets.interfaces import IHtmlHead
-from collective.salesforce.fundraising.interfaces import MemberCreated
 from collective.salesforce.fundraising.utils import get_settings
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from plone.dexterity.utils import createContentInContainer
@@ -25,9 +20,9 @@ js_template = """<script type="text/javascript">
 (function() {
     if (typeof window.janrain !== 'object') window.janrain = {};
     if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
-    
+
     janrain.settings.tokenUrl = '%(token_url)s';
-    
+
     function isReady() {
         janrain.ready = true;
     };
@@ -41,13 +36,13 @@ js_template = """<script type="text/javascript">
     var e = document.createElement('script');
     e.type = 'text/javascript';
     e.id = 'janrainAuthWidget';
-    
+
     if (document.location.protocol === 'https:') {
       e.src = 'https://rpxnow.com/js/lib/%(site_id)s/engage.js';
     } else {
       e.src = 'http://widget-cdn.rpxnow.com/js/lib/%(site_id)s/engage.js';
     }
-    
+
     var s = document.getElementsByTagName('script')[0];
     s.parentNode.insertBefore(e, s);
 
@@ -58,14 +53,14 @@ js_template = """<script type="text/javascript">
 window.onload = function() {
 
     janrain.engage.signin.appendTokenParams({'came_from': '%(came_from)s'});
-    
+
     if (typeof window.janrain !== 'object') window.janrain = {};
     if (typeof window.janrain.settings !== 'object') window.janrain.settings = {};
     if (typeof window.janrain.settings.share !== 'object') window.janrain.settings.share = {};
     if (typeof window.janrain.settings.packages !== 'object') janrain.settings.packages = [];
     janrain.settings.packages.push('share');
 
-    function isReady() { 
+    function isReady() {
         janrain.ready = true;
     };
     if (document.addEventListener) {
@@ -110,14 +105,10 @@ SHARE_JS_TEMPLATE = """
   })(jQuery);
 """
 
-def GenPasswd():
-    chars = string.ascii_letters + string.digits + '!@#$%^&*()'
-    random.seed = (os.urandom(1024))
-    return ''.join(random.choice(chars) for i in range(13))
-    
+
 class RpxHeadViewlet(grok.Viewlet):
     """ Add the RPX js to the head tag """
-   
+
     grok.name('collective.salesforce.fundraising.janrain.RpxHeadViewlet')
     grok.require('zope2.View')
     grok.context(Interface)
@@ -136,19 +127,21 @@ class RpxHeadViewlet(grok.Viewlet):
         context = aq_inner(self.context)
         portal_state = getMultiAdapter((context, self.request), name=u'plone_portal_state')
         portal_url = portal_state.portal_url()
-        token_url = portal_url + '/@@rpx_post_login' 
+        token_url = portal_url + '/@@rpx_post_login'
 
         # render the js template
         return js_template % {
-            'site_id': janrain_site_id, 
-            'token_url': token_url,  
-            'app_id': janrain_sharing_app_id,  
-            'came_from': self.request.get('came_from', self.context.absolute_url()),
+            'site_id': janrain_site_id,
+            'token_url': token_url,
+            'app_id': janrain_sharing_app_id,
+            'came_from': self.request.get('came_from',
+                                          self.context.absolute_url()),
         }
+
 
 class RpxPostLogin(grok.View):
     """ Handle Janrain's POST callback with a token and lookup profile """
-    
+
     grok.name('rpx_post_login')
     grok.context(IPloneSiteRoot)
     grok.require('zope2.View')
@@ -157,7 +150,8 @@ class RpxPostLogin(grok.View):
         # Get the api key from registry
         settings = get_settings()
 
-        # workaround for http://bugs.python.org/issue5285, map unicode to strings
+        # workaround for http://bugs.python.org/issue5285,
+        # map unicode to strings
         janrain_api_key = str(settings.janrain_api_key)
 
         if not janrain_api_key:
@@ -174,41 +168,45 @@ class RpxPostLogin(grok.View):
             janrain_api_key,
             token,
         )
-        
+
         if settings.janrain_use_extended_profile:
             auth_info_url = auth_info_url + '&extended=true'
-        
+
         resp = urllib2.urlopen(auth_info_url)
         auth_info = simplejson.loads(resp.read())
 
-        # This is for Plone's built in member management instead of membrane 
+        # This is for Plone's built in member management instead of membrane
         # See if a user already exists for the profile's email
-        #email = auth_info['profile']['email']
-        #member = None
-        #if email:
-            #member = mtool.getMemberById(email)
+        # email = auth_info['profile']['email']
+        # member = None
+        # if email:
+        #     member = mtool.getMemberById(email)
 
         # See if user already exists using dexterity.membrane
-        profile = auth_info.get('profile',{})
+        profile = auth_info.get('profile', {})
 
         email = profile.get('verifiedEmail', None)
         if not email:
             email = profile.get('email', None)
         if not email:
-            raise AttributeError('No email provided from social profile, unable to create account')
+            raise AttributeError(
+                'No email provided from social profile, unable to create '
+                'account'
+            )
 
         email = email.lower()
 
         res = get_brains_for_email(self.context, email, self.request)
         if not res:
-            # create new Person if no existing Person was found with the same email
-            name = profile.get('name',{})
-            address = profile.get('address',{})
+            # create new Person if no existing Person was found
+            # with the same email
+            name = profile.get('name', {})
+            address = profile.get('address', {})
             if not address:
                 addresses = profile.get('addresses', [])
                 if addresses:
                     address = addresses[0]
-        
+
             data = {
                 'first_name': name.get('givenName', None),
                 'last_name': name.get('familyName', None),
@@ -218,7 +216,7 @@ class RpxPostLogin(grok.View):
                 'state': address.get('region', None),
                 'zip': address.get('postalCode', None),
                 'country': address.get('country', None),
-                #'gender': profile.get('gender', None),
+                # 'gender': profile.get('gender', None),
                 'social_signin': True,
             }
 
@@ -247,13 +245,13 @@ class RpxPostLogin(grok.View):
 
             person = res[0].getObject()
 
-            if person.social_signin == False:
+            if not person.social_signin:
                 person.social_signin = True
-            
+
         # Set the photo
         photo = profile.get('photo', None)
         if not photo:
-            photos = profile.get('photos',[])
+            photos = profile.get('photos', [])
             if photos:
                 photo = photos[0]
         if photo and (not person.portrait or not person.portrait.size):
@@ -268,14 +266,6 @@ class RpxPostLogin(grok.View):
         if came_from:
             return self.request.response.redirect(came_from)
 
-        # merge in with standard plone login process.  
+        # merge in with standard plone login process.
         login_next = self.context.restrictedTraverse('login_next')
         login_next()
-
-#class RpxXdCommView(grok.View):
-#    """ Implement the rpx_xdcomm.html cross domain file """
-# 
-#    grok.name('rpx_xdcomm.html')
-#    grok.context(IPloneSiteRoot)
-#    grok.require('zope2.View')
-
