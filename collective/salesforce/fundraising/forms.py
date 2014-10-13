@@ -2,12 +2,11 @@ import copy
 import datetime
 
 from zope import schema
-from zope.component import getMultiAdapter
-from zope.interface import Interface
 from zope.interface import invariant
 from zope.interface import Invalid
 from zope.component.hooks import getSite
 
+from AccessControl import Unauthorized
 from AccessControl.AuthEncoding import pw_encrypt
 from AccessControl.SecurityManagement import newSecurityManager
 
@@ -37,7 +36,6 @@ from collective.salesforce.fundraising.donation import build_secret_key
 
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
-from collective.salesforce.fundraising.utils import send_confirmation_email
 
 
 class CreatePersonalCampaignPageForm(form.Form):
@@ -48,30 +46,26 @@ class CreatePersonalCampaignPageForm(form.Form):
 
     @property
     def fields(self):
-        fields = field.Fields(IPersonalCampaignPage).select('title', 'description', 'image', 'goal', 'personal_appeal', 'thank_you_message')
+        fields = field.Fields(IPersonalCampaignPage).select(
+            'title',
+            'description',
+            'image',
+            'goal',
+            'personal_appeal',
+            'thank_you_message')
 
         # Make the image field required
         image_field = copy.copy(fields['image'].field)
         image_field.required = True
         fields['image'].field = image_field
 
-        # Set the default title.  Since the title field is defined in the model xml, it's easiest to do this here
-        #mtool = getToolByName(self.context, 'portal_membership')
-        #member = mtool.getAuthenticatedMember()
-        #res = get_brains_for_email(self.context, member.getProperty('email'))
-        #if not res:
-        #    return None
-        #person = res[0].getObject()
-        #title_field = copy.copy(fields['title'].field)
-        #title_field.default = u"%s %s's Fundraising Page" % (person.first_name, person.last_name)
-        #fields['title'].field = title_field
-
         return fields
 
     ignoreContext = True
 
     label = _(u"Create My Fundraising Page")
-    description = _(u"Set a goal and encourage your friends, family, and colleagues to donate towards your goal.")
+    description = _(u"Set a goal and encourage your friends,"
+                    " family, and colleagues to donate towards your goal.")
 
     @button.buttonAndHandler(_(u'Create'))
     def handleOk(self, action):
@@ -81,30 +75,36 @@ class CreatePersonalCampaignPageForm(form.Form):
             return
 
         # Don't allow creation of a personal page if one already exists
-        existing_personal_campaign = self.context.get_personal_fundraising_campaign_url()
+        existing_personal_campaign = \
+            self.context.get_personal_fundraising_campaign_url()
         if existing_personal_campaign:
             messages = IStatusMessage(self.request)
-            messages.add("You can't create more than one personal page per campaign.")
+            messages.add("You can't create more than one "
+                         "personal page per campaign.")
             self.request.response.redirect(self.context.absolute_url())
             return
-
 
         # Add a personal campaign within the current context,
         # using the data from the form.
         parent_campaign = self.context
-        campaign = createContentInContainer(parent_campaign,
+        campaign = createContentInContainer(
+            parent_campaign,
             'collective.salesforce.fundraising.personalcampaignpage',
-            checkConstraints=False, **data)
+            checkConstraints=False, **data
+        )
 
         mtool = getToolByName(self.context, 'portal_membership')
         member = mtool.getAuthenticatedMember()
-        person_res = get_brains_for_email(self.context, member.getProperty('email'))
+        person_res = get_brains_for_email(
+            self.context,
+            member.getProperty('email')
+        )
         person = None
         contact_id = None
         if person_res:
             person = person_res[0].getObject()
             contact_id = person.sf_object_id
-        
+
         settings = get_settings()
 
         # Add the campaign in Salesforce
@@ -144,14 +144,18 @@ class CreatePersonalCampaignPageForm(form.Form):
     def handleCancel(self, action):
         return
 
+
 class EditPersonalCampaign(dexterity.EditForm):
     grok.name('edit-personal-campaign')
     grok.require('collective.salesforce.fundraising.EditPersonalCampaign')
     grok.context(IPersonalCampaignPage)
 
     label = _(u"Edit My Fundraising Page")
-    description = _(u"Use the form below to edit your fundraising page to create the most effective appeal to your friends and family.")
+    description = _(u"Use the form below to edit your fundraising page to "
+                    "create the most effective appeal to your friends and "
+                    "family.")
     schema = IEditPersonalCampaignPage
+
 
 class CreateDonorQuote(form.Form):
     grok.name('create-donor-quote')
@@ -160,7 +164,8 @@ class CreateDonorQuote(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IDonorQuote).select('quote','name','image','contact_sf_id', 'donation_id', 'amount')
+        return field.Fields(IDonorQuote).select(
+            'quote', 'name', 'image', 'contact_sf_id', 'donation_id', 'amount')
 
     ignoreContext = True
 
@@ -179,19 +184,16 @@ class CreateDonorQuote(form.Form):
         if errors:
             self.status = self.formErrorsMessage
             return
-        
+
         # Add a donor quote in the current context,
         # using the data from the form
         parent_campaign = self.context
-        quote = createContentInContainer(parent_campaign,
+        quote = createContentInContainer(
+            parent_campaign,
             'collective.salesforce.fundraising.donorquote',
-            checkConstraints=False, **data)
-        
-        mtool = getToolByName(self.context, 'portal_membership')
-        contact_id = None
-        if not mtool.isAnonymousUser():
-            member = mtool.getAuthenticatedMember()
-            contact_id = member.getProperty('sf_object_id')
+            checkConstraints=False,
+            **data
+        )
 
         # Add the Constituent Quote to Salesforce
         sfconn = getUtility(ISalesforceUtility).get_connection()
@@ -212,13 +214,19 @@ class CreateDonorQuote(form.Form):
         quote.parent_sf_id = parent_campaign.sf_object_id
         quote.reindexObject(idxs=['sf_object_id'])
 
-        # Send the user back to the thank you page with a note about their quote
-        # Hide the donor quote section of the thank you page
-        IStatusMessage(self.request).add(u'Your story has been successfully submitted.')
+        # Send the user back to the thank you page with a note about their
+        # quote. Hide the donor quote section of the thank you page
+        IStatusMessage(self.request).add(u'Your story has been '
+                                         'successfully submitted.')
         if data['donation_id'] and data['amount']:
-            self.request.response.redirect(parent_campaign.absolute_url() + '/thank-you?hide=donorquote&donation_id=%s&amount=%s' % (data['donation_id'], data['amount']))
+            self.request.response.redirect(
+                parent_campaign.absolute_url() +
+                '/thank-you?hide=donorquote&donation_id=%s&amount=%s'
+                % (data['donation_id'], data['amount']))
         else:
-            self.request.response.redirect(parent_campaign.absolute_url() + '/thank-you?hide=donorquote')
+            self.request.response.redirect(
+                parent_campaign.absolute_url() + '/thank-you?hide=donorquote')
+
 
 class CreateDonationDonorQuote(form.Form):
     grok.name('create-donor-quote')
@@ -232,7 +240,8 @@ class CreateDonationDonorQuote(form.Form):
 
     @property
     def fields(self):
-        return field.Fields(IDonorQuote).select('quote','name','image','key', 'amount')
+        return field.Fields(IDonorQuote).select('quote', 'name', 'image',
+                                                'key', 'amount')
 
     ignoreContext = True
 
@@ -258,24 +267,21 @@ class CreateDonationDonorQuote(form.Form):
         # Add a donor quote in the current context,
         # using the data from the form
         parent_campaign = donation.get_fundraising_campaign()
-        quote = createContentInContainer(donation,
+        quote = createContentInContainer(
+            donation,
             'collective.salesforce.fundraising.donorquote',
             checkConstraints=False, **data)
-        
-        mtool = getToolByName(self.context, 'portal_membership')
-        contact_id = None
-        if not mtool.isAnonymousUser():
-            member = mtool.getAuthenticatedMember()
-            contact_id = member.getProperty('sf_object_id')
 
         quote.parent_sf_id = parent_campaign.sf_object_id
 
         # FIXME: This is not saving to Salesforce yet
 
-        # Send the user back to the thank you page with a note about their quote
-        # Hide the donor quote section of the thank you page
-        IStatusMessage(self.request).add(u'Your story has been successfully submitted.')
-        self.request.response.redirect('%s?hide=donorquote&key=%s' % (donation.absolute_url(), data['key']))
+        # Send the user back to the thank you page with a note about their
+        # quote. Hide the donor quote section of the thank you page
+        IStatusMessage(self.request).add(u'Your story has been successfully '
+                                         'submitted.')
+        self.request.response.redirect('%s?hide=donorquote&key=%s' % (
+            donation.absolute_url(), data['key']))
 
 
 class ISetPassword(form.Schema):
@@ -301,7 +307,9 @@ class ISetPassword(form.Schema):
     @invariant
     def passwordsInvariant(data):
         if data.password != data.password_confirm:
-            raise Invalid(_(u"Your passwords do not match, please enter the same password in both fields"))
+            raise Invalid(_(u"Your passwords do not match, please enter "
+                            "the same password in both fields"))
+
 
 class SetPasswordForm(form.SchemaForm):
     grok.name('set-password-form')
@@ -309,14 +317,16 @@ class SetPasswordForm(form.SchemaForm):
 
     schema = ISetPassword
     ignoreContext = True
-    
+
     label = _(u"Set Your Password")
-    description = _(u"Use the form below to set a password for your account which you can use in the future to log in.")
+    description = _(u"Use the form below to set a password for your account "
+                    "which you can use in the future to log in.")
 
     def updateWidgets(self):
         super(SetPasswordForm, self).updateWidgets()
         self.widgets['email'].value = self.request.form.get('email', None)
-        self.widgets['came_from'].value = self.request.form.get('came_from', None)
+        self.widgets['came_from'].value = self.request.form.get(
+            'came_from', None)
 
     @button.buttonAndHandler(_(u"Submit"))
     def handleOk(self, action):
@@ -325,7 +335,8 @@ class SetPasswordForm(form.SchemaForm):
             self.status = self.formErrorsMessage
             return
 
-        # NOTE: The validator on email should have already checked if the password can be set and auto logged the user in
+        # NOTE: The validator on email should have already checked if the
+        # password can be set and auto logged the user in
         res = get_brains_for_email(self.context, data['email'], self.request)
         person = res[0].getObject()
         person.password = pw_encrypt(data['password'])
@@ -339,10 +350,10 @@ class SetPasswordForm(form.SchemaForm):
 
         self.request.form['came_from'] = came_from
 
-        # merge in with standard plone login process.  
+        # merge in with standard plone login process.
         login_next = self.context.restrictedTraverse('login_next')
         login_next()
-            
+
 
 @form.validator(field=ISetPassword['email'])
 def validateEmail(value):
@@ -350,10 +361,14 @@ def validateEmail(value):
 
     res = get_brains_for_email(site, value)
     if not res:
-        raise Invalid(_(u"No existing user account found to set password.  Please use the registration form to create an account."))
+        raise Invalid(_(u"No existing user account found to set password. "
+                        " Please use the registration form to create an"
+                        "account."))
 
     # Auto log in the user
-    # NOTE: This is to allow the current anon user access to the user profile.  If there is an error, you MUST log the user out before raising an exception
+    # NOTE: This is to allow the current anon user access to the user profile.
+    # If there is an error, you MUST log the user out before raising an
+    # exception
     mtool = getToolByName(site, 'portal_membership')
     acl = getToolByName(site, 'acl_users')
     newSecurityManager(None, acl.getUser(value))
@@ -361,9 +376,12 @@ def validateEmail(value):
 
     person = res[0].getObject()
 
-    if person.registered == True:
+    if person.registered:
         mtool.logoutUser()
-        raise Invalid(_(u"This account already has a password set.  If you have forgotten the password, please use the forgot password link to reset your password."))    
+        raise Invalid(_(u"This account already has a password set.  If you "
+                        "have forgotten the password, please use the forgot "
+                        "password link to reset your password."))
+
 
 class AddPersonForm(form.SchemaForm):
     grok.name('create-user-account')
@@ -378,7 +396,8 @@ class AddPersonForm(form.SchemaForm):
     def updateWidgets(self):
         super(AddPersonForm, self).updateWidgets()
         self.widgets['email'].value = self.request.form.get('email', None)
-        self.widgets['came_from'].value = self.request.form.get('came_from', None)
+        self.widgets['came_from'].value = self.request.form.get(
+            'came_from', None)
 
     @button.buttonAndHandler(_(u"Submit"))
     def handleOk(self, action):
@@ -406,19 +425,21 @@ class AddPersonForm(form.SchemaForm):
             else:
                 data_enc[key] = value
 
-   
         # Create the login user
         reg = getToolByName(self.context, 'portal_registration')
         props = {
-            'fullname': '%s %s' % (data_enc['first_name'], data_enc['last_name']),
+            'fullname': '%s %s' % (
+                data_enc['first_name'],
+                data_enc['last_name']),
             'username': data_enc['email'],
             'email': data_enc['email'],
         }
-        reg.addMember(data_enc['email'], data_enc['password'], properties=props) 
+        reg.addMember(data_enc['email'], data_enc['password'],
+                      properties=props)
 
         # Create the user object
         people_container = getattr(getSite(), 'people')
-        person = createContentInContainer(
+        createContentInContainer(
             people_container,
             'collective.salesforce.fundraising.person',
             checkConstraints=False,
@@ -440,7 +461,7 @@ class AddPersonForm(form.SchemaForm):
         if came_from:
             self.request.form['came_from'] = came_from
 
-        # merge in with standard plone login process.  
+        # merge in with standard plone login process.
         login_next = self.context.restrictedTraverse('login_next')
         login_next()
 
@@ -457,7 +478,8 @@ class CreateOfflineDonation(form.Form):
     ignoreContext = True
 
     label = _(u"Add Offline Donation")
-    description = _(u"If you have raised money offline via cash or check, enter them here so you get credit towards your goal")
+    description = _(u"If you have raised money offline via cash or check, "
+                    "enter them here so you get credit towards your goal")
 
     @button.buttonAndHandler(_(u'Submit'))
     def handleOk(self, action):
@@ -466,7 +488,9 @@ class CreateOfflineDonation(form.Form):
             self.status = self.formErrorsMessage
             return
 
-        data['title'] = '%s %s - One-time Offline Donation' % (data['first_name'], data['last_name'])
+        data['title'] = '%s %s - One-time Offline Donation' % (
+            data['first_name'],
+            data['last_name'])
         data['secret_key'] = build_secret_key()
         data['stage'] = 'Pledged'
         data['products'] = []
@@ -474,17 +498,21 @@ class CreateOfflineDonation(form.Form):
         data['payment_date'] = datetime.date.today()
         data['transaction_id'] = 'offline:' + data['secret_key']
         data['offline'] = True
- 
+
         # Add a donation in the current context,
         # using the data from the form
         parent_campaign = self.context
-        donation = createContentInContainer(parent_campaign,
+        createContentInContainer(
+            parent_campaign,
             'collective.salesforce.fundraising.donation',
             checkConstraints=False, **data)
 
         # Add the donation to the campaign totals
-        #self.context.add_donation(data['amount'])
-        
-        IStatusMessage(self.request).add(u'Your offline gift was entered and will be counted in your total raised. The gift and donor contact information will appear in "My Donors" shortly.')
-        self.request.response.redirect(parent_campaign.absolute_url())
+        # self.context.add_donation(data['amount'])
 
+        IStatusMessage(self.request).add(u'Your offline gift was entered and '
+                                         'will be counted in your total '
+                                         'raised. The gift and donor contact '
+                                         'information will appear in '
+                                         '"My Donors" shortly.')
+        self.request.response.redirect(parent_campaign.absolute_url())
