@@ -30,14 +30,15 @@ class IPerson(model.Schema, IImageScaleTraversable, IMember):
     """
 
     portrait = NamedBlobImage(
-            title = u"Portrait",
-            description = u"The photo used to identify you on the site",
-            required = False,
+        title=u"Portrait",
+        description=u"The photo used to identify you on the site",
+        required=False,
     )
 
     model.load("models/person.xml")
 
 alsoProvides(IPerson, IContentType)
+
 
 class IAddPerson(form.Schema, IEmail):
     """
@@ -45,7 +46,6 @@ class IAddPerson(form.Schema, IEmail):
     NOTE: This seems to be the only way to get a custom edit form with limited
     fields since we're using the model xml for most fields
     """
-    
     first_name = schema.TextLine(
         title=_(u"First Name"),
     )
@@ -54,7 +54,8 @@ class IAddPerson(form.Schema, IEmail):
     )
     email_opt_in = schema.Bool(
         title=_(u"Join our Email List?"),
-        description=_(u"Check this box to receive occassional updates via email"),
+        description=_(u"Check this box to receive "
+                      "occassional updates via email"),
         required=False,
         default=True,
     )
@@ -75,20 +76,23 @@ class IAddPerson(form.Schema, IEmail):
     @invariant
     def passwordsInvariant(data):
         if data.password != data.password_confirm:
-            raise Invalid(_(u"Your passwords do not match, please enter the same password in both fields"))
+            raise Invalid(_(u"Your passwords do not match, please enter the "
+                            "same password in both fields"))
+
 
 class Person(dexterity.Item):
     grok.implements(IAddPerson, IPerson)
 
     def upsertToSalesforce(self):
         sfconn = getUtility(ISalesforceUtility).get_connection()
-       
-        # only upsert values that are non-empty to Salesforce to avoid overwritting existing values with null 
+
+        # only upsert values that are non-empty to Salesforce to avoid
+        # overwritting existing values with null
         data = {
             'FirstName': self.first_name,
             'LastName': self.last_name,
             'Email': self.email,
-            'Online_Fundraising_User__c' : True,
+            'Online_Fundraising_User__c': True,
         }
         if self.email_opt_in:
             data['Email_Opt_In__c'] = self.email_opt_in
@@ -104,7 +108,7 @@ class Person(dexterity.Item):
             data['MailingPostalCode'] = self.zip
         if self.country:
             data['MailingCountry'] = self.country
-        #if self.gender:
+        # if self.gender:
         #    data['Gender__c'] = self.gender
         customer_id = getattr(self, 'stripe_customer_id', None)
         if customer_id:
@@ -127,17 +131,19 @@ class Person(dexterity.Item):
                 self.sf_object_id = contact_id
             else:
                 self.sf_object_id = res['id']
-    
+
         self.reindexObject()
 
         return res
 
+
 class PersonView(grok.View):
     grok.context(IPerson)
     grok.name('view')
-    
+
     def render(self):
         return 'Person objects cannot be viewed directly'
+
 
 @grok.subscribe(IPerson, IObjectAddedEvent)
 def setOwnerRole(person, event):
@@ -152,22 +158,24 @@ def setOwnerRole(person, event):
 
 
 def upsertPersonToSalesforceContact(person):
-    # NOTE: commented out because we always want to update SF when a contact is updated
-    # Skip if the sf_object_id is already set (could happen from 
-    # collective.salesforce.content sync)
-    #if getattr(person, 'sf_object_id', None):
+    # NOTE: commented out because we always want to update SF when a
+    # contact is updated. Skip if the sf_object_id is already set
+    # (could happen from collective.salesforce.content sync)
+    # if getattr(person, 'sf_object_id', None):
     #    return
 
     # upsert Contact in Salesforce
     return person.upsertToSalesforce()
 
-# Since we are no longer creating a Person for each donor, Person objects are really
-# just for personal fundraisers (and site admins).  The creation of a personal campaign page
-# requires the Person to have a its sf_object_id populated which means the Salesforce
-# sync needs to happen when a new Person is created rather than asynchronously
+
+# Since we are no longer creating a Person for each donor, Person objects are
+# really just for personal fundraisers (and site admins).  The creation of a
+# personal campaign page requires the Person to have a its sf_object_id
+# populated which means the Salesforce sync needs to happen when a new Person
+# is created rather than asynchronously
 # run synchronously o
-#@grok.subscribe(IPerson, IObjectAddedEvent)
-#def queueUpsertNewSalesforceContact(person, event):
+# @grok.subscribe(IPerson, IObjectAddedEvent)
+# def queueUpsertNewSalesforceContact(person, event):
 #    # abort if this site doesn't have this product installed
 #    mdata = getToolByName(person, 'portal_memberdata')
 #    if 'sf_object_id' not in mdata.propertyIds():
@@ -183,6 +191,7 @@ def queueUpsertNewSalesforceContact(person, event):
         return
     upsertPersonToSalesforceContact(person)
 
+
 @grok.subscribe(IPerson, IObjectModifiedEvent)
 def queueUpsertModifiedSalesforceContact(person, event):
     # abort if this site doesn't have this product installed
@@ -191,7 +200,6 @@ def queueUpsertModifiedSalesforceContact(person, event):
         return
     async = getUtility(IAsyncService)
     async.queueJob(upsertPersonToSalesforceContact, person)
-    
 
 
 class EmailLoginRouter(grok.View):
@@ -199,24 +207,30 @@ class EmailLoginRouter(grok.View):
     grok.context(ISiteRoot)
 
     def render(self):
-        came_from = self.request.form.get('came_from',None)
+        came_from = self.request.form.get('came_from', None)
         came_from_arg = ''
         if came_from:
             came_from_arg = '&came_from=%s' % quote(came_from)
-        email = self.request.form.get('email',None)
+        email = self.request.form.get('email', None)
         if not email:
-            return self.request.response.redirect(self.context.absolute_url() + '/login' + came_from_arg)
-   
+            return self.request.response.redirect(
+                self.context.absolute_url() + '/login' + came_from_arg)
+
         category = self.get_user_category(email)
-        if category == None:
-            return self.request.response.redirect(self.context.absolute_url() + '/create-user-account?email=' + quote(email) + came_from_arg)
+        if category is None:
+            return self.request.response.redirect(
+                self.context.absolute_url() + '/create-user-account?email=' + quote(email) + came_from_arg)
         if category == 'registered':
             # redirect to login
-            # FIXME: This code assumes the login portlet is the second tab on the pluggable login page.  I'm sure there's a better way to do this.
-            return self.request.response.redirect(self.context.absolute_url() + '/login?tab=1&email=' + quote(email) + came_from_arg)
+            # FIXME: This code assumes the login portlet is the second tab on
+            # the pluggable login page.
+            # I'm sure there's a better way to do this.
+            return self.request.response.redirect(
+                self.context.absolute_url() + '/login?tab=1&email=' + quote(email) + came_from_arg)
         if category == 'social' or category == 'donor_only':
-            return self.request.response.redirect(self.context.absolute_url() + '/set-password-form?email=' + quote(email) + came_from_arg)
-        
+            return self.request.response.redirect(
+                self.context.absolute_url() + '/set-password-form?email=' + quote(email) + came_from_arg)
+
     def get_user_category(self, email):
         """ Returns either registered, social, donor_only, or None """
         res = get_brains_for_email(self.context, email)
@@ -242,19 +256,19 @@ class EmailLoginRouter(grok.View):
 
         return category
 
-   
+
 class CleanupSalesforceIds(grok.View):
     grok.name('cleanup-salesforce-person-ids')
     grok.require('cmf.ModifyPortalContent')
-    grok.context(ISiteRoot) 
+    grok.context(ISiteRoot)
 
     def render(self):
-        
+
         sfconn = getUtility(ISalesforceUtility).get_connection()
-    
+
         soql = "select Id, Email from Contact where Online_Fundraising_User__c = True"
-      
-        # FIXME: Handle paginated query in case the number of contacts is > 200 
+
+        # FIXME: Handle paginated query in case the number of contacts is > 200
         res = sfconn.query(soql)
 
         num_person_updated = 0
@@ -273,12 +287,13 @@ class CleanupSalesforceIds(grok.View):
                 num_person_updated += 1
                 person.sf_object_id = contact['Id']
                 person.reindexObject(idxs=['sf_object_id'])
-           
+
             member = mtool.getMemberById(person.email)
             if not member:
                 continue
             if member.getProperty('sf_object_id') != person.sf_object_id:
                 num_member_updated = 0
-                member.setMemberProperties({'sf_object_id': person.sf_object_id})
+                member.setMemberProperties(
+                    {'sf_object_id': person.sf_object_id})
 
         return "Updated %s Person objects, %s Member objects, and skipped %s non-existing Contacts" % (num_person_updated, num_member_updated, num_skipped)

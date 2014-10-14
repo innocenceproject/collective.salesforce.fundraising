@@ -21,15 +21,17 @@
   <metal:content-core define-macro="content-core">
 
     <div class="thank-you-message" tal:content="structure context/thank_you_message/output|nothing" />
+    
+    <div id="double-the-donation">
+        <script>var DDCONF = { API_KEY: "3692" };</script>
+
+        <script src="//doublethedonation.com/api/js/ddplugin.js"></script>
+        <link href="//doublethedonation.com/api/css/ddplugin.css" rel="stylesheet">
+        <div id="dd-container" ng-app="dd.plugin"><div class="well"><div ng-include="search_template"></div><p><center><a href="//doublethedonation.com/matching-grant-resources/matching-gift-basics/">Matching Gift</a> and <a href="//doublethedonation.com/matching-grant-resources/volunteer-grant-basics/">Volunteer Grant</a> information provided by <br><a href="//doublethedonation.com"><img alt="Powered by Double the Donation" src="//doublethedonation.com/api/img/powered-by.png" /></a></center></p></div></div>
+    </div>
 
     <div class="donation-receipt-wrapper" tal:content="structure view/receipt" tal:condition="view/receipt" />
     
-    <script>var DDCONF = { API_KEY: "3692" };</script>
-
-    <script src="//doublethedonation.com/api/js/ddplugin.js"></script>
-    <link href="//doublethedonation.com/api/css/ddplugin.css" rel="stylesheet">
-    <div id="dd-container" ng-app="dd.plugin"><div class="well"><div ng-include="search_template"></div><p><center><a href="//doublethedonation.com/matching-grant-resources/matching-gift-basics/">Matching Gift</a> and <a href="//doublethedonation.com/matching-grant-resources/volunteer-grant-basics/">Volunteer Grant</a> information provided by <br><a href="//doublethedonation.com"><img alt="Powered by Double the Donation" src="//doublethedonation.com/api/img/powered-by.png" /></a></center></p></div></div>
-
     <div class="next-steps">
 
       <h2 class="next-steps-header">Increase Your Gift's Impact</h2>
