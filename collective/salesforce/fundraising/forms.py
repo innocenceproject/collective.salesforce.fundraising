@@ -409,6 +409,10 @@ class AddPersonForm(form.SchemaForm):
         data = {
             'first_name': data['first_name'],
             'last_name': data['last_name'],
+            'fullname': '%s %s' % (
+                data['first_name'],
+                data['last_name']),
+            'username': data['email'],
             'email': data['email'],
             'email_opt_in': data['email_opt_in'],
             'password': pw_encrypt(data['password']),
@@ -434,10 +438,13 @@ class AddPersonForm(form.SchemaForm):
             'username': data_enc['email'],
             'email': data_enc['email'],
         }
-        reg.addMember(data_enc['email'], data_enc['password'],
-                      properties=props)
+        #        new_person = reg.addMember(
+        #            data_enc['email'],
+        #            data_enc['password'],
+        #            properties=data
+        #        )
 
-        # Create the user object
+        # Create the user object portal reg and PAS should do this for us
         people_container = getattr(getSite(), 'people')
         createContentInContainer(
             people_container,
