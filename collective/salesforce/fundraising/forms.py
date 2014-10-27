@@ -413,7 +413,7 @@ class AddPersonForm(form.SchemaForm):
                 data['first_name'],
                 data['last_name']),
             'username': data['email'],
-            'email': data['email'],
+            'email': data['email'].lower(),
             'email_opt_in': data['email_opt_in'],
             'password': pw_encrypt(data['password']),
             'registered': True,
@@ -431,18 +431,11 @@ class AddPersonForm(form.SchemaForm):
 
         # Create the login user
         reg = getToolByName(self.context, 'portal_registration')
-        props = {
-            'fullname': '%s %s' % (
-                data_enc['first_name'],
-                data_enc['last_name']),
-            'username': data_enc['email'],
-            'email': data_enc['email'],
-        }
-        #        new_person = reg.addMember(
-        #            data_enc['email'],
-        #            data_enc['password'],
-        #            properties=data
-        #        )
+        reg.addMember(
+            data_enc['email'],
+            data_enc['password'],
+            properties=data,
+        )
 
         # Create the user object portal reg and PAS should do this for us
         people_container = getattr(getSite(), 'people')
