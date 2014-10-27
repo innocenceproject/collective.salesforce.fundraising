@@ -5,14 +5,11 @@ from zope.interface import alsoProvides
 from zope.interface import invariant
 from zope.interface import Invalid
 from zope.component import getUtility
-from zope.component.hooks import getSite
 from AccessControl.SecurityManagement import newSecurityManager
 from zope.app.content.interfaces import IContentType
 from Products.CMFCore.utils import getToolByName
-from Products.membrane.interfaces import IUserAdder
 from plone.directives import dexterity, form
 from plone.supermodel import model
-from plone.dexterity.utils import createContentInContainer
 from dexterity.membrane.content.member import IMember, IEmail
 from dexterity.membrane.membrane_helpers import get_brains_for_email
 from zope.app.container.interfaces import IObjectAddedEvent
@@ -300,24 +297,3 @@ class CleanupSalesforceIds(grok.View):
                     {'sf_object_id': person.sf_object_id})
 
         return "Updated %s Person objects, %s Member objects, and skipped %s non-existing Contacts" % (num_person_updated, num_member_updated, num_skipped)
-
-
-class PersonAdder(grok.GlobalUtility):
-    """
-    UserAdder utility that knows how to add People
-    """
-    grok.provides(IUserAdder)
-    grok.name('fundraising_person')
-
-    def addUser(self, login, password):
-        """
-        Adds a SimpleMember object at the root of the Plone site.
-        """
-        people_container = getattr(getSite(), 'people')
-        createContentInContainer(
-            people_container,
-            'collective.salesforce.fundraising.person',
-            checkConstraints=False,
-            email=login,
-            password=password
-        )
