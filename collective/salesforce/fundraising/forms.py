@@ -463,7 +463,11 @@ class AddPersonForm(form.SchemaForm):
 
         # merge in with standard plone login process.
         login_next = self.context.restrictedTraverse('login_next')
-        login_next()
+        html = login_next()
+
+        # Send the response from login_next() to the browser.
+        if self.request.response.getStatus() == 200:
+            self.render = lambda: html
 
 
 class CreateOfflineDonation(form.Form):
