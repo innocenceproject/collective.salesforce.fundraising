@@ -175,6 +175,15 @@ class FundraisingCampaignPage(object):
 
         return val
 
+    def set_unless_default(self, field, value):
+        """Set a field unless the value has never changed from the default."""
+        attr = '_%s' % field
+        if not hasattr(self, attr):
+            if value == self.get_default(field):
+                # This field should not change from the default value.
+                return
+        setattr(self, attr, value)
+
     @getproperty
     def thank_you_message(self):
         return self.get_local_or_default('thank_you_message')
@@ -430,8 +439,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
 
     @setproperty
     def external_media_url(self, external_media_url):
-        if external_media_url != self.get_default('external_media_url'):
-            self._external_media_url = external_media_url
+        self.set_unless_default('external_media_url', external_media_url)
 
     @getproperty
     def donation_receipt_legal(self):

@@ -409,7 +409,11 @@ class AddPersonForm(form.SchemaForm):
         data = {
             'first_name': data['first_name'],
             'last_name': data['last_name'],
-            'email': data['email'],
+            'fullname': '%s %s' % (
+                data['first_name'],
+                data['last_name']),
+            'username': data['email'],
+            'email': data['email'].lower(),
             'email_opt_in': data['email_opt_in'],
             'password': pw_encrypt(data['password']),
             'registered': True,
@@ -427,17 +431,13 @@ class AddPersonForm(form.SchemaForm):
 
         # Create the login user
         reg = getToolByName(self.context, 'portal_registration')
-        props = {
-            'fullname': '%s %s' % (
-                data_enc['first_name'],
-                data_enc['last_name']),
-            'username': data_enc['email'],
-            'email': data_enc['email'],
-        }
-        reg.addMember(data_enc['email'], data_enc['password'],
-                      properties=props)
+        reg.addMember(
+            data_enc['email'],
+            data_enc['password'],
+            properties=data,
+        )
 
-        # Create the user object
+        # Create the user object portal reg and PAS should do this for us
         people_container = getattr(getSite(), 'people')
         createContentInContainer(
             people_container,
@@ -463,7 +463,11 @@ class AddPersonForm(form.SchemaForm):
 
         # merge in with standard plone login process.
         login_next = self.context.restrictedTraverse('login_next')
-        login_next()
+        html = login_next()
+
+        # Send the response from login_next() to the browser.
+        if self.request.response.getStatus() == 200:
+            self.render = lambda: html
 
 
 class CreateOfflineDonation(form.Form):
