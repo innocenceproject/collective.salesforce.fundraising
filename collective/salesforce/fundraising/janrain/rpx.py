@@ -186,8 +186,11 @@ class RpxPostLogin(grok.View):
         profile = auth_info.get('profile', {})
 
         email = profile.get('verifiedEmail', None)
-        if not email:
-            email = profile.get('email', None)
+
+        # NB: Do NOT accept the 'email' attribute as an alternative
+        # to 'verifiedEmail'.  The 'email' attribute can be entered by
+        # users and therefore would be a security hole.
+
         if not email:
             raise AttributeError(
                 'No email provided from social profile, unable to create '
