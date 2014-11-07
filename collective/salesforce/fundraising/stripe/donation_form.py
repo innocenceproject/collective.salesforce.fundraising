@@ -402,6 +402,10 @@ class RecordStripeDonation(grok.View):
             for item in products:
                 data['products'].append('%s|%s|%s' % (item['product'].price, item['quantity'], IUUID(item['product'])))
 
+        # title must be unicode for dexterity
+        if data.get('title', None) and not isinstance(data['title'], unicode):
+            data['title'] = unicode(data['title'])
+
         donation = createContentInContainer(
             page,
             'collective.salesforce.fundraising.donation',
