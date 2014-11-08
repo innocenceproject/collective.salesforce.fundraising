@@ -1,6 +1,7 @@
 import random
 from rwproperty import getproperty, setproperty
 from datetime import date
+import re
 
 from Acquisition import aq_base
 from five import grok
@@ -353,10 +354,12 @@ class FundraisingCampaignPage(object):
         if external_media:
             consumer = getUtility(IConsumer)
             # FIXME - don't hard code maxwidth
-            return consumer.get_data(
+            html = consumer.get_data(
                 self.external_media_url,
                 maxwidth=270
             ).get('html')
+            html = fix_oembed_html(html)
+            return html
 
     def get_header_image_url(self):
         local_image = getattr(self, 'header_image', None)
@@ -1162,3 +1165,23 @@ class CleanDonorOnlyUsers(grok.View):
             self.context.people.manage_delObjects(to_delete)
 
         return '\n'.join(to_delete)
+
+
+def fix_oembed_html(html):
+    """Adjust the HTML we get from certain oembed providers."""
+
+    # Upgrade all Youtube video links to SSL.
+    html = re.sub(
+        r'src="http://youtube.com',
+        'src="https://youtube.com', html)
+    html = re.sub(
+        r'src="http://www.youtube.com',
+        'src="https://www.youtube.com', html)
+    html = re.sub(
+        r'src="http://youtu.be',
+        'src="https://youtu.be', html)
+    html = re.sub(
+        r'src="http://www.youtu.be',
+        'src="https://www.youtu.be', html)
+
+    return html
