@@ -1,8 +1,8 @@
 import copy
 import datetime
+from email import message_from_string
 
 from zope import schema
-from zope.interface import invariant
 from zope.interface import Invalid
 from zope.component.hooks import getSite
 
@@ -289,26 +289,6 @@ class ISetPassword(form.Schema):
         title=_(u"Email Address"),
         description=_(u""),
     )
-    password = schema.Password(
-        title=_(u"New Password"),
-        description=_(u""),
-    )
-    password_confirm = schema.Password(
-        title=_(u"Confirm New Password"),
-        description=_(u""),
-    )
-    came_from = schema.TextLine(
-        title=_(u"Redirect after login"),
-        required=False,
-    )
-
-    form.mode(came_from='hidden')
-
-    @invariant
-    def passwordsInvariant(data):
-        if data.password != data.password_confirm:
-            raise Invalid(_(u"Your passwords do not match, please enter "
-                            "the same password in both fields"))
 
 
 class SetPasswordForm(form.SchemaForm):
@@ -319,14 +299,13 @@ class SetPasswordForm(form.SchemaForm):
     ignoreContext = True
 
     label = _(u"Set Your Password")
-    description = _(u"Use the form below to set a password for your account "
-                    "which you can use in the future to log in.")
+    description = _(
+        u"Use this form to set a password for your account "
+        "which you can use in the future to log in.")
 
     def updateWidgets(self):
         super(SetPasswordForm, self).updateWidgets()
         self.widgets['email'].value = self.request.form.get('email', None)
-        self.widgets['came_from'].value = self.request.form.get(
-            'came_from', None)
 
     @button.buttonAndHandler(_(u"Submit"))
     def handleOk(self, action):
@@ -335,24 +314,34 @@ class SetPasswordForm(form.SchemaForm):
             self.status = self.formErrorsMessage
             return
 
-        # NOTE: The validator on email should have already checked if the
-        # password can be set and auto logged the user in
-        res = get_brains_for_email(self.context, data['email'], self.request)
-        person = res[0].getObject()
-        person.password = pw_encrypt(data['password'])
-        person.registered = True
+        email = data['email']
 
-        # See if came_from was passed
-        # fix odd bug where came_from is a list of two values
-        came_from = data.get('came_from', None)
-        if came_from and isinstance(came_from, (list, tuple)):
-            came_from = came_from[0]
+        site = getSite()
+        membership = getToolByName(site, 'portal_membership')
+        member = membership.getMemberById(email)
 
-        self.request.form['came_from'] = came_from
-
-        # merge in with standard plone login process.
-        login_next = self.context.restrictedTraverse('login_next')
-        login_next()
+        # Like mailPassword() in CMFPlone.RegistrationTool, render
+        # and send the message ourselves to avoid tripping over security.
+        reset_tool = getToolByName(site, 'portal_password_reset')
+        reset = reset_tool.requestReset(member.getId())
+        encoding = site.getProperty('email_charset', 'utf-8')
+        mail_text = site.mail_password_template(
+            site, self.request, member=member, reset=reset,
+            password=member.getPassword(), charset=encoding)
+        # The mail headers are not properly encoded, so we need to extract
+        # them and let MailHost manage the encoding.
+        if isinstance(mail_text, unicode):
+            mail_text = mail_text.encode(encoding)
+        message_obj = message_from_string(mail_text.strip())
+        subject = message_obj['Subject']
+        m_to = message_obj['To']
+        m_from = message_obj['From']
+        host = getToolByName(site, 'MailHost')
+        host.send(mail_text, m_to, m_from, subject=subject,
+                  charset=encoding, immediate=False)
+        # return the rendered template "mail_password_response.pt"
+        # (in Products.PasswordResetTool)
+        return site.mail_password_response(site, self.request)
 
 
 @form.validator(field=ISetPassword['email'])
@@ -360,24 +349,20 @@ def validateEmail(value):
     site = getSite()
 
     res = get_brains_for_email(site, value)
-    if not res:
+    if res:
+        membership = getToolByName(site, 'portal_membership')
+        member = membership.getMemberById(value)
+    else:
+        member = None
+
+    if member is None:
         raise Invalid(_(u"No existing user account found to set password. "
                         " Please use the registration form to create an"
                         "account."))
 
-    # Auto log in the user
-    # NOTE: This is to allow the current anon user access to the user profile.
-    # If there is an error, you MUST log the user out before raising an
-    # exception
-    mtool = getToolByName(site, 'portal_membership')
-    acl = getToolByName(site, 'acl_users')
-    newSecurityManager(None, acl.getUser(value))
-    mtool.loginUser()
-
     person = res[0].getObject()
 
     if person.registered:
-        mtool.logoutUser()
         raise Invalid(_(u"This account already has a password set.  If you "
                         "have forgotten the password, please use the forgot "
                         "password link to reset your password."))
