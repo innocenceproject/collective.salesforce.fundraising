@@ -301,7 +301,7 @@ class SetPasswordForm(form.SchemaForm):
     label = _(u"Set Your Password")
     description = _(
         u"Use this form to set a password for your account "
-        "which you can use in the future to log in.")
+        u"which you can use in the future to log in.")
 
     def updateWidgets(self):
         super(SetPasswordForm, self).updateWidgets()
@@ -339,9 +339,16 @@ class SetPasswordForm(form.SchemaForm):
         host = getToolByName(site, 'MailHost')
         host.send(mail_text, m_to, m_from, subject=subject,
                   charset=encoding, immediate=False)
-        # return the rendered template "mail_password_response.pt"
-        # (in Products.PasswordResetTool)
-        return site.mail_password_response(site, self.request)
+
+        brains = get_brains_for_email(site, email)
+        if brains is not None:
+            person = brains[0].getObject()
+            # person.registered must be set in order for the user
+            # to log in with a password.
+            person.registered = True
+
+        self.request.response.redirect(
+            self.context.absolute_url() + '/mail_password_response')
 
 
 @form.validator(field=ISetPassword['email'])
