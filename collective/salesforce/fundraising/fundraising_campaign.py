@@ -121,6 +121,10 @@ def handleFundraisingCampaignCreated(campaign, event):
         campaign.reindexObject(idxs=['sf_object_id'])
 
 
+# _missing is a marker for identifying unset attributes.
+_missing = object()
+
+
 class FundraisingCampaignPage(object):
     grok.implements(IStripeModeChooser)
 
@@ -132,13 +136,14 @@ class FundraisingCampaignPage(object):
 
         # Try page
         page = aq_base(self.get_fundraising_campaign_page())
-        val = getattr(page, '_%s' % field, None)
-        if val is None:
+        val = getattr(page, '_%s' % field, _missing)
+        if val is _missing:
+            val = None
             # For backwards compatibility, check __dict__ for a previous value
-            # and port it
+            # and port it.
             if field in page.__dict__:
                 val = page.__dict__[field]
-                setattr(self, '_%s' % field, val)
+                setattr(page, '_%s' % field, val)
 
         test_val = val
         # check if the output of a rich text field is empty
