@@ -742,6 +742,15 @@ a.button-create-personal-campaign:hover {
     display: block;
     padding: 0 30px; }
 
+.field.invalid input {
+  box-shadow: 0 0 1px 1px red;
+}
+
+input[type=submit][disabled] {
+  cursor: default;
+  opacity: 0.25;
+}
+
 #recurly-subscribe .recurly {
   width: 100%;
   font-family: Arial, FreeSans, sans-serif !important; }

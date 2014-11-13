@@ -1,5 +1,8 @@
 var _GET_VARS = {};
 
+var EMAIL_RE = /^[A-Z0-9._%!#$%&'*+\-\/=?^_`{|}~()]+@[A-Z0-9]+([.\-][A-Z0-9]+)*\.[A-Z]{2,8}$/i;
+
+
 document.location.search.replace(/\??(?:([^=]+)=([^&]*)&?)/g, function () {
     function decode(s) {
         return decodeURIComponent(s.split("+").join(" "));
@@ -226,6 +229,24 @@ function handleHonoraryTypeChange() {
     refreshHonoraryPreview(form);
 }
 
+function updateHonoraryFormValidity() {
+    var form, email_valid, email_field, require_email, form_valid;
+
+    form = $('form.donation-form-honorary');
+    email_field = form.find('.field-email');
+    require_email = $('#honorary-send-email').is(':checked');
+
+    email_valid = EMAIL_RE.test($.trim(email_field.find('input').val()));
+    email_field.toggleClass('invalid', !email_valid);
+    form_valid = (!require_email || email_valid);
+    form.toggleClass('invalid', !form_valid);
+    if (form_valid) {
+        form.find('input[type=submit]').removeAttr('disabled');
+    } else {
+        form.find('input[type=submit]').attr('disabled', 'disabled');
+    }
+}
+
 function handleHonoraryNotificationChange() {
     var form = $(this).parents('form.donation-form-honorary');
 
@@ -273,6 +294,8 @@ function handleHonoraryNotificationChange() {
 
         refreshHonoraryPreview(form);
     }
+
+    updateHonoraryFormValidity();
 }
 
 function handleHonoraryShowAmountChange() {
@@ -337,27 +360,31 @@ function linkStateAndCountryField() {
 }
 
 function setupHonoraryForm() {
-    var form = $('form.donation-form-honorary');
+    var form, field_email, type_input, send_input;
 
-    if (form.length == 0) {
+    form = $('form.donation-form-honorary');
+    if (form.length === 0) {
         return;
     }
 
     // Handle changes in the type
-    var type_input = form.find('.field-honorary-type .option input');
+    type_input = form.find('.field-honorary-type .option input');
     type_input.change(handleHonoraryTypeChange);
     type_input.change();
 
     // Handle changes in send
-    var send_input = form.find('.field-honorary-send .option input');
+    send_input = form.find('.field-honorary-send .option input');
     send_input.change(handleHonoraryNotificationChange);
     send_input.change();
     
     // Handle changes in show_amount
-    var send_input = form.find('.subfield-show-amount .option input');
+    send_input = form.find('.subfield-show-amount .option input');
     send_input.change(handleHonoraryShowAmountChange);
     send_input.change();
     
+    field_email = form.find('.field-email');
+    field_email.find('input').bind('change keyup', updateHonoraryFormValidity);
+
 }
 
 function setupProductForm() {

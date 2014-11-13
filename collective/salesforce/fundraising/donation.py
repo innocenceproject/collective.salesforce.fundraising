@@ -1,5 +1,6 @@
 import os
 import random
+import re
 import string
 import transaction
 from five import grok
@@ -47,6 +48,10 @@ from collective.salesforce.fundraising.personal_campaign_page import IPersonalCa
 
 import logging
 logger = logging.getLogger("Plone")
+
+email_re = re.compile(
+    r"^[A-Z0-9._%!#$%&'*+\-/=?^_`{|}~()]+"
+    r"@[A-Z0-9]+([.\-][A-Z0-9]+)*\.[A-Z]{2,8}$", re.I)
 
 def build_secret_key():
     return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(32))
@@ -848,14 +853,28 @@ class HonoraryMemorialView(grok.View):
 
         # Handle POST
         if self.request['REQUEST_METHOD'] == 'POST':
+
+            notification_type = self.request.form.get('honorary_notification_type', None)
+            email = ''
+            if notification_type == 'Email':
+                email = (self.request.form.get('honorary_email') or '').strip()
+                if email_re.match(email) is None:
+                    # Redirect to an error page, allowing the user
+                    # to press the back button and make corrections.
+                    # This isn't ideal, but JS validation should normally
+                    # stop users from getting here anyway.
+                    return self.request.response.redirect(
+                        '%s/email-error' % self.context.absolute_url(),
+                        status=303)
+
             # Fetch values from the request
             self.context.honorary_type = self.request.form.get('honorary_type', None)
-            self.context.honorary_notification_type = self.request.form.get('honorary_notification_type', None)
+            self.context.honorary_notification_type = notification_type
             self.context.honorary_first_name = self.request.form.get('honorary_first_name', None)
             self.context.honorary_last_name = self.request.form.get('honorary_last_name', None)
             self.context.honorary_recipient_first_name = self.request.form.get('honorary_recipient_first_name', None)
             self.context.honorary_recipient_last_name = self.request.form.get('honorary_recipient_last_name', None)
-            self.context.honorary_email = self.request.form.get('honorary_email', None)
+            self.context.honorary_email = email
             self.context.honorary_street_address = self.request.form.get('honorary_street_address', None)
             self.context.honorary_city = self.request.form.get('honorary_city', None)
             self.context.honorary_state = self.request.form.get('honorary_state', None)
@@ -864,7 +883,7 @@ class HonoraryMemorialView(grok.View):
             self.context.honorary_message = unicode(self.request.form.get('honorary_message', None), 'utf-8')
 
             # If there was an email passed and we're supposed to send an email, send the email
-            if self.context.honorary_notification_type == 'Email' and self.context.honorary_email:
+            if notification_type == 'Email':
                 self.send_email()
 
             # Queue an update of the Donation to get honorary fields populated on the Opportunity in Salesforce
@@ -880,6 +899,14 @@ class HonoraryMemorialView(grok.View):
         self.states = states_list
 
         return self.form_template()
+
+
+class EmailErrorView(grok.View):
+    grok.context(IDonation)
+    grok.require('zope2.View')
+    grok.name('email-error')
+    grok.template('email-error')
+
 
 class HonoraryEmailView(grok.View):
     grok.context(IDonation)
