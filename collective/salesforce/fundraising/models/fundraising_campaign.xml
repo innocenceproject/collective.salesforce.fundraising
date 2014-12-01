@@ -18,7 +18,7 @@
         </field>
         <field name="external_media_url" type="zope.schema.TextLine">
             <title>External Media URL</title>
-            <description>A link to externally hosted media promoting the campaign.  For example, a Youtube video, a Flickr photo gallery, etc.</description>
+            <description>A link to a YouTube video promoting the campaign.</description>
             <required>False</required>
         </field>
         <field name="body" type="plone.app.textfield.RichText">
