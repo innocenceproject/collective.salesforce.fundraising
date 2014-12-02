@@ -27,6 +27,7 @@ from plone.portlets.interfaces import IPortletAssignmentMapping
 from plone.portlets.interfaces import IPortletManager
 from plone.portlets.constants import CONTENT_TYPE_CATEGORY
 
+from Products.CMFCore.interfaces import IActionSucceededEvent
 from Products.CMFPlone.interfaces import IPloneSiteRoot
 from Products.CMFCore.utils import getToolByName
 from Products.ATContentTypes.interfaces import IATDocument
@@ -1190,3 +1191,15 @@ def fix_oembed_html(html):
         'src="https://www.youtu.be', html)
 
     return html
+
+
+@grok.subscribe(IFundraisingCampaign, IActionSucceededEvent)
+def campaign_workflow_succeeded(campaign, event):
+    """A workflow action succeeded on an IFundraisingCampaign.
+
+    If switching to test mode or publishing, change stripe_mode accordingly.
+    """
+    if event.action == 'test':
+        campaign.stripe_mode = 'test'
+    elif event.action in ('publish', 'personal_only'):
+        campaign.stripe_mode = 'live'
