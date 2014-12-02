@@ -1,0 +1,14 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+    <!-- Override plone_redirector_view. -->
+    <browser:page
+        name="plone_redirector_view"
+        for="*"
+        class=".error.Custom404View"
+        permission="zope2.View"
+        allowed_interface="plone.app.redirector.interfaces.IFourOhFourView"
+        />
+
+</configure>
