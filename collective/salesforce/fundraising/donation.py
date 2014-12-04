@@ -1,3 +1,4 @@
+from decimal import Decimal
 import os
 import random
 import re
@@ -1235,11 +1236,35 @@ class SalesforceDonationSync(grok.Adapter):
         self.context.synced_opportunity = True
 
     def create_products(self):
-        # FIXME: change to upsert
         if not self.products:
             return
 
+        # Get the set of line items that already exist for this donation
+        # in the Salesforce database.
+        stmt = """\
+            select PricebookEntryId, UnitPrice, Quantity
+            from OpportunityLineItem
+            where Opportunity.Success_Transaction_ID__c = '%s'
+            """ % self.context.transaction_id
+        res = self.sfconn.query(stmt)
+        existent = set()
+        for item in res['records']:
+            existent.add((
+                unicode(item['PricebookEntryId']),
+                Decimal(item['UnitPrice']),
+                int(item['Quantity']),
+            ))
+
         for product in self.products:
+            # Add an OpportunityLineItem unless it already exists.
+            key = (
+                unicode(product['PricebookEntryId']),
+                Decimal(product['UnitPrice']),
+                int(product['Quantity']),
+            )
+            if key in existent:
+                continue
+
             product['Opportunity'] = {
                 'Success_Transaction_ID__c': self.context.transaction_id,
             }
@@ -1247,6 +1272,10 @@ class SalesforceDonationSync(grok.Adapter):
 
             if not res['success']:
                 raise Exception(res['errors'][0])
+
+            # Note: it might be nice to also delete line items
+            # to keep Salesforce in sync.  The API for doing that isn't
+            # obvious though.
 
         self.context.synced_products = True
 
