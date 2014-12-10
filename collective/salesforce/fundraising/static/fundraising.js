@@ -229,6 +229,10 @@ function handleHonoraryTypeChange() {
     refreshHonoraryPreview(form);
 }
 
+function missingValueFilter() {
+    return !$(this).val();
+}
+
 function updateHonoraryFormValidity() {
     var form, email_valid, email_field, require_email, form_valid;
 
@@ -238,7 +242,13 @@ function updateHonoraryFormValidity() {
 
     email_valid = EMAIL_RE.test($.trim(email_field.find('input').val()));
     email_field.toggleClass('invalid', !email_valid);
-    form_valid = (!require_email || email_valid);
+
+    if (form.find("input[type=text][required]:visible, select[required]:visible").filter(missingValueFilter).length > 0) {
+        form_valid = false;
+    } else {
+        form_valid = (!require_email || email_valid);
+    }
+
     form.toggleClass('invalid', !form_valid);
     if (form_valid) {
         form.find('input[type=submit]').removeAttr('disabled');
@@ -359,6 +369,14 @@ function linkStateAndCountryField() {
     }
 }
 
+function updateRequiredInput() {
+    var field, invalid;
+    field = $(this).closest('.field');
+    invalid = field.find('input[type=text][required]:visible, select[required]:visible').filter(missingValueFilter).length > 0;
+    field.toggleClass('invalid', invalid);
+    updateHonoraryFormValidity();
+}
+
 function setupHonoraryForm() {
     var form, field_email, type_input, send_input;
 
@@ -383,8 +401,10 @@ function setupHonoraryForm() {
     send_input.change();
     
     field_email = form.find('.field-email');
-    field_email.find('input').bind('change keyup', updateHonoraryFormValidity);
+    field_email.find('input').bind('change keyup blur', updateHonoraryFormValidity);
 
+    form.bind('change', updateHonoraryFormValidity);
+    form.find('input[type=text][required], select[required]').bind('change keyup blur', updateRequiredInput);
 }
 
 function setupProductForm() {
