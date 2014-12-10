@@ -351,3 +351,10 @@ class IFundraisingSettings(Interface):
         default=0,
         required=False,
     )
+
+    async_error_email = schema.TextLine(
+        title=_(u"Async Error Email Address"),
+        description=_(u"Where to send emails about errors that happen in asynchronous jobs"),
+        default=u'support@sixfeetup.com',
+        required=False,
+    )

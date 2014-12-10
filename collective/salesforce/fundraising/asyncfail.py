@@ -15,6 +15,8 @@ from twisted.python.failure import Failure
 import zc.async
 import Zope2
 
+from collective.salesforce.fundraising.utils import get_settings
+
 try:
     # plone < 4.3
     from zope.app.component.hooks import setSite
@@ -162,10 +164,13 @@ def email_failure_from_portal(portal, info):
     from_address = portal.getProperty('email_from_address')
     from_formatted = formataddr((from_name, from_address))
 
+    settings = get_settings()
+    to_address = settings.async_error_email
+
     all_info = info.copy()
     all_info.update({
         'from_formatted': from_formatted,
-        'to_formatted': from_formatted,
+        'to_formatted': to_address,
         'hostname': socket.gethostname(),
         'pid': os.getpid(),
         'thread_id': thread.get_ident(),

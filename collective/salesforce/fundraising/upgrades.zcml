@@ -30,9 +30,17 @@
   <genericsetup:upgradeStep
       source="4"
       destination="5"
-      title="Normalize email case for consistent login"
+      title="collective.salesforce.fundraising: Normalize email case for consistent login"
       description="Set login_transform='lower' on PAS"
       profile="collective.salesforce.fundraising:default"
       handler=".upgrades.upgrade_4_to_5" />
+
+  <genericsetup:upgradeDepends
+      source="5"
+      destination="6"
+      title="collective.salesforce.fundraising: Add async_error_email to Plone registry"
+      description="Add async_error_email to Plone registry"
+      profile="collective.salesforce.fundraising:default"
+      import_steps="plone.app.registry" />
 
 </configure>
