@@ -1,8 +1,12 @@
+
+import datetime
 from decimal import Decimal
 import os
 import random
 import re
 import string
+
+import pytz
 import transaction
 from five import grok
 import martian.util
@@ -56,6 +60,20 @@ email_re = re.compile(
 
 def build_secret_key():
     return ''.join(random.choice(string.ascii_letters + string.digits) for x in range(32))
+
+
+def queueJobWithDelay(length, func, context, *args, **kwargs):
+    """Queue a job with a delay to avoid database conflicts."""
+    if length == 'short':
+        seconds = 10
+    else:
+        seconds = 20
+    before = datetime.datetime.now(pytz.UTC)
+    async = getUtility(IAsyncService)
+    async.queueJobWithDelay(
+        None, before + datetime.timedelta(seconds=seconds),
+        func, context, *args, **kwargs)
+
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
 def availableCampaigns(context):
@@ -888,8 +906,7 @@ class HonoraryMemorialView(grok.View):
                 self.send_email()
 
             # Queue an update of the Donation to get honorary fields populated on the Opportunity in Salesforce
-            async = getUtility(IAsyncService)
-            async.queueJob(async_salesforce_sync, self.context)
+            queueJobWithDelay('normal', async_salesforce_sync, self.context)
 
             # Redirect on to the thank you page
             return self.request.response.redirect('%s?key=%s' % (self.context.absolute_url(), self.context.secret_key))
@@ -1319,13 +1336,11 @@ def async_salesforce_sync(donation):
 
 @grok.subscribe(IDonation, IObjectAddedEvent)
 def queueSalesforceSyncAdded(donation, event):
-    async = getUtility(IAsyncService)
-    async.queueJob(async_salesforce_sync, donation)
+    queueJobWithDelay('short', async_salesforce_sync, donation)
 
 @grok.subscribe(IDonation, IObjectModifiedEvent)
 def queueSalesforceSyncModified(donation, event):
-    async = getUtility(IAsyncService)
-    async.queueJob(async_salesforce_sync, donation)
+    queueJobWithDelay('normal', async_salesforce_sync, donation)
 
 # Receipt email
 def sendDonationReceipt(donation):
@@ -1335,13 +1350,11 @@ def sendDonationReceipt(donation):
 
 @grok.subscribe(IDonation, IObjectAddedEvent)
 def queueDonationReceiptAdded(donation, event):
-    async = getUtility(IAsyncService)
-    async.queueJob(sendDonationReceipt, donation)
+    queueJobWithDelay('normal', sendDonationReceipt, donation)
 
 @grok.subscribe(IDonation, IObjectModifiedEvent)
 def queueDonationReceiptModified(donation, event):
-    async = getUtility(IAsyncService)
-    async.queueJob(sendDonationReceipt, donation)
+    queueJobWithDelay('normal', sendDonationReceipt, donation)
 
 # Subscribe donor to list
 def mailchimpSubscribeDonor(donation):
@@ -1379,8 +1392,7 @@ def queueMailchimpSubscribeDonorAdded(donation, event):
         donation.subscribed_donor = True
         return 'Skipping, no donors list specified for campaign'
 
-    async = getUtility(IAsyncService)
-    async.queueJob(mailchimpSubscribeDonor, donation)
+    queueJobWithDelay('normal', mailchimpSubscribeDonor, donation)
 
 @grok.subscribe(IDonation, IObjectModifiedEvent)
 def queueMailchimpSubscribeDonorModified(donation, event):
@@ -1391,8 +1403,7 @@ def queueMailchimpSubscribeDonorModified(donation, event):
         donation.subscribed_donor = True
         return 'Skipping, no donors list specified for campaign'
 
-    async = getUtility(IAsyncService)
-    async.queueJob(mailchimpSubscribeDonor, donation)
+    queueJobWithDelay('normal', mailchimpSubscribeDonor, donation)
 
 # Personal campaign donation notification
 def mailchimpSendPersonalCampaignDonation(donation):
@@ -1411,8 +1422,7 @@ def queueMailchimpSendPersonalCampaignDonationAdded(donation, event):
         # Skip if not a personal page
         return 'Skipping, not a personal page'
 
-    async = getUtility(IAsyncService)
-    async.queueJob(mailchimpSendPersonalCampaignDonation, donation)
+    queueJobWithDelay('normal', mailchimpSendPersonalCampaignDonation, donation)
 
 #@grok.subscribe(IDonation, IObjectModifiedEvent)
 #def queueMailchimpSendPersonalCampaignDonationModified(donation, event):
@@ -1434,5 +1444,4 @@ def addAmountToPage(donation):
 
 @grok.subscribe(IDonation, IObjectAddedEvent)
 def queueAddAmountToPage(donation, event):
-    async = getUtility(IAsyncService)
-    async.queueJob(addAmountToPage, donation)
+    queueJobWithDelay('normal', addAmountToPage, donation)
