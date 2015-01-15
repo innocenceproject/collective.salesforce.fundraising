@@ -360,12 +360,13 @@ class FundraisingCampaignPage(object):
         if external_media:
             consumer = getUtility(IConsumer)
             # FIXME - don't hard code maxwidth
-            html = consumer.get_data(
+            data = consumer.get_data(
                 self.external_media_url,
                 maxwidth=270
-            ).get('html')
-            html = fix_oembed_html(html)
-            return html
+            )
+            if data:
+                html = data.get('html', '')
+                return fix_oembed_html(html)
 
     def get_header_image_url(self):
         local_image = getattr(self, 'header_image', None)
