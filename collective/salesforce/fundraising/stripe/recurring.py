@@ -76,6 +76,21 @@ def get_container_for_invoice(invoice):
         return res[0].getObject()
 
 
+def get_subscription_line_item(invoice):
+    """Get the line item from an invoice that describes the subscription plan.
+
+    (Prorated subscription invoices have multiple lines.)
+    """
+    line_items = invoice['lines']['data']
+    for line_item in line_items:
+        plan = line_item.get('plan')
+        if plan and plan.get('amount') and plan.get('interval'):
+            return line_item
+    # Fall back to old behavior in case the code above doesn't
+    # find the right line item.
+    return line_items[0]
+
+
 def make_donation_from_invoice(invoice, container):
     last_donation = get_last_donation_for_invoice(invoice)
 
@@ -85,8 +100,7 @@ def make_donation_from_invoice(invoice, container):
     if invoice['livemode'] == False:
         mode = 'test'
 
-    # For recurring invoices, there should only be one line item
-    line_item = invoice['lines']['data'][0]
+    line_item = get_subscription_line_item(invoice)
     plan = line_item['plan']
 
     # Stripe handles amounts as cents
@@ -199,8 +213,7 @@ def update_donation_from_invoice(donation, invoice):
     if invoice['livemode'] == False:
         mode = 'test'
 
-    # For recurring invoices, there should only be one line item
-    line_item = invoice['lines']['data'][0]
+    line_item = get_subscription_line_item(invoice)
     plan = line_item['plan']
 
     # The full charge is needed to determine if a refund was issued
@@ -251,7 +264,7 @@ def get_donation_for_invoice(invoice):
         return res[0].getObject()
 
 def get_email_recurring_receipt_data(invoice):
-    line_item = invoice['lines']['data'][0]
+    line_item = get_subscription_line_item(invoice)
     plan = line_item['plan']
 
     page = get_container_for_invoice(invoice)
