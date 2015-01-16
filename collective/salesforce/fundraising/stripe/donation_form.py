@@ -328,15 +328,15 @@ class RecordStripeDonation(grok.View):
         if email:
             email = email.lower()
 
-        first_name = self.request.form.get('first_name', None)
-        last_name = self.request.form.get('last_name', None)
+        first_name = uencode(self.request.form.get('first_name', None))
+        last_name = uencode(self.request.form.get('last_name', None))
         email_opt_in = self.request.form.get('email_signup', None) == 'YES'
-        phone = self.request.form.get('phone', None)
-        address = self.request.form.get('address', None)
-        city = self.request.form.get('city', None)
-        state = self.request.form.get('state', None)
-        zipcode = self.request.form.get('zip', None)
-        country = self.request.form.get('country', None)
+        phone = uencode(self.request.form.get('phone', None))
+        address = uencode(self.request.form.get('address', None))
+        city = uencode(self.request.form.get('city', None))
+        state = uencode(self.request.form.get('state', None))
+        zipcode = uencode(self.request.form.get('zip', None))
+        country = uencode(self.request.form.get('country', None))
         amount = int(float(self.request.form.get('x_amount', None)))
         source_url = self.request.form.get('source_url', '')
 
@@ -421,3 +421,16 @@ class RecordStripeDonation(grok.View):
             redirect_url = '%s?key=%s' % (donation.absolute_url(), donation.secret_key)
 
         return self.request.response.redirect(redirect_url)
+
+
+def uencode(s):
+    """Convert to unicode if necessary.
+
+    Assume str objects are encoded in UTF-8.
+    """
+    if s is None or isinstance(s, unicode):
+        return s
+    elif isinstance(s, str):
+        return s.decode('utf-8')
+    else:
+        return unicode(s)
