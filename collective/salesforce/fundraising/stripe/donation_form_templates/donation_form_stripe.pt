@@ -63,7 +63,9 @@
         <div class="field field-contact">
           <div class="field-inputs">
             <div class="subfield subfield-email">
-              <input type="email" name="email" required="required" placeholder="Email" tal:attributes="value python: view.request.form.get('email', None)" />
+              <input type="email" name="email" required="required" placeholder="Email"
+                pattern="[A-Za-z0-9._%!#$%&amp;'*+\-\/=?^_`{|}~()]+@[A-Za-z0-9]+([.\-][A-Za-z0-9]+)*\.[A-Za-z]{2,8}$"
+                tal:attributes="value python: view.request.form.get('email', None)" />
             </div>
             <div class="subfield subfield-phone">
               <input type="text" name="phone" placeholder="Phone" tal:attributes="value python: view.request.form.get('phone', None)" />
