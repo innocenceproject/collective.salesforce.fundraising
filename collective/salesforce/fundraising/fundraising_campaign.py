@@ -269,7 +269,15 @@ class FundraisingCampaignPage(object):
         if not source_campaign:
             source_campaign = self.REQUEST.get(
                 'collective.salesforce.fundraising.source_campaign', '')
-        return source_campaign
+        # Discard extraneous characters that may have been added accidentally
+        # through social network sharing.  source_campaign must be a valid
+        # Salesforce ID, so restrict it to a base-62 value.
+        # See: http://www.salesforce.com/us/developer/docs/api/Content/field_types.htm#i1435616
+        if source_campaign:
+            match = re.search(r'[A-Za-z0-9]+', source_campaign)
+            if match is not None:
+                return match.group()
+        return ''
 
     def get_source_url(self):
         # Check if there is a cookie that captures the referrer of first entry
