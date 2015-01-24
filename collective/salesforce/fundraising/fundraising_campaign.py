@@ -474,8 +474,7 @@ class FundraisingCampaign(dexterity.Container, FundraisingCampaignPage):
 
     @setproperty
     def donation_form(self, donation_form):
-        if donation_form != self.get_default('donation_form'):
-            self._donation_form = donation_form
+        self.set_unless_default('donation_form', donation_form)
 
     @getproperty
     def stripe_recurring_plan(self):
