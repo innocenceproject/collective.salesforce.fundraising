@@ -845,7 +845,10 @@ class CampaignView(grok.View):
         tabs = []
         donation_form = self.context.donation_form
         if donation_form:
-            html = self.context.unrestrictedTraverse(donation_form.split('/'))
+            html = self.context.unrestrictedTraverse(
+                donation_form.split('/'), default=None)
+            if html is None:
+                html = '<code>Form missing: <em>%s</em></code>' % donation_form
             tabs.append({
                 'id': donation_form,
                 'label': u'Donate',
