@@ -34,6 +34,7 @@ from zope.component import getMultiAdapter
 from collective.salesforce.fundraising import MessageFactory as _
 from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.utils import get_standard_pricebook_id
+from collective.salesforce.fundraising.utils import uencode
 
 from collective.salesforce.fundraising.donation import build_secret_key
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaignPage
@@ -421,16 +422,3 @@ class RecordStripeDonation(grok.View):
             redirect_url = '%s?key=%s' % (donation.absolute_url(), donation.secret_key)
 
         return self.request.response.redirect(redirect_url)
-
-
-def uencode(s):
-    """Convert to unicode if necessary.
-
-    Assume str objects are encoded in UTF-8.
-    """
-    if s is None or isinstance(s, unicode):
-        return s
-    elif isinstance(s, str):
-        return s.decode('utf-8')
-    else:
-        return unicode(s)

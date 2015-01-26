@@ -50,6 +50,7 @@ from collective.salesforce.fundraising.utils import get_settings
 from collective.salesforce.fundraising.us_states import states_list
 from collective.salesforce.fundraising.janrain.rpx import SHARE_JS_TEMPLATE
 from collective.salesforce.fundraising.personal_campaign_page import IPersonalCampaignPage
+from collective.salesforce.fundraising.utils import uencode
 
 import logging
 logger = logging.getLogger("Plone")
@@ -889,17 +890,17 @@ class HonoraryMemorialView(grok.View):
             # Fetch values from the request
             self.context.honorary_type = self.request.form.get('honorary_type', None)
             self.context.honorary_notification_type = notification_type
-            self.context.honorary_first_name = self.request.form.get('honorary_first_name', None)
-            self.context.honorary_last_name = self.request.form.get('honorary_last_name', None)
-            self.context.honorary_recipient_first_name = self.request.form.get('honorary_recipient_first_name', None)
-            self.context.honorary_recipient_last_name = self.request.form.get('honorary_recipient_last_name', None)
+            self.context.honorary_first_name = uencode(self.request.form.get('honorary_first_name', None))
+            self.context.honorary_last_name = uencode(self.request.form.get('honorary_last_name', None))
+            self.context.honorary_recipient_first_name = uencode(self.request.form.get('honorary_recipient_first_name', None))
+            self.context.honorary_recipient_last_name = uencode(self.request.form.get('honorary_recipient_last_name', None))
             self.context.honorary_email = email
-            self.context.honorary_street_address = self.request.form.get('honorary_street_address', None)
-            self.context.honorary_city = self.request.form.get('honorary_city', None)
-            self.context.honorary_state = self.request.form.get('honorary_state', None)
-            self.context.honorary_zip = self.request.form.get('honorary_zip', None)
-            self.context.honorary_country = self.request.form.get('honorary_country', None)
-            self.context.honorary_message = unicode(self.request.form.get('honorary_message', None), 'utf-8')
+            self.context.honorary_street_address = uencode(self.request.form.get('honorary_street_address', None))
+            self.context.honorary_city = uencode(self.request.form.get('honorary_city', None))
+            self.context.honorary_state = uencode(self.request.form.get('honorary_state', None))
+            self.context.honorary_zip = uencode(self.request.form.get('honorary_zip', None))
+            self.context.honorary_country = uencode(self.request.form.get('honorary_country', None))
+            self.context.honorary_message = uencode(self.request.form.get('honorary_message', None))
 
             # If there was an email passed and we're supposed to send an email, send the email
             if notification_type == 'Email':

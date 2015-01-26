@@ -89,3 +89,16 @@ def get_person_by_sf_id(sf_id):
    
 def addcommas(value):
     return '{0:,}'.format(value) 
+
+
+def uencode(s):
+    """Convert to unicode if necessary.
+
+    Assume str objects are encoded in UTF-8.
+    """
+    if s is None or isinstance(s, unicode):
+        return s
+    elif isinstance(s, str):
+        return s.decode('utf-8')
+    else:
+        return unicode(s)
