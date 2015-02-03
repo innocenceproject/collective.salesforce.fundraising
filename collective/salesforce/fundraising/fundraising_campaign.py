@@ -46,23 +46,35 @@ from collective.chimpdrill.utils import IMailsnakeConnection
 
 @grok.provider(schema.interfaces.IContextSourceBinder)
 def availableDonationForms(context):
-    query = {
-        "portal_type": "collective.salesforce.fundraising.productform",
-        "path": '/'.join(context.getPhysicalPath()),
-    }
     terms = []
     settings = get_settings()
     default = settings.default_donation_form
     terms.append(SimpleVocabulary.createTerm(default, default,
                                              'Stripe Donation Form'))
 
-    pc = getToolByName(context, 'portal_catalog')
-    res = pc.searchResults(**query)
-    for form in res:
-        form_id = form.id + '/donation_form_stripe'
-        terms.append(
-            SimpleVocabulary.createTerm(form_id, form_id,
-                                        'Product Form: ' + form.Title))
+    try:
+        campaign_getter = context.get_fundraising_campaign
+
+    except AttributeError:
+        # The campaign hasn't been created yet, so there are no
+        # available campaign-specific donation forms yet.
+        pass
+
+    else:
+        campaign = campaign_getter()
+        query = {
+            "portal_type": "collective.salesforce.fundraising.productform",
+            "path": '/'.join(campaign.getPhysicalPath()),
+        }
+
+        pc = getToolByName(context, 'portal_catalog')
+        res = pc.searchResults(**query)
+        for form in res:
+            form_id = form.id + '/donation_form_stripe'
+            terms.append(
+                SimpleVocabulary.createTerm(form_id, form_id,
+                                            'Product Form: ' + form.Title))
+
     return SimpleVocabulary(terms)
 
 
