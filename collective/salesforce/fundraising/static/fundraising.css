@@ -195,8 +195,10 @@ a.button-create-personal-campaign:hover {
 }
 
 .donation-form-wrapper {
-  width: 620px;
-  margin-bottom: 20px; }
+    max-width: 620px;
+    margin-bottom: 20px;
+    position: relative;
+}
   .donation-form-wrapper ul.tabs {
     padding: 0 !important;
     margin: 0 !important; }
@@ -274,11 +276,12 @@ a.button-create-personal-campaign:hover {
         margin-top: -10px;
       }
       #content form.donation-form .field.field.field-recurring-plan {
-        width: 500px;
+        max-width: 500px;
         margin-bottom: 30px;
       }
       #content form.donation-form .field.field-recurring-plan input {
         float: left;
+        clear: left;
         width: 24px;
         margin-top: 2px;
       }
