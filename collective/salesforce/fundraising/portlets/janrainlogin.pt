@@ -1,29 +1,3 @@
-<style type="text/css">
-  #janrainEngageWrapper {
-    height: 200px;
-    width: 400px;
-    float: left;
-    border-right: 1px dotted #ccc;
-    padding-right: 15px;
-  }
-  .divider-or {
-    float: left;
-    font-size: 24px;
-    font-weight: bold;
-    margin-top: 70px;
-    margin-left: -15px;
-    background-color: white;
-  }
-  #form-login {
-    width: 300px;
-    float: left;
-    margin-left: 15px;
-  }
-  #form-register {
-    clear: both;
-  }
-</style>
-
 <dl class="portlet portletJanrainLoginRegister">
   <dd class="portletItem">
     <div id="janrainEngageWrapper">
