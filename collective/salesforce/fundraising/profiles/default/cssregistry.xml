@@ -2,5 +2,5 @@
     <stylesheet
         id="++resource++collective.salesforce.fundraising.static/fundraising.css"
         cacheable="True" compression="safe" cookable="True"
-        enabled="True" expression=""  insert-after="*"/>
+        enabled="False" expression=""  insert-after="*"/>
 </object>
