@@ -15,7 +15,7 @@
           <em class="description">each</em>
         </div>
 
-        <div class="field field-donation-amount">
+        <div class="field field-donation-amount hasOptions">
    
           <div class="field-amount">
             <div class="field-quantity">

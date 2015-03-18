@@ -8,7 +8,7 @@
       <fieldset class="fieldset-donation-amount">
         <legend>Select an Amount</legend>
 
-        <div class="field field-donation-amount">
+        <div class="field field-donation-amount hasOptions">
    
           <div class="field-amount">
             <label for="x_amount">or Enter an Amount</label>
