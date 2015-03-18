@@ -14,6 +14,9 @@
 
 <metal:main fill-slot="content-core">
   <metal:content-core define-macro="content-core">
+  
+    <link rel="stylesheet" type="text/css" media="screen"
+        tal:attributes="href string:${context/portal_url}/++resource++collective.salesforce.fundraising.static/fundraising.css" />
 
     <div class="personal-fundraisers-wrapper">
 
