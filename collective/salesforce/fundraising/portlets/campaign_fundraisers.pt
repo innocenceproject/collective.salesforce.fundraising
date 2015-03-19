@@ -21,7 +21,11 @@
     <dd class="portletItem">
       <tal:if_count condition="fundraisers_count">
       <a href="#" tal:attributes="href view_all"><span class="count" tal:content="fundraisers_count">17</span></a>
-      <span class="count-text">people have already<br />started fundraising.</span>
+      <span class="count-text">
+          <tal:one condition="python:fundraisers_count == 1">person has</tal:one>
+          <tal:more condition="python:fundraisers_count > 1">people have</tal:more>
+          already<br />started fundraising.
+      </span>
       </tal:if_count>
       <tal:if_not_count condition="not: fundraisers_count">
         <span>Be the first to start fundraising. Create your page.</span>
