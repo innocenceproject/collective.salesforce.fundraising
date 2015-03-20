@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 import os
 
-version = '1.26'
+version = '1.27'
 
 setup(name='collective.salesforce.fundraising',
       version=version,
