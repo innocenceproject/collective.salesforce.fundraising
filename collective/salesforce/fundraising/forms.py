@@ -387,9 +387,18 @@ class AddPersonForm(form.SchemaForm):
 
     def updateWidgets(self):
         super(AddPersonForm, self).updateWidgets()
-        self.widgets['email'].value = self.request.form.get('email', None)
-        self.widgets['came_from'].value = self.request.form.get(
-            'came_from', None)
+        email = self.request.form.get(
+            'email')
+        if not email:
+            email = self.request.form.get(
+                'form.widgets.email')
+        self.widgets['email'].value = email
+        came_from = self.request.form.get(
+            'came_from')
+        if not came_from:
+            came_from = self.request.form.get(
+                'form.widgets.came_from')
+        self.widgets['came_from'].value = came_from
 
     @button.buttonAndHandler(_(u"Submit"))
     def handleOk(self, action):
