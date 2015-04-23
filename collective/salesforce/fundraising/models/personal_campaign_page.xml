@@ -4,7 +4,8 @@
        xmlns:form="http://namespaces.plone.org/supermodel/form">
     
     <schema sf:object="Campaign" sf:criteria="Type = 'Personal Fundraising'" sf:container="get_container">
-        <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c">
+        <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c"
+               form:validator="collective.salesforce.fundraising.fundraising_campaign.CampaignTitleValidator">
             <title>Provide a brief title for your campaign</title>
         </field>
         <field name="description" type="zope.schema.Text" sf:field="Description">

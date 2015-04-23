@@ -4,7 +4,8 @@
        xmlns:form="http://namespaces.plone.org/supermodel/form">
     
     <schema sf:object="Campaign" sf:criteria="Type = 'Fundraising'" sf:container="/donate">
-        <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c">
+        <field name="title" type="zope.schema.TextLine" sf:field="Public_Name__c"
+               form:validator="collective.salesforce.fundraising.fundraising_campaign.CampaignTitleValidator">
             <title>Title</title>
             <description>Campaign Title - Comes from Public Name on Campaign in Salesforce</description>
         </field>
