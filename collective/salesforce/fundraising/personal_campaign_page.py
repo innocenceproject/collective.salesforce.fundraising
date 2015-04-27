@@ -87,6 +87,7 @@ class IEditPersonalCampaignPage(form.Schema, IImageScaleTraversable):
     title = schema.TextLine(
         title=_(u"Title"),
         description=_(u"Provide a brief title for your campaign"),
+        max_length=80,
     )
     description = schema.Text(
         title=_(u"Description"),
