@@ -91,11 +91,15 @@ alsoProvides(IFundraisingCampaign, IContentType)
 
 
 class CampaignTitleValidator(SimpleFieldValidator):
-    """ title valiator, salesforce limits name field to 80 chars
+    """ title validator, salesforce limits name field to 80 chars
     """
 
     def validate(self, value):
-        if len(value) > 80:
+        if not value:
+            raise Invalid(
+                u"Please enter a campaign title"
+            )
+        if value and len(value) > 80:
             raise Invalid(
                 u"Campaign titles need to be less than 80 characters"
             )
