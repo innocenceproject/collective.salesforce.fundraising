@@ -212,6 +212,15 @@ class IDonation(model.Schema, IImageScaleTraversable):
         required=False,
         default=False,
     )
+    synced_time = schema.Datetime(
+        title=u"Salesforce Donation Date",
+        required=False
+    )
+    synced_index = schema.Int(
+        title=u"Number of times Salesforce sync has been attempted",
+        required=False,
+        default=0
+    )
     synced_products = schema.Bool(
         title=u"Salesforce Opportunity Products Synced?",
         required=False,
@@ -1039,8 +1048,18 @@ class DonationReceipt(grok.Adapter):
 class SalesforceDonationSync(grok.Adapter):
     grok.provides(ISalesforceDonationSync)
     grok.context(IDonation)
+    
+    def mark_attempt(self):
+        """mark the sync attempt on the donation
+           used by a cronjob to know when to attempt another sync
+        """
+        self.context.synced_time = datetime.datetime.now()
+        self.context.synced_index = self.context.synced_index + 1
+        transaction.commit()
 
     def sync_to_salesforce(self):
+        self.mark_attempt()
+        
         self.sfconn = getUtility(ISalesforceUtility).get_connection()
         self.campaign = self.context.get_fundraising_campaign()
         self.page = self.context.get_fundraising_campaign_page()
