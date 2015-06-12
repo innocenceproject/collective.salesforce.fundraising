@@ -43,6 +43,8 @@ from plone.formwidget.contenttree.source import ObjPathSourceBinder
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from plone.z3cform.interfaces import IWrappedForm
 from z3c.form.browser.radio import RadioWidget
+from collective.salesforce.fundraising.asyncfail import email_failure_from_portal
+from mailsnake.exceptions import HTTPRequestException
 from plone.namedfile.interfaces import IImageScaleTraversable
 from collective.chimpdrill.utils import IMailsnakeConnection
 from collective.simplesalesforce.utils import ISalesforceUtility
@@ -354,9 +356,26 @@ class Donation(dexterity.Container):
 
     def send_donation_receipt(self):
         settings = get_settings()
-
-        res = self.send_email_thank_you()
-        self.is_receipt_sent = True
+        res = ''
+        
+        try:
+            res = self.send_email_thank_you()
+        except HTTPRequestException as e:
+            failure = {
+                'func_name': 'send_donation_receipt',
+                'func': '',
+                'args': '',
+                'kwargs': '',
+                'portal_path': '',
+                'context_path': repr(self),
+                'userfolder_path': '',
+                'user_id': '',
+                'tb': e,
+            }
+            email_failure_from_portal(self, failure)
+        
+        if res:
+            self.is_receipt_sent = True
         return res
 
         logger.warning('collective.salesforce.fundraising: Send Donation Receipt: No template found')
@@ -499,9 +518,6 @@ class Donation(dexterity.Container):
         return template
 
     def send_email_thank_you(self):
-        # Mark the receipt as sent so if the transaction commits, no receipt should be sent again
-        self.is_receipt_sent = True
-
         template = self.get_email_template('email_thank_you')
         if not template:
             return
