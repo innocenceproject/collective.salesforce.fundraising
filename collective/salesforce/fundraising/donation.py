@@ -882,9 +882,37 @@ class HonoraryMemorialView(grok.View):
 
     def send_email(self):
         if self.context.honorary_type == 'Memorial':
-            return self.context.send_email_memorial()
+            try:
+                return self.context.send_email_memorial()
+            except HTTPRequestException as e:
+                failure = {
+                    'func_name': 'send_email',
+                    'func': '',
+                    'args': '',
+                    'kwargs': '',
+                    'portal_path': '',
+                    'context_path': repr(self.context),
+                    'userfolder_path': '',
+                    'user_id': '',
+                    'tb': e,
+                }
+                email_failure_from_portal(self.context, failure)
         else:
-            return self.context.send_email_honorary()
+            try:
+                return self.context.send_email_honorary()
+            except HTTPRequestException as e:
+                failure = {
+                    'func_name': 'send_email',
+                    'func': '',
+                    'args': '',
+                    'kwargs': '',
+                    'portal_path': '',
+                    'context_path': repr(self.context),
+                    'userfolder_path': '',
+                    'user_id': '',
+                    'tb': e,
+                }
+                email_failure_from_portal(self.context, failure)
 
     def render(self):
         # check that either the secret_key was passed in the request or the user has modify rights
@@ -957,7 +985,21 @@ class HonoraryEmailView(grok.View):
     grok.name('honorary-email')
 
     def render(self):
-        return self.context.render_email_honorary()
+        try:
+            return self.context.render_email_honorary()
+        except HTTPRequestException as e:
+            failure = {
+                'func_name': 'HonoraryEmailView',
+                'func': '',
+                'args': '',
+                'kwargs': '',
+                'portal_path': '',
+                'context_path': repr(self.context),
+                'userfolder_path': '',
+                'user_id': '',
+                'tb': e,
+            }
+            email_failure_from_portal(self.context, failure)
 
     def update(self):
         # check that either the secret_key was passed in the request or the user has modify rights
@@ -972,7 +1014,21 @@ class MemorialEmailView(grok.View):
     grok.name('memorial-email')
 
     def render(self):
-        return self.context.render_email_memorial()
+        try:
+            return self.context.render_email_memorial()
+        except HTTPRequestException as e:
+            failure = {
+                'func_name': 'MemorialEmailView',
+                'func': '',
+                'args': '',
+                'kwargs': '',
+                'portal_path': '',
+                'context_path': repr(self.context),
+                'userfolder_path': '',
+                'user_id': '',
+                'tb': e,
+            }
+            email_failure_from_portal(self.context, failure)
 
     def update(self):
         # check that either the secret_key was passed in the request or the user has modify rights
