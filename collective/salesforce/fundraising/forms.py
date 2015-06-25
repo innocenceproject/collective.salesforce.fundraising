@@ -22,9 +22,11 @@ from Products.CMFCore.interfaces import ISiteRoot
 from Products.CMFCore.utils import getToolByName
 
 from dexterity.membrane.membrane_helpers import get_brains_for_email
+from mailsnake.exceptions import HTTPRequestException
 
 from collective.simplesalesforce.utils import ISalesforceUtility
 
+from collective.salesforce.fundraising.asyncfail import email_failure_from_portal
 from collective.salesforce.fundraising.fundraising_campaign import IFundraisingCampaign
 from collective.salesforce.fundraising.personal_campaign_page import IPersonalCampaignPage
 from collective.salesforce.fundraising.personal_campaign_page import IEditPersonalCampaignPage
@@ -134,7 +136,21 @@ class CreatePersonalCampaignPageForm(form.Form):
         campaign.reindexObject()
 
         # Send email confirmation and links.
-        campaign.send_email_personal_page_created()
+        try:
+            campaign.send_email_personal_page_created()
+        except HTTPRequestException as e:
+            failure = {
+                'func_name': 'MemorialEmailView',
+                'func': '',
+                'args': '',
+                'kwargs': '',
+                'portal_path': '',
+                'context_path': repr(self.context),
+                'userfolder_path': '',
+                'user_id': '',
+                'tb': e,
+            }
+            email_failure_from_portal(self.context, failure)
 
         # Send the user to their new campaign.
         IStatusMessage(self.request).add(u'Welcome to your fundraising page!')
