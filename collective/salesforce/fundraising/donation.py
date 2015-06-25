@@ -960,7 +960,7 @@ class HonoraryMemorialView(grok.View):
                 self.send_email()
 
             # Queue an update of the Donation to get honorary fields populated on the Opportunity in Salesforce
-            queueJobWithDelay('normal', async_salesforce_sync, self.context)
+            queueJobWithDelay('normal', async_salesforce_sync_nomark, self.context)
 
             # Redirect on to the thank you page
             return self.request.response.redirect('%s?key=%s' % (self.context.absolute_url(), self.context.secret_key))
@@ -1129,8 +1129,9 @@ class SalesforceDonationSync(grok.Adapter):
         self.context.synced_index = self.context.synced_index + 1
         transaction.commit()
 
-    def sync_to_salesforce(self):
-        self.mark_attempt()
+    def sync_to_salesforce(self, mark_att=True):
+        if mark_att:
+            self.mark_attempt()
         
         self.sfconn = getUtility(ISalesforceUtility).get_connection()
         self.campaign = self.context.get_fundraising_campaign()
@@ -1425,6 +1426,8 @@ class SalesforceDonationSync(grok.Adapter):
 # Salesforce sync
 def async_salesforce_sync(donation):
     return ISalesforceDonationSync(donation).sync_to_salesforce()
+def async_salesforce_sync_nomark(donation):
+    return ISalesforceDonationSync(donation).sync_to_salesforce(mark_att=False)
 
 @grok.subscribe(IDonation, IObjectAddedEvent)
 def queueSalesforceSyncAdded(donation, event):
