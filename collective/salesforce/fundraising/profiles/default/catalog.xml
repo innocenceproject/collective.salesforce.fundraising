@@ -5,4 +5,8 @@
  <column value="goal"/>
  <column value="get_percent_goal"/>
  <column value="synced_opportunity"/>
+ 
+ <index name="synced_opportunity" meta_type="BooleanIndex">
+   <indexed_attr value="synced_opportunity"/>
+ </index>
 </object>
