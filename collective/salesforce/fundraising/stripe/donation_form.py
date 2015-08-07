@@ -375,7 +375,7 @@ class RecordStripeDonation(grok.View):
             data['transaction_id'] = charge['id']
             data['is_test'] = charge['livemode'] == False
             data['title'] = '%s %s - $%i per %s' % (first_name, last_name, amount, plan['interval'])
-            data['payment_date'] = stripe_timestamp_to_date(subscription['current_period_start'])
+            data['payment_date'] = stripe_timestamp_to_date(charge['created'])
             data['next_payment_date'] = stripe_timestamp_to_date(subscription['current_period_end'])
         else:
             # One time donation
