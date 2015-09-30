@@ -214,10 +214,8 @@ class IDonation(model.Schema, IImageScaleTraversable):
         required=False,
         default=False,
     )
-    synced_date = schema.Datetime(
-        title=u"Salesforce Donation Synced Date",
-        description=u"UTC Date donation was synced. Used for the syncing "
-                     "cronjob. May not match payment date.",
+    synced_time = schema.Datetime(
+        title=u"Salesforce Donation Date",
         required=False
     )
     synced_index = schema.Int(
@@ -1127,7 +1125,7 @@ class SalesforceDonationSync(grok.Adapter):
         """mark the sync attempt on the donation
            used by a cronjob to know when to attempt another sync
         """
-        self.context.synced_date = datetime.datetime.now(pytz.UTC)
+        self.context.synced_time = datetime.datetime.now()
         self.context.synced_index = self.context.synced_index + 1
         transaction.commit()
 
