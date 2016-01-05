@@ -411,12 +411,12 @@ def recurring_payment_failed(event):
 
 @grok.subscribe(ICustomerSubscriptionUpdatedEvent)
 def recurring_subscription_updated(event):
-    subscription = event.data['data']['object']
-    plan = subscription['plan']
+    subscriptions = event.data['data']['object']
+    plan = subscriptions['plan']
 
     # Fetch the recurring profile from Salesforce
     sfconn = getUtility(ISalesforceUtility).get_connection()
-    res = sfconn.query("select Id, npe03__Amount__c, npe03__Next_Payment_Date__c, npe03__Open_Ended_Status__c from npe03__Recurring_Donation__c where Stripe_Customer_ID__c = '%s'" % subscription['customer'])
+    res = sfconn.query("select Id, npe03__Amount__c, npe03__Next_Payment_Date__c, npe03__Open_Ended_Status__c from npe03__Recurring_Donation__c where Stripe_Customer_ID__c = '%s'" % subscriptions['customer'])
 
     # If not found, ignore the change.  The recurring profile will be created by a successful invoice payment
     if res['totalSize'] == 0:
@@ -427,13 +427,13 @@ def recurring_subscription_updated(event):
 
     # Check if the amount has changed, if so add to data for change
     # Stripe handles amounts as cents
-    amount = (plan['amount'] * subscription['quantity']) / 100
+    amount = (plan['amount'] * subscriptions['quantity']) / 100
     if recurring['npe03__Amount__c'] != amount:
         data['npe03__Amount__c'] = amount
 
     # Check if the next billing date has changed, if so add to data for change
-    if recurring['npe03__Next_Payment_Date__c'] != subscription['current_period_end']:
-        data['npe03__Next_Payment_Date__c'] = subscription['current_period_end']
+    if recurring['npe03__Next_Payment_Date__c'] != subscriptions['period']['end']:
+        data['npe03__Next_Payment_Date__c'] = subscriptions['period']['end']
 
     # Assume that updated subscriptions are active otherwise the would be deleted
     if recurring['npe03__Open_Ended_Status__c'] != 'Open':
@@ -449,11 +449,11 @@ def recurring_subscription_updated(event):
 
 @grok.subscribe(ICustomerSubscriptionDeletedEvent)
 def recurring_subscription_deleted(event):
-    subscription = event.data['data']['object']
+    subscriptions = event.data['data']['object']
 
     # Fetch the recurring profile from Salesforce
     sfconn = getUtility(ISalesforceUtility).get_connection()
-    res = sfconn.query("select Id, npe03__Open_Ended_Status__c from npe03__Recurring_Donation__c where Stripe_Customer_ID__c = '%s'" % subscription['customer'])
+    res = sfconn.query("select Id, npe03__Open_Ended_Status__c from npe03__Recurring_Donation__c where Stripe_Customer_ID__c = '%s'" % subscriptions['customer'])
 
     # If not found in Salesforce, do nothing
     if res['totalSize'] == 0:

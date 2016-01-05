@@ -272,7 +272,7 @@ class RecordStripeDonation(grok.View):
 
         charge = stripe_api.Charge.retrieve(
             charge_id,
-            expand=['customer.subscription', 'invoice']
+            expand=['customer.subscriptions', 'invoice']
         )
         # What happens if there is no charge_id passed or no charge was found?
         if not charge:
@@ -367,8 +367,9 @@ class RecordStripeDonation(grok.View):
         if charge['invoice']:
             invoice = charge['invoice']
             customer = charge['customer']
-            subscription = customer['subscription']
+            subscriptions = customer['subscriptions']
             plan = invoice['lines']['data'][0]['plan']
+            period = invoice['lines']['data'][0]['period']
 
             data['stripe_customer_id'] = customer['id']
             data['stripe_plan_id'] = plan['id']
@@ -376,7 +377,7 @@ class RecordStripeDonation(grok.View):
             data['is_test'] = charge['livemode'] == False
             data['title'] = '%s %s - $%i per %s' % (first_name, last_name, amount, plan['interval'])
             data['payment_date'] = stripe_timestamp_to_date(charge['created'])
-            data['next_payment_date'] = stripe_timestamp_to_date(subscription['current_period_end'])
+            data['next_payment_date'] = stripe_timestamp_to_date(period['end'])
         else:
             # One time donation
             data['payment_date'] = stripe_timestamp_to_date(charge['created'])
