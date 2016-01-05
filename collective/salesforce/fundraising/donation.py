@@ -215,7 +215,7 @@ class IDonation(model.Schema, IImageScaleTraversable):
         default=False,
     )
     synced_time = schema.Datetime(
-        title=u"Salesforce Donation Date",
+        title=u"Salesforce Syncing Date",
         required=False
     )
     synced_index = schema.Int(
