@@ -432,8 +432,8 @@ def recurring_subscription_updated(event):
         data['npe03__Amount__c'] = amount
 
     # Check if the next billing date has changed, if so add to data for change
-    if recurring['npe03__Next_Payment_Date__c'] != subscriptions['period']['end']:
-        data['npe03__Next_Payment_Date__c'] = subscriptions['period']['end']
+    if recurring['npe03__Next_Payment_Date__c'] != subscriptions['current_period_end']:
+        data['npe03__Next_Payment_Date__c'] = subscriptions['current_period_end']
 
     # Assume that updated subscriptions are active otherwise the would be deleted
     if recurring['npe03__Open_Ended_Status__c'] != 'Open':
