@@ -1275,7 +1275,6 @@ class SalesforceDonationSync(grok.Adapter):
             'Name': self.context.title,
             'StageName': self.context.stage,
             'CampaignId': self.page.sf_object_id,
-            'Source_Campaign__c': self.context.source_campaign_sf_id,
             # Maximum length of a source url is 255 characters
             'Source_Url__c': self.context.source_url[:255],
             'Payment_Method__c': self.context.payment_method,
